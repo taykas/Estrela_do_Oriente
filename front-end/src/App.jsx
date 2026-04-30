@@ -1,5 +1,5 @@
-import App from './App.jsx'
 import { BrowserRouter, Routes, Route } from "react-router-dom"
+import { MainPage } from './pages/main-page.jsx'
 
 function App() {
 
@@ -7,6 +7,7 @@ function App() {
     <>
       <BrowserRouter>
         <Routes>
+          <Route path='/' element={<MainPage/>}></Route>
         </Routes>
       </BrowserRouter>
     </>
