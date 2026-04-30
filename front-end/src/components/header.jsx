@@ -5,16 +5,16 @@ import carrinho from "../assets/icon carrinho.png";
 export const Header = () => {
     return(
         <div>
-            <div className='flex items-center justify-between h-[10vh] bg-black'>
-                <img src={estrela} alt="logo" className="w-[5vw] m-5"/>
+            <div className='flex items-center justify-between h-[10vh] w-full bg-black'>
+                <img src={estrela} alt="logo" className="w-[15vw] m-2"/>
 
-                <section className="flex gap-5 text-2xl">
+                <section className="flex gap-2 text-sm">
                     <h1 className="text-white">INICIO</h1>
                     <h1 className="text-white">PRODUTOS</h1>
                     <h1 className="text-white">SOBRE</h1>
                 </section>
 
-                <img src={carrinho} alt="" className="w-[3vw] m-5"/>
+                <img src={carrinho} alt="" className="w-[10vw] m-2"/>
             </div>
 
             <div>
