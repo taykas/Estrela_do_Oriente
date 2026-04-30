@@ -18,7 +18,7 @@ export const Header = () => {
             </div>
 
             <div>
-                <div className="border-t-4 border-[#f6d771]"></div>
+                <div className="border-t-2 border-[#f1b519]"></div>
             </div>
         </div>
     )
