@@ -12,8 +12,7 @@ export const Footer = () => {
                 style={{ fontFamily: "Corvel" }} 
                 className="w-full bg-black text-white flex flex-col justify-around items-center text-sm">
 
-                <section className="order-1 flex gap-6 p-5 bg-black
-                    ">
+                <section className="order-1 flex gap-6 p-5 bg-black">
                     <Link to='/' onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>Inicio</Link>
                     <Link to='/products'>Produtos</Link>
                     <Link to='/about'>Sobre</Link>
