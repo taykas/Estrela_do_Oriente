@@ -28,15 +28,18 @@ export const MainPage = () => {
     return(
         <>
             {/* First Section */}
-            <div className="min-h-[50vh] w-full bg-black flex flex-col relative">
+            <Header/>
+            <div className="min-h-[50vh] w-full bg-black flex flex-col relative
+                sm:flex-row sm:items-start sm:justify-center sm:h-[45vh]">
                 
-                <Header/>
 
-                <img src={estrela} className="w-[35vw] self-center mt-3" />
+                <img src={estrela} className="w-[30vw] self-center mt-3 z-20
+                    sm:w-[40%] sm:self-start" />
 
                 <div 
                     style={{ fontFamily: "Corvel" }} 
-                    className="flex flex-col items-center justify-center text-[#f1b519] z-20 mt-3"
+                    className="flex flex-col items-center justify-center text-[#f1b519] z-20 mt-3
+                    sm:w-[45%]"
                 >
                     <h1 className="text-5xl text-center leading-tight">
                         ESTRELA <br />
