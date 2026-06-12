@@ -34,24 +34,30 @@ export const MainPage = () => {
                 
 
                 <img src={estrela} className="w-[30vw] self-center mt-3 z-20
-                    sm:w-[35%] sm:self-start" />
+                    sm:w-[35%] sm:self-start
+                    md:w-[40vw]"/>
 
                 <div 
                     style={{ fontFamily: "Corvel" }} 
                     className="flex flex-col items-center justify-center text-[#f1b519] z-20 mt-3
-                    sm:w-[45%]"
+                    sm:w-[45%]
+                    md:w-[55vw]"
                 >
                     <h1 className="text-5xl text-center leading-tight
-                        sm:text-4xl">
+                        sm:text-4xl
+                        md:text-5xl">
                         ESTRELA <br />
                         <span className="whitespace-nowrap">DO ORIENTE</span>
                     </h1>
 
-                    <h1>LOJA DE ARTIGOS RELIGIOSOS</h1>
+                    <h1 className="
+                        md:text-xl">
+                        LOJA DE ARTIGOS RELIGIOSOS</h1>
 
                     <img src={linha_estrela} alt="" className="w-[70vw]" />
 
-                    <h1 className="text-center">
+                    <h1 className="text-center
+                        md:text-2xl">
                         CONHEÇA NOSSOS <br/>
                         <span className="whitespace-nowrap">PRODUTOS</span>
                     </h1>
@@ -70,11 +76,13 @@ export const MainPage = () => {
                 className="flex flex-col min-h-[85vh] bg-black text-[#f1b519] pt-32">
 
                 <section className="flex flex-col items-center">
-                    <h1 className="text-2xl">ESTRELA DO ORIENTE</h1>
-                    <h1>Produtos em Destaque</h1>
+                    <h1 className="text-2xl
+                        md:text-3xl">ESTRELA DO ORIENTE</h1>
+                    <h1 className="md:text-2xl">Produtos em Destaque</h1>
                 </section>
         
-                <section className="  flex gap-4 overflow-x-auto px-4 mt-5 snap-x snap-mandatory scroll-smooth">
+                <section className="flex gap-4 overflow-x-auto px-4 mt-5 snap-x snap-mandatory scroll-smooth
+                    md:gap-35 md:text-xl">
 
                     <div className="min-w-50">
                         <CardDestaque imagem={destaque1} categoria="Imagem" descricao="Pretos Velhos" preco="89,50"/>
@@ -90,7 +98,8 @@ export const MainPage = () => {
 
                 </section>
 
-                <button className="self-center bg-[#f1b519] text-black rounded-2xl w-[70vw] h-[8vh] mt-5 text-center shadow-[0_0_60px_rgba(241,181,25,0.8)]">
+                <button className="self-center bg-[#f1b519] text-black rounded-2xl w-[70vw] h-[8vh] mt-5 text-center shadow-[0_0_60px_rgba(241,181,25,0.8)]
+                    md:text-2xl">
                     Ver todos os produtos
                 </button>
 

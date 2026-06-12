@@ -10,7 +10,8 @@ export const Header = () => {
                     sm:w-[10vw]"/>
 
                 <section className="flex gap-2 text-sm
-                    sm:text-xl">
+                    sm:text-xl
+                    md:text-2xl">
                     <h1 className="text-white">INICIO</h1>
                     <h1 className="text-white">PRODUTOS</h1>
                     <h1 className="text-white">SOBRE</h1>
