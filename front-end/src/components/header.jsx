@@ -4,7 +4,7 @@ import carrinho from "../assets/icon carrinho.png";
 
 export const Header = () => {
     return(
-        <div>
+        <div style={{ fontFamily: "Corvel" }} >
             <div className='flex items-center justify-between h-[10vh] w-full bg-black'>
                 <img src={estrela} alt="logo" className="w-[15vw] m-2"/>
 
