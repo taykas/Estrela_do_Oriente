@@ -7,18 +7,21 @@ export const Header = () => {
         <div style={{ fontFamily: "Corvel" }} >
             <div className='flex items-center justify-between h-[10vh] w-full bg-black'>
                 <img src={estrela} alt="logo" className="w-[15vw] m-2
-                    sm:w-[10vw]"/>
+                    sm:w-[10vw]
+                    lg:w-[6vw]"/>
 
                 <section className="flex gap-2 text-sm
                     sm:text-xl
-                    md:text-2xl">
+                    md:text-2xl
+                    lg:text-xl">
                     <h1 className="text-white">INICIO</h1>
                     <h1 className="text-white">PRODUTOS</h1>
                     <h1 className="text-white">SOBRE</h1>
                 </section>
 
                 <img src={carrinho} alt="" className="w-[10vw] m-2
-                    sm:w-[8vw]"/>
+                    sm:w-[8vw]
+                    lg:w-[5vw]"/>
             </div>
 
             <div>

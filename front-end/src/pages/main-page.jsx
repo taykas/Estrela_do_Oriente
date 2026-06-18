@@ -30,18 +30,21 @@ export const MainPage = () => {
             {/* First Section */}
             <Header/>
             <div className="min-h-[45vh] w-full bg-black flex flex-col relative
-                sm:flex-row sm:items-start sm:justify-center">
+                sm:flex-row sm:items-start sm:justify-center
+                lg:h-[85vh] lg:flex-row lg:items-start">
                 
 
-                <img src={estrela} className="w-[30vw] self-center mt-3 z-20
-                    sm:w-[35%] sm:self-start
-                    md:w-[40vw]"/>
+                <img src={estrela} className="w-[40vw] self-center mt-3 z-20
+                    sm:w-[35vw] sm:self-start sm:justify-end
+                    md:w-[40vw]
+                    lg:w-[30vw]"/>
 
                 <div 
                     style={{ fontFamily: "Corvel" }} 
                     className="flex flex-col items-center justify-center text-[#f1b519] z-20 mt-3
                     sm:w-[45%]
-                    md:w-[55vw]"
+                    md:w-[45vw]
+                    lg:w-[40vw]"
                 >
                     <h1 className="text-5xl text-center leading-tight
                         sm:text-4xl
@@ -54,7 +57,9 @@ export const MainPage = () => {
                         md:text-xl">
                         LOJA DE ARTIGOS RELIGIOSOS</h1>
 
-                    <img src={linha_estrela} alt="" className="w-[70vw]" />
+                    <img src={linha_estrela} alt="" className="w-[70vw]
+                        md:w-[40vw]
+                        lg:w-[30vw]" />
 
                     <h1 className="text-center
                         md:text-2xl">
@@ -77,12 +82,20 @@ export const MainPage = () => {
 
                 <section className="flex flex-col items-center">
                     <h1 className="text-2xl
-                        md:text-3xl">ESTRELA DO ORIENTE</h1>
-                    <h1 className="md:text-2xl">Produtos em Destaque</h1>
+                        md:text-3xl
+                        lg:text-4xl">
+                            ESTRELA DO ORIENTE
+                    </h1>
+                    <h1 className="
+                        md:text-2xl
+                        lg:text-2xl">
+                        Produtos em Destaque
+                    </h1>
                 </section>
         
                 <section className="flex gap-4 overflow-x-auto px-4 mt-5 snap-x snap-mandatory scroll-smooth
-                    md:gap-35 md:text-xl">
+                    md:gap-35 md:text-xl
+                    lg:gap-10 lg:items-center lg:justify-center">
 
                     <div className="min-w-50">
                         <CardDestaque imagem={destaque1} categoria="Imagem" descricao="Pretos Velhos" preco="89,50"/>
@@ -99,7 +112,8 @@ export const MainPage = () => {
                 </section>
 
                 <button className="self-center bg-[#f1b519] text-black rounded-2xl w-[70vw] h-[8vh] mt-5 text-center shadow-[0_0_60px_rgba(241,181,25,0.8)]
-                    md:text-2xl">
+                    md:text-2xl
+                    lg:w-[45vw]">
                     Ver todos os produtos
                 </button>
 
@@ -107,12 +121,15 @@ export const MainPage = () => {
             </div>
 
             {/* Third Section */}
-            <div style={{ fontFamily: "Corvel" }}  className="flex flex-col bg-black min-h-[55vh] -mt-10">
+            <div style={{ fontFamily: "Corvel" }}  className="flex flex-col bg-black min-h-[55vh] 
+                md:-mt-10
+                lg:mt-0">
                 <section className="w-[90%] self-center">
                     <h1 className="text-[#f1b519] text-center text-2xl
                     md:text-3xl">Sobre Nós</h1>
                     <h1 className="text-white text-sm text-center
-                    md:text-xl">
+                    md:text-xl
+                    lg:text-lg">
                         Lorem ipsum dolor sit amet consectetur adipisicing elit.
                         Consequuntur culpa in praesentium illum aliquid voluptatibus soluta unde rem
                         doloremque voluptate est delectus, eum dolorem reiciendis ea dolor a quod blanditiis.</h1>

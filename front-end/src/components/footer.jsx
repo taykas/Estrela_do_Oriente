@@ -10,11 +10,11 @@ export const Footer = () => {
         <>
             <div
                 style={{ fontFamily: "Corvel" }} 
-                className="w-full bg-black text-white flex flex-col justify-around items-center text-sm
-                md:justify-between md:h-[20vh]">
+                className="w-full bg-black text-white flex flex-col justify-around items-center text-sm gap-2
+                md:justify-between md:h-fit">
                 
 
-                <section className="order-1 flex gap-6 p-5 bg-black
+                <section className="order-0 flex gap-6 p-5 bg-black
                     md:order-0 md:text-lg ">
                     <Link to='/' onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>Inicio</Link>
                     <Link to='/products'>Produtos</Link>
@@ -22,7 +22,9 @@ export const Footer = () => {
                     <Link to='/about'>Contato</Link>
                 </section>
 
-                <div className="md:flex md:justify-center md:items-center md:mb-15 md:gap-5">
+                <div className="flex flex-col gap-2
+                    md:flex md:justify-center md:items-center md:mb-15 md:gap-5
+                    lg:flex-row lg:gap-30">
 
                     <section className="order-0 flex items-center justify-center gap-4 bg-black
                     md:order-1">
