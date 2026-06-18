@@ -44,7 +44,7 @@ export const MainPage = () => {
                     className="flex flex-col items-center justify-center text-[#f1b519] z-20 mt-3
                     sm:w-[45%]
                     md:w-[45vw]
-                    lg:w-[40vw]"
+                    lg:w-[40vw] lg:mt-10"
                 >
                     <h1 className="text-5xl text-center leading-tight
                         sm:text-4xl
@@ -78,7 +78,7 @@ export const MainPage = () => {
             {/* Second Section */}
             <div 
                 style={{ fontFamily: "Corvel" }}  
-                className="flex flex-col min-h-[85vh] bg-black text-[#f1b519] pt-32">
+                className="flex flex-col min-h-[85vh] bg-black text-[#f1b519] pt-32 lg:gap-10">
 
                 <section className="flex flex-col items-center">
                     <h1 className="text-2xl
@@ -123,34 +123,43 @@ export const MainPage = () => {
             {/* Third Section */}
             <div style={{ fontFamily: "Corvel" }}  className="flex flex-col bg-black min-h-[55vh] 
                 md:-mt-10
-                lg:mt-0">
-                <section className="w-[90%] self-center">
-                    <h1 className="text-[#f1b519] text-center text-2xl
-                    md:text-3xl">Sobre Nós</h1>
-                    <h1 className="text-white text-sm text-center
-                    md:text-xl
-                    lg:text-lg">
-                        Lorem ipsum dolor sit amet consectetur adipisicing elit.
-                        Consequuntur culpa in praesentium illum aliquid voluptatibus soluta unde rem
-                        doloremque voluptate est delectus, eum dolorem reiciendis ea dolor a quod blanditiis.</h1>
-                </section>
+                lg:mt-0 ">
 
-                <div className="relative w-[90vw] self-center">
-                    
-                    <img 
-                        src={sobre_imagem} 
-                        alt="" 
-                        className="w-full"
-                    />
+                <div className="flex">
 
-                    <div className="absolute inset-0 bg-linear-to-t from-transparent to-black"></div>
+                    <section className="w-[90%] self-center">
+                        <h1 className="text-[#f1b519] text-center text-2xl
+                        md:text-3xl">Sobre Nós</h1>
+                        <h1 className="text-white text-sm text-center
+                        md:text-xl
+                        lg:text-lg">
+                            Lorem ipsum dolor sit amet consectetur adipisicing elit.
+                            Consequuntur culpa in praesentium illum aliquid voluptatibus soluta unde rem
+                            doloremque voluptate est delectus, eum dolorem reiciendis ea dolor a quod blanditiis.</h1>
+                    </section>
+
+                    <div className="relative w-[90vw] self-center">
+                        
+                        <img 
+                            src={sobre_imagem} 
+                            alt="" 
+                            className="w-full
+                            "
+                        />
+
+                        <div className="absolute inset-0 bg-linear-to-t from-transparent to-black
+                            lg:bg-linear-to-l"></div>
 
 
+                    </div>
                 </div>
 
-                <img src={linha_estrela} alt="" className="w-[80vw] mt-6 self-center" />
 
+                <div className="w-full h-fit bg-black items-center justify-center flex">
+                    <img src={linha_estrela} alt="" className="mt-6 self-center w-[80vw]" />
+                </div>
             </div>
+
 
             <Footer/>
 
