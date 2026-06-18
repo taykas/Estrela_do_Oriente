@@ -107,10 +107,13 @@ export const MainPage = () => {
             </div>
 
             {/* Third Section */}
-            <div style={{ fontFamily: "Corvel" }}  className="flex flex-col bg-black min-h-[55vh]">
+            <div style={{ fontFamily: "Corvel" }}  className="flex flex-col bg-black min-h-[55vh] -mt-10">
                 <section className="w-[90%] self-center">
-                    <h1 className="text-[#f1b519] text-center text-2xl">Sobre Nós</h1>
-                    <h1 className="text-white text-sm text-center">Lorem ipsum dolor sit amet consectetur adipisicing elit.
+                    <h1 className="text-[#f1b519] text-center text-2xl
+                    md:text-3xl">Sobre Nós</h1>
+                    <h1 className="text-white text-sm text-center
+                    md:text-xl">
+                        Lorem ipsum dolor sit amet consectetur adipisicing elit.
                         Consequuntur culpa in praesentium illum aliquid voluptatibus soluta unde rem
                         doloremque voluptate est delectus, eum dolorem reiciendis ea dolor a quod blanditiis.</h1>
                 </section>
