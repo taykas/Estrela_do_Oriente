@@ -1,7 +1,7 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom"
 import { MainPage } from './pages/main-page.jsx'
-import { Products } from "./pages/products.jsx"
-import { About } from "./pages/about.jsx"
+import { ProdutosPage } from "./pages/products.jsx"
+import { EstoquePage } from "./pages/estoque.jsx"
 
 function App() {
 
@@ -10,8 +10,8 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path='/' element={<MainPage/>}></Route>
-          <Route path='/products' element={<Products/>}></Route>
-          <Route path='/about' element={<About/>}></Route>
+          <Route path='/products' element={<ProdutosPage/>}></Route>
+          <Route path='/estoque' element={<EstoquePage/>}></Route>
         </Routes>
       </BrowserRouter>
     </>
