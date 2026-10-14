@@ -11,114 +11,46 @@ import {
     Settings,
     Menu,
     Search,
+    Bell,
+    AlertTriangle,
     Plus,
+    Eye,
+    Boxes,
+    DollarSign,
+    CircleAlert,
+    X,
     ArrowDownToLine,
     ArrowUpFromLine,
-    SlidersHorizontal,
-    AlertTriangle,
-    Boxes,
-    TrendingUp,
-    TrendingDown,
-    X,
-    ChevronDown,
-    History,
-    RotateCcw
+    ChevronLeft,
+    ChevronRight
 } from "lucide-react";
-
+import { useNavigate } from "react-router-dom";
 import estrela from "../assets/icon estrela.png";
 
 const menuItems = [
-    { nome: "Início", icone: Home },
-    { nome: "Produtos", icone: Package },
-    { nome: "Estoque", icone: Warehouse, ativo: true },
-    { nome: "Vendas", icone: ShoppingCart },
-    { nome: "Pedidos", icone: ClipboardList },
-    { nome: "Fornecedores", icone: Truck },
-    { nome: "Relatórios", icone: ChartNoAxesCombined },
-    { nome: "Configurações", icone: Settings }
+    { nome: "Início", icone: Home, rota: "/" },
+    { nome: "Produtos", icone: Package, rota: "/produtos" },
+    { nome: "Estoque", icone: Warehouse, rota: "/estoque" },
+    { nome: "Vendas", icone: ShoppingCart, rota: "/vendas" },
+    { nome: "Pedidos", icone: ClipboardList, rota: "/pedidos" },
+    { nome: "Fornecedores", icone: Truck, rota: "/fornecedores" },
+    { nome: "Relatórios", icone: ChartNoAxesCombined, rota: "/relatorios" },
+    { nome: "Configurações", icone: Settings, rota: "/configuracoes" }
 ];
 
-const estoqueInicial = [
-    {
-        id: 1,
-        codigo: "PRD-001",
-        nome: "Incenso Natural",
-        categoria: "Incensos",
-        quantidade: 3,
-        minimo: 10,
-        custo: 6.5,
-        status: "Ativo"
-    },
-    {
-        id: 2,
-        codigo: "PRD-002",
-        nome: "Vela de 7 Dias",
-        categoria: "Velas",
-        quantidade: 25,
-        minimo: 10,
-        custo: 9.5,
-        status: "Ativo"
-    },
-    {
-        id: 3,
-        codigo: "PRD-003",
-        nome: "Patua",
-        categoria: "Acessórios",
-        quantidade: 2,
-        minimo: 5,
-        custo: 12,
-        status: "Ativo"
-    },
-    {
-        id: 4,
-        codigo: "PRD-004",
-        nome: "Erva de Proteção",
-        categoria: "Ervas",
-        quantidade: 4,
-        minimo: 10,
-        custo: 4.5,
-        status: "Ativo"
-    },
-    {
-        id: 5,
-        codigo: "PRD-005",
-        nome: "Óleo de Unção",
-        categoria: "Óleos",
-        quantidade: 2,
-        minimo: 5,
-        custo: 16,
-        status: "Ativo"
-    },
-    {
-        id: 6,
-        codigo: "PRD-006",
-        nome: "Vela Aromática",
-        categoria: "Velas",
-        quantidade: 18,
-        minimo: 5,
-        custo: 11,
-        status: "Ativo"
-    },
-    {
-        id: 7,
-        codigo: "PRD-007",
-        nome: "Incenso de Mirra",
-        categoria: "Incensos",
-        quantidade: 0,
-        minimo: 8,
-        custo: 7,
-        status: "Ativo"
-    },
-    {
-        id: 8,
-        codigo: "PRD-008",
-        nome: "Colar de Proteção",
-        categoria: "Acessórios",
-        quantidade: 12,
-        minimo: 4,
-        custo: 18,
-        status: "Inativo"
-    }
+const produtosIniciais = [
+    { id: 1, nome: "Incenso Natural", categoria: "Incensos", quantidade: 3, minimo: 10, preco: 12.90 },
+    { id: 2, nome: "Vela de 7 Dias", categoria: "Velas", quantidade: 5, minimo: 10, preco: 18.90 },
+    { id: 3, nome: "Patuá", categoria: "Acessórios", quantidade: 2, minimo: 5, preco: 24.90 },
+    { id: 4, nome: "Erva de Proteção", categoria: "Ervas", quantidade: 4, minimo: 10, preco: 9.90 },
+    { id: 5, nome: "Óleo de Unção", categoria: "Óleos", quantidade: 2, minimo: 5, preco: 15.90 },
+    { id: 6, nome: "Sal Grosso", categoria: "Insumos", quantidade: 15, minimo: 10, preco: 5.90 },
+    { id: 7, nome: "Defumador", categoria: "Incensos", quantidade: 20, minimo: 10, preco: 22.90 },
+    { id: 8, nome: "Pau Santo", categoria: "Ervas", quantidade: 12, minimo: 10, preco: 14.90 },
+    { id: 9, nome: "Quartzo Rosa", categoria: "Cristais", quantidade: 8, minimo: 10, preco: 29.90 },
+    { id: 10, nome: "Xarope de Guiné", categoria: "Ervas", quantidade: 0, minimo: 5, preco: 19.90 },
+    { id: 11, nome: "Vela Aromática", categoria: "Velas", quantidade: 32, minimo: 10, preco: 16.90 },
+    { id: 12, nome: "Incenso de Mirra", categoria: "Incensos", quantidade: 28, minimo: 10, preco: 11.90 }
 ];
 
 const categorias = [
@@ -127,7 +59,8 @@ const categorias = [
     "Acessórios",
     "Ervas",
     "Óleos",
-    "Outros"
+    "Cristais",
+    "Insumos"
 ];
 
 const moeda = (valor) =>
@@ -136,294 +69,185 @@ const moeda = (valor) =>
         currency: "BRL"
     });
 
-const dataAtual = () => {
-    return new Date().toLocaleString("pt-BR", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit"
-    });
+const obterStatus = (produto) => {
+    if (produto.quantidade === 0) return "Sem estoque";
+    if (produto.quantidade <= produto.minimo) return "Estoque baixo";
+    return "Normal";
 };
 
-const formularioVazio = {
-    produtoId: "",
-    tipo: "Entrada",
-    quantidade: "",
-    motivo: "Reposição",
-    observacao: ""
-};
+export const Estoque = () => {
+    const navegar = useNavigate();
 
-export const EstoquePage = () => {
-    const [produtos, setProdutos] = useState(estoqueInicial);
-    const [movimentacoes, setMovimentacoes] = useState([
-        {
-            id: 1,
-            codigo: "PRD-002",
-            produto: "Vela de 7 Dias",
-            tipo: "Entrada",
-            quantidade: 10,
-            anterior: 15,
-            atual: 25,
-            motivo: "Reposição",
-            data: "13/10/2026, 14:20",
-            observacao: "Reposição de mercadoria"
-        },
-        {
-            id: 2,
-            codigo: "PRD-006",
-            produto: "Vela Aromática",
-            tipo: "Saída",
-            quantidade: 2,
-            anterior: 20,
-            atual: 18,
-            motivo: "Venda",
-            data: "13/10/2026, 13:45",
-            observacao: "Saída para venda"
-        },
-        {
-            id: 3,
-            codigo: "PRD-003",
-            produto: "Patua",
-            tipo: "Saída",
-            quantidade: 3,
-            anterior: 5,
-            atual: 2,
-            motivo: "Venda",
-            data: "12/10/2026, 16:10",
-            observacao: "Saída para venda"
-        }
-    ]);
-
+    const [produtos, setProdutos] = useState(produtosIniciais);
     const [busca, setBusca] = useState("");
-    const [categoriaFiltro, setCategoriaFiltro] = useState("Todas");
-    const [filtroEstoque, setFiltroEstoque] = useState("Todos");
-    const [aba, setAba] = useState("estoque");
-    const [modalAberto, setModalAberto] = useState(false);
-    const [formulario, setFormulario] = useState(formularioVazio);
-    const [menuAberto, setMenuAberto] = useState(false);
+    const [categoriaSelecionada, setCategoriaSelecionada] = useState("Todas");
+    const [statusSelecionado, setStatusSelecionado] = useState("Todos");
+    const [pagina, setPagina] = useState(1);
+    const [produtoSelecionado, setProdutoSelecionado] = useState(null);
+    const [quantidadeEntrada, setQuantidadeEntrada] = useState("");
+    const [quantidadeSaida, setQuantidadeSaida] = useState("");
+    const [mensagem, setMensagem] = useState("");
 
-    const totalUnidades = produtos.reduce(
-        (total, produto) => total + produto.quantidade,
-        0
-    );
-
-    const valorTotal = produtos.reduce(
-        (total, produto) =>
-            total + produto.quantidade * produto.custo,
-        0
-    );
-
-    const produtosBaixos = produtos.filter(
-        (produto) =>
-            produto.status === "Ativo" &&
-            produto.quantidade > 0 &&
-            produto.quantidade <= produto.minimo
-    ).length;
-
-    const produtosZerados = produtos.filter(
-        (produto) =>
-            produto.status === "Ativo" &&
-            produto.quantidade === 0
-    ).length;
-
-    const entradasHoje = movimentacoes
-        .filter((item) => item.tipo === "Entrada")
-        .reduce((total, item) => total + item.quantidade, 0);
-
-    const saidasHoje = movimentacoes
-        .filter((item) => item.tipo === "Saída")
-        .reduce((total, item) => total + item.quantidade, 0);
+    const porPagina = 10;
 
     const produtosFiltrados = produtos.filter((produto) => {
         const termo = busca.toLowerCase();
 
         const correspondeBusca =
             produto.nome.toLowerCase().includes(termo) ||
-            produto.codigo.toLowerCase().includes(termo) ||
-            produto.categoria.toLowerCase().includes(termo);
+            produto.categoria.toLowerCase().includes(termo) ||
+            String(produto.id).includes(termo);
 
         const correspondeCategoria =
-            categoriaFiltro === "Todas" ||
-            produto.categoria === categoriaFiltro;
+            categoriaSelecionada === "Todas" ||
+            produto.categoria === categoriaSelecionada;
 
-        let correspondeEstoque = true;
+        const correspondeStatus =
+            statusSelecionado === "Todos" ||
+            obterStatus(produto) === statusSelecionado;
 
-        if (filtroEstoque === "Baixo") {
-            correspondeEstoque =
-                produto.quantidade > 0 &&
-                produto.quantidade <= produto.minimo;
-        } else if (filtroEstoque === "Zerado") {
-            correspondeEstoque = produto.quantidade === 0;
-        } else if (filtroEstoque === "Normal") {
-            correspondeEstoque =
-                produto.quantidade > produto.minimo;
-        }
-
-        return (
-            correspondeBusca &&
-            correspondeCategoria &&
-            correspondeEstoque
-        );
+        return correspondeBusca && correspondeCategoria && correspondeStatus;
     });
 
-    const movimentacoesFiltradas = movimentacoes.filter((item) => {
-        const termo = busca.toLowerCase();
+    const totalPaginas = Math.max(
+        1,
+        Math.ceil(produtosFiltrados.length / porPagina)
+    );
 
-        return (
-            item.produto.toLowerCase().includes(termo) ||
-            item.codigo.toLowerCase().includes(termo) ||
-            item.motivo.toLowerCase().includes(termo)
+    const produtosPagina = produtosFiltrados.slice(
+        (pagina - 1) * porPagina,
+        pagina * porPagina
+    );
+
+    const totalProdutos = produtos.length;
+
+    const valorEstoque = produtos.reduce(
+        (total, produto) => total + produto.quantidade * produto.preco,
+        0
+    );
+
+    const produtosBaixos = produtos.filter(
+        (produto) =>
+            produto.quantidade > 0 &&
+            produto.quantidade <= produto.minimo
+    ).length;
+
+    const produtosSemEstoque = produtos.filter(
+        (produto) => produto.quantidade === 0
+    ).length;
+
+    const quantidadePorCategoria = (categoria) =>
+        produtos
+            .filter((produto) => produto.categoria === categoria)
+            .reduce((total, produto) => total + produto.quantidade, 0);
+
+    const abrirMovimentacao = (tipo, produto = null) => {
+        setMensagem("");
+        setQuantidadeEntrada("");
+        setQuantidadeSaida("");
+
+        setProdutoSelecionado(
+            produto
+                ? { ...produto, tipo }
+                : { id: null, tipo }
         );
-    });
-
-    const navegar = (destino) => {
-        // Integre com o React Router quando as páginas existirem.
-        console.log("Navegar para:", destino);
-        setMenuAberto(false);
     };
 
-    const abrirMovimentacao = (tipo = "Entrada") => {
-        setFormulario({
-            ...formularioVazio,
-            tipo
-        });
-        setModalAberto(true);
+    const fecharModal = () => {
+        setProdutoSelecionado(null);
+        setMensagem("");
+        setQuantidadeEntrada("");
+        setQuantidadeSaida("");
     };
 
-    const atualizarCampo = (campo, valor) => {
-        setFormulario((anterior) => ({
-            ...anterior,
-            [campo]: valor
-        }));
-    };
-
-    const registrarMovimentacao = (evento) => {
-        evento.preventDefault();
-
-        const produto = produtos.find(
-            (item) => item.id === Number(formulario.produtoId)
+    const registrarMovimentacao = (tipo) => {
+        const quantidade = Number(
+            tipo === "entrada" ? quantidadeEntrada : quantidadeSaida
         );
-
-        const quantidade = Number(formulario.quantidade);
 
         if (
-            !produto ||
+            !produtoSelecionado ||
+            produtoSelecionado.id === null ||
             !Number.isInteger(quantidade) ||
             quantidade <= 0
         ) {
-            alert("Selecione um produto e informe uma quantidade inteira maior que zero.");
+            setMensagem("Informe uma quantidade inteira maior que zero.");
             return;
         }
 
-        if (produto.status !== "Ativo") {
-            alert("Não é possível movimentar um produto inativo.");
+        const produtoAtual = produtos.find(
+            (produto) => produto.id === produtoSelecionado.id
+        );
+
+        if (!produtoAtual) {
+            setMensagem("Produto não encontrado.");
             return;
         }
 
-        const anterior = produto.quantidade;
-        let atual = anterior;
-
-        if (formulario.tipo === "Entrada") {
-            atual = anterior + quantidade;
-        } else if (formulario.tipo === "Saída") {
-            if (quantidade > anterior) {
-                alert(
-                    `Estoque insuficiente. Quantidade disponível: ${anterior} unidade(s).`
-                );
-                return;
-            }
-
-            atual = anterior - quantidade;
-        } else {
-            atual = quantidade;
+        if (tipo === "saida" && quantidade > produtoAtual.quantidade) {
+            setMensagem("A quantidade de saída é maior que o estoque disponível.");
+            return;
         }
 
-        const produtoAtualizado = {
-            ...produto,
-            quantidade: atual
-        };
-
-        const novaMovimentacao = {
-            id: Date.now(),
-            codigo: produto.codigo,
-            produto: produto.nome,
-            tipo: formulario.tipo,
-            quantidade:
-                formulario.tipo === "Ajuste"
-                    ? Math.abs(atual - anterior)
-                    : quantidade,
-            anterior,
-            atual,
-            motivo:
-                formulario.tipo === "Ajuste"
-                    ? "Inventário"
-                    : formulario.motivo,
-            data: dataAtual(),
-            observacao: formulario.observacao.trim()
-        };
-
-        setProdutos((anteriores) =>
-            anteriores.map((item) =>
-                item.id === produto.id
-                    ? produtoAtualizado
-                    : item
+        setProdutos((atuais) =>
+            atuais.map((produto) =>
+                produto.id === produtoAtual.id
+                    ? {
+                        ...produto,
+                        quantidade:
+                            produto.quantidade +
+                            (tipo === "entrada" ? quantidade : -quantidade)
+                    }
+                    : produto
             )
         );
 
-        setMovimentacoes((anteriores) => [
-            novaMovimentacao,
-            ...anteriores
-        ]);
+        setMensagem(
+            `${tipo === "entrada" ? "Entrada" : "Saída"} de ${quantidade} unidade(s) registrada com sucesso.`
+        );
 
-        setModalAberto(false);
-        setFormulario(formularioVazio);
+        setProdutoSelecionado(null);
+        setQuantidadeEntrada("");
+        setQuantidadeSaida("");
     };
 
-    const classeCampo =
-        "mt-2 w-full rounded-md border border-[#f1b519]/25 bg-black px-3 py-3 text-sm text-gray-200 outline-none transition focus:border-[#f1b519]";
-
-    const statusEstoque = (produto) => {
-        if (produto.quantidade === 0) {
-            return {
-                texto: "Sem estoque",
-                classe: "bg-red-500/10 text-red-400"
-            };
+    const indicadores = [
+        {
+            titulo: "Total de Produtos",
+            valor: totalProdutos,
+            descricao: "Produtos cadastrados",
+            icone: Boxes
+        },
+        {
+            titulo: "Valor em Estoque",
+            valor: moeda(valorEstoque),
+            descricao: "Valor total dos produtos",
+            icone: DollarSign
+        },
+        {
+            titulo: "Produtos em Estoque Baixo",
+            valor: produtosBaixos,
+            descricao: "Precisam de reposição",
+            icone: AlertTriangle
+        },
+        {
+            titulo: "Produtos em Falta",
+            valor: produtosSemEstoque,
+            descricao: "Sem estoque disponível",
+            icone: CircleAlert
         }
-
-        if (produto.quantidade <= produto.minimo) {
-            return {
-                texto: "Estoque baixo",
-                classe: "bg-[#f1b519]/10 text-[#f1b519]"
-            };
-        }
-
-        return {
-            texto: "Normal",
-            classe: "bg-emerald-500/10 text-emerald-400"
-        };
-    };
+    ];
 
     return (
         <div className="min-h-screen bg-black text-white">
-
             {/* Menu lateral */}
-            <aside
-                className={`fixed left-0 top-0 z-50 flex h-screen w-60 flex-col border-r border-[#f1b519]/30 bg-black transition-transform duration-300 ${
-                    menuAberto
-                        ? "translate-x-0"
-                        : "-translate-x-full"
-                } lg:translate-x-0`}
-            >
-                <div className="flex h-24 shrink-0 items-center gap-3 border-b border-[#f1b519]/60 px-5">
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center">
-                        <img
-                            src={estrela}
-                            alt="Estrela do Oriente"
-                            className="h-12 w-12 object-contain"
-                        />
-                    </div>
-
+            <aside className="fixed left-0 top-0 z-40 hidden h-screen w-60 flex-col border-r border-[#f1b519]/30 bg-black lg:flex">
+                <div className="flex h-24 items-center gap-3 border-b border-[#f1b519]/60 px-5">
+                    <img
+                        src={estrela}
+                        alt="Estrela do Oriente"
+                        className="h-12 w-12 shrink-0 object-contain"
+                    />
                     <h1
                         className="text-lg leading-tight text-[#f1b519]"
                         style={{ fontFamily: "Corvel" }}
@@ -435,936 +259,642 @@ export const EstoquePage = () => {
                 <nav className="flex-1 space-y-2 overflow-y-auto px-3 py-6">
                     {menuItems.map((item) => {
                         const Icone = item.icone;
+                        const ativo = item.nome === "Estoque";
 
                         return (
                             <button
                                 key={item.nome}
-                                onClick={() => navegar(item.nome)}
+                                onClick={() => navegar(item.rota)}
                                 className={`flex w-full items-center gap-3 rounded-md px-4 py-3 text-left text-sm transition-colors ${
-                                    item.ativo
+                                    ativo
                                         ? "bg-[#f1b519]/20 text-[#f1b519]"
                                         : "text-gray-300 hover:bg-[#f1b519]/10 hover:text-[#f1b519]"
                                 }`}
                             >
                                 <Icone size={19} strokeWidth={1.8} />
                                 <span>{item.nome}</span>
-
-                                {item.ativo && (
+                                {ativo && (
                                     <span className="ml-auto h-2 w-2 rounded-full bg-[#f1b519]" />
                                 )}
                             </button>
                         );
                     })}
                 </nav>
-
-                <div className="border-t border-[#f1b519]/20 p-4">
-                    <p className="text-xs text-gray-500">
-                        Controle administrativo
-                    </p>
-                    <p className="mt-1 text-xs text-[#f1b519]">
-                        Estrela do Oriente
-                    </p>
-                </div>
             </aside>
 
-            {/* Fundo do menu mobile */}
-            {menuAberto && (
-                <button
-                    aria-label="Fechar menu"
-                    onClick={() => setMenuAberto(false)}
-                    className="fixed inset-0 z-40 bg-black/70 lg:hidden"
-                />
-            )}
-
-            {/* Conteúdo principal */}
+            {/* Conteúdo */}
             <div className="min-h-screen lg:ml-60">
-
-                {/* Cabeçalho */}
                 <header className="sticky top-0 z-30 flex h-24 items-center justify-between border-b border-[#f1b519]/50 bg-black px-4 sm:px-6 lg:px-8">
                     <div className="flex items-center gap-3">
                         <button
-                            onClick={() => setMenuAberto(true)}
                             className="text-[#f1b519] lg:hidden"
-                            aria-label="Abrir menu"
+                            aria-label="Menu"
                         >
                             <Menu size={25} />
                         </button>
 
                         <div>
                             <h2
-                                className="text-lg text-[#f1b519] sm:text-xl"
+                                className="text-xl text-[#f1b519] sm:text-2xl"
                                 style={{ fontFamily: "Corvel" }}
                             >
-                                Controle de Estoque
+                                Estoque
                             </h2>
-                            <p className="hidden text-xs text-gray-400 sm:block">
-                                Entradas, saídas e inventário
+                            <p className="text-xs text-gray-400">
+                                Controle de produtos e inventário
                             </p>
                         </div>
                     </div>
 
-                    <div className="hidden items-center gap-2 rounded-md border border-[#f1b519]/25 px-3 py-2 sm:flex">
-                        <Warehouse size={16} className="text-[#f1b519]" />
-                        <span className="text-xs text-gray-400">
-                            Área administrativa
-                        </span>
+                    <div className="flex items-center gap-4">
+                        <div className="hidden items-center gap-2 rounded-md border border-white/15 px-3 py-2 sm:flex">
+                            <Search size={17} className="text-gray-400" />
+                            <input
+                                value={busca}
+                                onChange={(e) => {
+                                    setBusca(e.target.value);
+                                    setPagina(1);
+                                }}
+                                placeholder="Buscar produto..."
+                                className="w-36 bg-transparent text-sm outline-none placeholder:text-gray-500 lg:w-48"
+                            />
+                        </div>
+
+                        <Bell size={21} className="text-[#f1b519]" />
+
+                        <div className="hidden border-l border-[#f1b519]/30 pl-4 sm:block">
+                            <p className="text-sm text-[#f1b519]">
+                                Estrela do Oriente
+                            </p>
+                            <p className="text-xs text-gray-500">
+                                {new Date().toLocaleDateString("pt-BR")}
+                            </p>
+                        </div>
                     </div>
                 </header>
 
                 <main className="space-y-6 p-4 sm:p-6 lg:p-8">
+                    {/* Ações principais */}
+                    <section className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <button
+                            onClick={() => abrirMovimentacao("entrada")}
+                            className="flex items-center gap-4 rounded-lg bg-[#f1b519] p-5 text-left text-black transition hover:bg-[#d9a30f]"
+                        >
+                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-black/10">
+                                <ArrowDownToLine size={26} />
+                            </div>
+                            <div>
+                                <p className="text-base font-semibold">
+                                    Entrada de estoque
+                                </p>
+                                <p className="mt-1 text-sm text-black/70">
+                                    Adicionar unidades aos produtos
+                                </p>
+                            </div>
+                            <Plus size={20} className="ml-auto shrink-0" />
+                        </button>
 
-                    {/* Título e ações */}
-                    <section className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-                        <div>
-                            <h2 className="text-xl text-[#f1b519]">
-                                Visão geral do estoque
-                            </h2>
-                            <p className="mt-1 text-sm text-gray-400">
-                                Acompanhe quantidades, valores e movimentações.
-                            </p>
-                        </div>
-
-                        <div className="flex flex-col gap-2 sm:flex-row">
-                            <button
-                                onClick={() => abrirMovimentacao("Saída")}
-                                className="flex items-center justify-center gap-2 rounded-md border border-[#f1b519]/40 px-4 py-3 text-sm text-[#f1b519] transition hover:bg-[#f1b519]/10"
-                            >
-                                <ArrowUpFromLine size={17} />
-                                Registrar saída
-                            </button>
-
-                            <button
-                                onClick={() => abrirMovimentacao("Entrada")}
-                                className="flex items-center justify-center gap-2 rounded-md bg-[#f1b519] px-4 py-3 text-sm font-medium text-black transition hover:bg-[#d9a30f]"
-                            >
-                                <Plus size={18} />
-                                Registrar entrada
-                            </button>
-                        </div>
+                        <button
+                            onClick={() => abrirMovimentacao("saida")}
+                            className="flex items-center gap-4 rounded-lg border border-red-500/40 bg-red-500/[0.06] p-5 text-left transition hover:bg-red-500/10"
+                        >
+                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-red-500/10 text-red-400">
+                                <ArrowUpFromLine size={26} />
+                            </div>
+                            <div>
+                                <p className="text-base font-semibold text-red-300">
+                                    Saída de estoque
+                                </p>
+                                <p className="mt-1 text-sm text-gray-400">
+                                    Registrar retirada de produtos
+                                </p>
+                            </div>
+                            <Plus size={20} className="ml-auto shrink-0 text-red-400" />
+                        </button>
                     </section>
 
                     {/* Indicadores */}
-                    <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                    <section>
+                        <h2 className="mb-4 text-lg text-[#f1b519]">
+                            Resumo do Estoque
+                        </h2>
 
-                        <div className="rounded-lg border border-[#f1b519]/40 bg-[#080808] p-5 transition-colors hover:border-[#f1b519]">
-                            <div className="flex items-center justify-between">
-                                <p className="text-sm text-gray-300">
-                                    Unidades em estoque
-                                </p>
-                                <Boxes size={22} className="text-[#f1b519]" />
-                            </div>
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                            {indicadores.map((item) => {
+                                const Icone = item.icone;
 
-                            <p className="mt-5 text-3xl text-[#f1b519]">
-                                {totalUnidades}
-                            </p>
-                            <p className="mt-1 text-xs text-gray-500">
-                                Quantidade total de unidades
-                            </p>
-                        </div>
-
-                        <div className="rounded-lg border border-[#f1b519]/40 bg-[#080808] p-5 transition-colors hover:border-[#f1b519]">
-                            <div className="flex items-center justify-between">
-                                <p className="text-sm text-gray-300">
-                                    Valor do estoque
-                                </p>
-                                <Warehouse size={22} className="text-[#f1b519]" />
-                            </div>
-
-                            <p className="mt-5 break-words text-2xl text-[#f1b519]">
-                                {moeda(valorTotal)}
-                            </p>
-                            <p className="mt-1 text-xs text-gray-500">
-                                Avaliado pelo preço de custo
-                            </p>
-                        </div>
-
-                        <div className="rounded-lg border border-[#f1b519]/40 bg-[#080808] p-5 transition-colors hover:border-[#f1b519]">
-                            <div className="flex items-center justify-between">
-                                <p className="text-sm text-gray-300">
-                                    Estoque baixo
-                                </p>
-                                <AlertTriangle size={22} className="text-[#f1b519]" />
-                            </div>
-
-                            <p className="mt-5 text-3xl text-[#f1b519]">
-                                {produtosBaixos}
-                            </p>
-                            <p className="mt-1 text-xs text-gray-500">
-                                Produtos que precisam de reposição
-                            </p>
-                        </div>
-
-                        <div className="rounded-lg border border-red-500/30 bg-[#080808] p-5 transition-colors hover:border-red-400/60">
-                            <div className="flex items-center justify-between">
-                                <p className="text-sm text-gray-300">
-                                    Produtos zerados
-                                </p>
-                                <AlertTriangle size={22} className="text-red-400" />
-                            </div>
-
-                            <p className="mt-5 text-3xl text-red-400">
-                                {produtosZerados}
-                            </p>
-                            <p className="mt-1 text-xs text-gray-500">
-                                Produtos ativos sem unidades
-                            </p>
-                        </div>
-                    </section>
-
-                    {/* Movimentações resumidas */}
-                    <section className="grid grid-cols-1 gap-4 md:grid-cols-2">
-
-                        <div className="flex items-center justify-between rounded-lg border border-[#f1b519]/30 bg-[#050505] p-5">
-                            <div>
-                                <p className="text-sm text-gray-400">
-                                    Entradas registradas
-                                </p>
-                                <p className="mt-2 text-2xl text-emerald-400">
-                                    +{entradasHoje} un.
-                                </p>
-                                <p className="mt-1 text-xs text-gray-500">
-                                    Total de unidades nas entradas registradas
-                                </p>
-                            </div>
-
-                            <div className="flex h-12 w-12 items-center justify-center rounded-md border border-emerald-500/20 bg-emerald-500/10">
-                                <TrendingUp size={23} className="text-emerald-400" />
-                            </div>
-                        </div>
-
-                        <div className="flex items-center justify-between rounded-lg border border-[#f1b519]/30 bg-[#050505] p-5">
-                            <div>
-                                <p className="text-sm text-gray-400">
-                                    Saídas registradas
-                                </p>
-                                <p className="mt-2 text-2xl text-[#f1b519]">
-                                    -{saidasHoje} un.
-                                </p>
-                                <p className="mt-1 text-xs text-gray-500">
-                                    Total de unidades nas saídas registradas
-                                </p>
-                            </div>
-
-                            <div className="flex h-12 w-12 items-center justify-center rounded-md border border-[#f1b519]/20 bg-[#f1b519]/10">
-                                <TrendingDown size={23} className="text-[#f1b519]" />
-                            </div>
-                        </div>
-                    </section>
-
-                    {/* Alerta de reposição */}
-                    {(produtosBaixos > 0 || produtosZerados > 0) && (
-                        <section className="rounded-lg border border-[#f1b519]/40 bg-[#f1b519]/[0.05] p-5">
-                            <div className="flex items-start gap-3">
-                                <AlertTriangle
-                                    size={22}
-                                    className="mt-0.5 shrink-0 text-[#f1b519]"
-                                />
-
-                                <div className="flex-1">
-                                    <h3 className="text-sm text-[#f1b519]">
-                                        Atenção à reposição
-                                    </h3>
-                                    <p className="mt-1 text-sm leading-6 text-gray-400">
-                                        {produtosZerados > 0 &&
-                                            `${produtosZerados} produto(s) estão sem estoque. `}
-                                        {produtosBaixos > 0 &&
-                                            `${produtosBaixos} produto(s) estão no nível mínimo ou abaixo dele.`}
-                                    </p>
-                                </div>
-
-                                <button
-                                    onClick={() => {
-                                        setAba("estoque");
-                                        setFiltroEstoque("Baixo");
-                                    }}
-                                    className="shrink-0 text-xs text-[#f1b519] hover:underline"
-                                >
-                                    Ver itens
-                                </button>
-                            </div>
-                        </section>
-                    )}
-
-                    {/* Painel de gerenciamento */}
-                    <section className="overflow-hidden rounded-lg border border-[#f1b519]/40 bg-[#050505]">
-
-                        {/* Abas */}
-                        <div className="flex flex-col justify-between gap-4 border-b border-[#f1b519]/25 p-5 sm:flex-row sm:items-center">
-                            <div className="flex gap-5">
-                                <button
-                                    onClick={() => setAba("estoque")}
-                                    className={`border-b-2 pb-2 text-sm transition ${
-                                        aba === "estoque"
-                                            ? "border-[#f1b519] text-[#f1b519]"
-                                            : "border-transparent text-gray-500 hover:text-gray-300"
-                                    }`}
-                                >
-                                    Posição de estoque
-                                </button>
-
-                                <button
-                                    onClick={() => setAba("movimentacoes")}
-                                    className={`flex items-center gap-2 border-b-2 pb-2 text-sm transition ${
-                                        aba === "movimentacoes"
-                                            ? "border-[#f1b519] text-[#f1b519]"
-                                            : "border-transparent text-gray-500 hover:text-gray-300"
-                                    }`}
-                                >
-                                    <History size={16} />
-                                    Histórico
-                                </button>
-                            </div>
-
-                            <div className="relative">
-                                <Search
-                                    size={17}
-                                    className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"
-                                />
-                                <input
-                                    type="text"
-                                    value={busca}
-                                    onChange={(evento) =>
-                                        setBusca(evento.target.value)
-                                    }
-                                    placeholder={
-                                        aba === "estoque"
-                                            ? "Buscar produto..."
-                                            : "Buscar movimentação..."
-                                    }
-                                    className="w-full rounded-md border border-[#f1b519]/25 bg-black py-2.5 pl-9 pr-3 text-sm text-gray-200 outline-none focus:border-[#f1b519] sm:w-64"
-                                />
-                            </div>
-                        </div>
-
-                        {aba === "estoque" && (
-                            <>
-                                {/* Filtros de estoque */}
-                                <div className="flex flex-col gap-3 border-b border-white/10 px-5 py-4 sm:flex-row sm:items-center">
-                                    <div className="flex items-center gap-2 text-xs text-gray-400">
-                                        <SlidersHorizontal size={15} />
-                                        Filtros
-                                    </div>
-
-                                    <div className="relative">
-                                        <select
-                                            value={categoriaFiltro}
-                                            onChange={(evento) =>
-                                                setCategoriaFiltro(evento.target.value)
-                                            }
-                                            className="w-full appearance-none rounded-md border border-[#f1b519]/20 bg-black py-2 pl-3 pr-8 text-xs text-gray-300 outline-none focus:border-[#f1b519] sm:w-44"
-                                        >
-                                            <option value="Todas">
-                                                Todas as categorias
-                                            </option>
-                                            {categorias.map((categoria) => (
-                                                <option key={categoria} value={categoria}>
-                                                    {categoria}
-                                                </option>
-                                            ))}
-                                        </select>
-                                        <ChevronDown
-                                            size={14}
-                                            className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[#f1b519]"
-                                        />
-                                    </div>
-
-                                    <div className="relative">
-                                        <select
-                                            value={filtroEstoque}
-                                            onChange={(evento) =>
-                                                setFiltroEstoque(evento.target.value)
-                                            }
-                                            className="w-full appearance-none rounded-md border border-[#f1b519]/20 bg-black py-2 pl-3 pr-8 text-xs text-gray-300 outline-none focus:border-[#f1b519] sm:w-44"
-                                        >
-                                            <option value="Todos">Todos os níveis</option>
-                                            <option value="Normal">Estoque normal</option>
-                                            <option value="Baixo">Estoque baixo</option>
-                                            <option value="Zerado">Sem estoque</option>
-                                        </select>
-                                        <ChevronDown
-                                            size={14}
-                                            className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[#f1b519]"
-                                        />
-                                    </div>
-
-                                    {(busca ||
-                                        categoriaFiltro !== "Todas" ||
-                                        filtroEstoque !== "Todos") && (
-                                        <button
-                                            onClick={() => {
-                                                setBusca("");
-                                                setCategoriaFiltro("Todas");
-                                                setFiltroEstoque("Todos");
-                                            }}
-                                            className="flex items-center gap-1 text-xs text-[#f1b519] hover:underline sm:ml-auto"
-                                        >
-                                            <RotateCcw size={13} />
-                                            Limpar filtros
-                                        </button>
-                                    )}
-                                </div>
-
-                                {/* Tabela de estoque */}
-                                <div className="overflow-x-auto">
-                                    <table className="w-full min-w-[850px] text-left text-sm">
-                                        <thead>
-                                            <tr className="bg-[#f1b519]/[0.07] text-xs text-[#c5a64a]">
-                                                <th className="px-5 py-4 font-medium">
-                                                    Produto
-                                                </th>
-                                                <th className="px-4 py-4 font-medium">
-                                                    Categoria
-                                                </th>
-                                                <th className="px-4 py-4 font-medium">
-                                                    Quantidade
-                                                </th>
-                                                <th className="px-4 py-4 font-medium">
-                                                    Estoque mínimo
-                                                </th>
-                                                <th className="px-4 py-4 font-medium">
-                                                    Valor em estoque
-                                                </th>
-                                                <th className="px-5 py-4 font-medium">
-                                                    Situação
-                                                </th>
-                                                <th className="px-5 py-4 text-right font-medium">
-                                                    Ações
-                                                </th>
-                                            </tr>
-                                        </thead>
-
-                                        <tbody>
-                                            {produtosFiltrados.map((produto) => {
-                                                const status = statusEstoque(produto);
-
-                                                return (
-                                                    <tr
-                                                        key={produto.id}
-                                                        className="border-t border-white/10 text-gray-300 transition hover:bg-white/[0.025]"
-                                                    >
-                                                        <td className="px-5 py-4">
-                                                            <div className="flex items-center gap-3">
-                                                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-[#f1b519]/25 bg-[#f1b519]/[0.06]">
-                                                                    <Package
-                                                                        size={19}
-                                                                        className="text-[#f1b519]"
-                                                                    />
-                                                                </div>
-
-                                                                <div>
-                                                                    <p className="font-medium text-gray-200">
-                                                                        {produto.nome}
-                                                                    </p>
-                                                                    <p className="mt-1 text-xs text-gray-500">
-                                                                        {produto.codigo}
-                                                                    </p>
-                                                                </div>
-                                                            </div>
-                                                        </td>
-
-                                                        <td className="px-4 py-4">
-                                                            {produto.categoria}
-                                                        </td>
-
-                                                        <td className="px-4 py-4">
-                                                            <span
-                                                                className={
-                                                                    produto.quantidade === 0
-                                                                        ? "font-medium text-red-400"
-                                                                        : produto.quantidade <= produto.minimo
-                                                                        ? "font-medium text-[#f1b519]"
-                                                                        : "text-gray-200"
-                                                                }
-                                                            >
-                                                                {produto.quantidade} un.
-                                                            </span>
-                                                        </td>
-
-                                                        <td className="px-4 py-4 text-gray-400">
-                                                            {produto.minimo} un.
-                                                        </td>
-
-                                                        <td className="whitespace-nowrap px-4 py-4 text-gray-200">
-                                                            {moeda(
-                                                                produto.quantidade * produto.custo
-                                                            )}
-                                                        </td>
-
-                                                        <td className="px-5 py-4">
-                                                            <span
-                                                                className={`whitespace-nowrap rounded-full px-2.5 py-1 text-xs ${status.classe}`}
-                                                            >
-                                                                {status.texto}
-                                                            </span>
-                                                        </td>
-
-                                                        <td className="px-5 py-4">
-                                                            <div className="flex justify-end gap-2">
-                                                                <button
-                                                                    disabled={produto.status !== "Ativo"}
-                                                                    onClick={() => {
-                                                                        setFormulario({
-                                                                            ...formularioVazio,
-                                                                            produtoId: String(produto.id),
-                                                                            tipo: "Entrada"
-                                                                        });
-                                                                        setModalAberto(true);
-                                                                    }}
-                                                                    title="Registrar entrada"
-                                                                    aria-label={`Registrar entrada de ${produto.nome}`}
-                                                                    className="rounded-md border border-emerald-500/25 p-2 text-emerald-400 transition hover:bg-emerald-500/10 disabled:cursor-not-allowed disabled:opacity-30"
-                                                                >
-                                                                    <ArrowDownToLine size={16} />
-                                                                </button>
-
-                                                                <button
-                                                                    disabled={
-                                                                        produto.status !== "Ativo" ||
-                                                                        produto.quantidade === 0
-                                                                    }
-                                                                    onClick={() => {
-                                                                        setFormulario({
-                                                                            ...formularioVazio,
-                                                                            produtoId: String(produto.id),
-                                                                            tipo: "Saída",
-                                                                            motivo: "Venda"
-                                                                        });
-                                                                        setModalAberto(true);
-                                                                    }}
-                                                                    title="Registrar saída"
-                                                                    aria-label={`Registrar saída de ${produto.nome}`}
-                                                                    className="rounded-md border border-[#f1b519]/25 p-2 text-[#f1b519] transition hover:bg-[#f1b519]/10 disabled:cursor-not-allowed disabled:opacity-30"
-                                                                >
-                                                                    <ArrowUpFromLine size={16} />
-                                                                </button>
-
-                                                                <button
-                                                                    disabled={produto.status !== "Ativo"}
-                                                                    onClick={() => {
-                                                                        setFormulario({
-                                                                            ...formularioVazio,
-                                                                            produtoId: String(produto.id),
-                                                                            tipo: "Ajuste",
-                                                                            quantidade: String(produto.quantidade)
-                                                                        });
-                                                                        setModalAberto(true);
-                                                                    }}
-                                                                    title="Ajustar inventário"
-                                                                    aria-label={`Ajustar estoque de ${produto.nome}`}
-                                                                    className="rounded-md border border-white/15 p-2 text-gray-400 transition hover:bg-white/5 hover:text-white disabled:cursor-not-allowed disabled:opacity-30"
-                                                                >
-                                                                    <SlidersHorizontal size={16} />
-                                                                </button>
-                                                            </div>
-                                                        </td>
-                                                    </tr>
-                                                );
-                                            })}
-                                        </tbody>
-                                    </table>
-
-                                    {produtosFiltrados.length === 0 && (
-                                        <div className="px-5 py-14 text-center">
-                                            <Warehouse
-                                                size={34}
-                                                className="mx-auto text-[#f1b519]/50"
+                                return (
+                                    <div
+                                        key={item.titulo}
+                                        className="rounded-lg border border-[#f1b519]/40 bg-[#080808] p-5 transition-colors hover:border-[#f1b519]"
+                                    >
+                                        <div className="flex items-center justify-between gap-2">
+                                            <p className="text-sm text-gray-300">
+                                                {item.titulo}
+                                            </p>
+                                            <Icone
+                                                size={23}
+                                                className="shrink-0 text-[#f1b519]"
+                                                strokeWidth={1.7}
                                             />
-                                            <p className="mt-3 text-sm text-gray-300">
-                                                Nenhum produto encontrado.
-                                            </p>
-                                            <p className="mt-1 text-xs text-gray-500">
-                                                Altere a busca ou os filtros selecionados.
-                                            </p>
                                         </div>
-                                    )}
+                                        <p className="mt-5 break-words text-2xl font-semibold text-[#f1b519]">
+                                            {item.valor}
+                                        </p>
+                                        <p className="mt-1 text-xs text-gray-500">
+                                            {item.descricao}
+                                        </p>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </section>
+
+                    {/* Tabela e painel lateral */}
+                    <section className="grid grid-cols-1 items-start gap-5 2xl:grid-cols-4">
+                        {/* Produtos */}
+                        <div className="overflow-hidden rounded-lg border border-[#f1b519]/40 bg-[#050505] 2xl:col-span-3">
+                            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#f1b519]/25 p-5">
+                                <div className="flex items-center gap-2">
+                                    <Package size={21} className="text-[#f1b519]" />
+                                    <h2 className="text-lg text-[#f1b519]">
+                                        Produtos em Estoque
+                                    </h2>
                                 </div>
 
-                                <div className="border-t border-[#f1b519]/20 px-5 py-4">
-                                    <p className="text-xs text-gray-500">
-                                        Exibindo {produtosFiltrados.length} de {produtos.length} produtos.
-                                    </p>
+                                <button
+                                    onClick={() => navegar("/produtos")}
+                                    className="flex items-center gap-2 rounded-md border border-[#f1b519]/60 px-3 py-2 text-sm text-[#f1b519] transition hover:bg-[#f1b519] hover:text-black"
+                                >
+                                    <Plus size={17} />
+                                    Cadastrar Produto
+                                </button>
+                            </div>
+
+                            <div className="grid grid-cols-1 gap-3 p-4 md:grid-cols-3">
+                                <div className="flex items-center gap-2 rounded-md border border-white/20 px-3 py-2 md:col-span-1">
+                                    <Search size={17} className="shrink-0 text-gray-400" />
+                                    <input
+                                        value={busca}
+                                        onChange={(e) => {
+                                            setBusca(e.target.value);
+                                            setPagina(1);
+                                        }}
+                                        placeholder="Buscar por nome ou categoria..."
+                                        className="w-full bg-transparent text-sm outline-none placeholder:text-gray-500"
+                                    />
                                 </div>
-                            </>
-                        )}
 
-                        {aba === "movimentacoes" && (
-                            <>
-                                <div className="overflow-x-auto">
-                                    <table className="w-full min-w-[850px] text-left text-sm">
-                                        <thead>
-                                            <tr className="bg-[#f1b519]/[0.07] text-xs text-[#c5a64a]">
-                                                <th className="px-5 py-4 font-medium">
-                                                    Data
-                                                </th>
-                                                <th className="px-4 py-4 font-medium">
-                                                    Produto
-                                                </th>
-                                                <th className="px-4 py-4 font-medium">
-                                                    Tipo
-                                                </th>
-                                                <th className="px-4 py-4 font-medium">
-                                                    Quantidade
-                                                </th>
-                                                <th className="px-4 py-4 font-medium">
-                                                    Saldo anterior
-                                                </th>
-                                                <th className="px-4 py-4 font-medium">
-                                                    Saldo atual
-                                                </th>
-                                                <th className="px-5 py-4 font-medium">
-                                                    Motivo
-                                                </th>
-                                            </tr>
-                                        </thead>
+                                <select
+                                    value={categoriaSelecionada}
+                                    onChange={(e) => {
+                                        setCategoriaSelecionada(e.target.value);
+                                        setPagina(1);
+                                    }}
+                                    className="rounded-md border border-white/20 bg-black px-3 py-2 text-sm text-gray-300 outline-none focus:border-[#f1b519]"
+                                >
+                                    <option value="Todas">Todas as categorias</option>
+                                    {categorias.map((categoria) => (
+                                        <option key={categoria} value={categoria}>
+                                            {categoria}
+                                        </option>
+                                    ))}
+                                </select>
 
-                                        <tbody>
-                                            {movimentacoesFiltradas.map((item) => (
+                                <select
+                                    value={statusSelecionado}
+                                    onChange={(e) => {
+                                        setStatusSelecionado(e.target.value);
+                                        setPagina(1);
+                                    }}
+                                    className="rounded-md border border-white/20 bg-black px-3 py-2 text-sm text-gray-300 outline-none focus:border-[#f1b519]"
+                                >
+                                    <option value="Todos">Todos os status</option>
+                                    <option value="Normal">Normal</option>
+                                    <option value="Estoque baixo">Estoque baixo</option>
+                                    <option value="Sem estoque">Sem estoque</option>
+                                </select>
+                            </div>
+
+                            <div className="overflow-x-auto px-4">
+                                <table className="w-full min-w-[760px] text-left text-sm">
+                                    <thead>
+                                        <tr className="bg-[#f1b519]/[0.07] text-xs text-[#c5a64a]">
+                                            <th className="px-3 py-4 font-medium">Produto</th>
+                                            <th className="px-3 py-4 font-medium">Categoria</th>
+                                            <th className="px-3 py-4 font-medium">Estoque Atual</th>
+                                            <th className="px-3 py-4 font-medium">Estoque Mínimo</th>
+                                            <th className="px-3 py-4 font-medium">Status</th>
+                                            <th className="px-3 py-4 text-center font-medium">Ações</th>
+                                        </tr>
+                                    </thead>
+
+                                    <tbody>
+                                        {produtosPagina.map((produto) => {
+                                            const status = obterStatus(produto);
+
+                                            return (
                                                 <tr
-                                                    key={item.id}
-                                                    className="border-t border-white/10 text-gray-300 transition hover:bg-white/[0.025]"
+                                                    key={produto.id}
+                                                    className="border-t border-white/10 text-gray-300 transition-colors hover:bg-white/[0.03]"
                                                 >
-                                                    <td className="whitespace-nowrap px-5 py-4 text-xs text-gray-400">
-                                                        {item.data}
+                                                    <td className="whitespace-nowrap px-3 py-4">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="flex h-9 w-9 items-center justify-center rounded-md border border-[#f1b519]/25 bg-[#f1b519]/[0.06]">
+                                                                <Package size={18} className="text-[#f1b519]" />
+                                                            </div>
+                                                            <span>{produto.nome}</span>
+                                                        </div>
                                                     </td>
 
-                                                    <td className="px-4 py-4">
-                                                        <p className="text-gray-200">
-                                                            {item.produto}
-                                                        </p>
-                                                        <p className="mt-1 text-xs text-gray-500">
-                                                            {item.codigo}
-                                                        </p>
+                                                    <td className="px-3 py-4">{produto.categoria}</td>
+
+                                                    <td
+                                                        className={`px-3 py-4 ${
+                                                            produto.quantidade === 0
+                                                                ? "text-red-400"
+                                                                : produto.quantidade <= produto.minimo
+                                                                    ? "text-[#f1b519]"
+                                                                    : ""
+                                                        }`}
+                                                    >
+                                                        {produto.quantidade}
                                                     </td>
 
-                                                    <td className="px-4 py-4">
+                                                    <td className="px-3 py-4">{produto.minimo}</td>
+
+                                                    <td className="px-3 py-4">
                                                         <span
-                                                            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs ${
-                                                                item.tipo === "Entrada"
-                                                                    ? "bg-emerald-500/10 text-emerald-400"
-                                                                    : item.tipo === "Saída"
-                                                                    ? "bg-[#f1b519]/10 text-[#f1b519]"
-                                                                    : "bg-sky-500/10 text-sky-400"
+                                                            className={`whitespace-nowrap rounded-full border px-2.5 py-1 text-xs ${
+                                                                status === "Normal"
+                                                                    ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-400"
+                                                                    : status === "Sem estoque"
+                                                                        ? "border-red-500/40 bg-red-500/10 text-red-400"
+                                                                        : "border-[#f1b519]/40 bg-[#f1b519]/10 text-[#f1b519]"
                                                             }`}
                                                         >
-                                                            {item.tipo === "Entrada" ? (
-                                                                <ArrowDownToLine size={13} />
-                                                            ) : item.tipo === "Saída" ? (
-                                                                <ArrowUpFromLine size={13} />
-                                                            ) : (
-                                                                <SlidersHorizontal size={13} />
-                                                            )}
-                                                            {item.tipo}
+                                                            {status}
                                                         </span>
                                                     </td>
 
-                                                    <td className="px-4 py-4">
-                                                        {item.tipo === "Entrada"
-                                                            ? "+"
-                                                            : item.tipo === "Saída"
-                                                            ? "-"
-                                                            : ""}
-                                                        {item.quantidade} un.
-                                                    </td>
+                                                    <td className="px-3 py-4">
+                                                        <div className="flex items-center justify-center gap-3">
+                                                            <button
+                                                                title="Ver detalhes"
+                                                                onClick={() =>
+                                                                    setProdutoSelecionado({
+                                                                        ...produto,
+                                                                        tipo: "detalhes"
+                                                                    })
+                                                                }
+                                                                className="text-gray-400 hover:text-[#f1b519]"
+                                                            >
+                                                                <Eye size={17} />
+                                                            </button>
 
-                                                    <td className="px-4 py-4 text-gray-400">
-                                                        {item.anterior} un.
-                                                    </td>
+                                                            <button
+                                                                title="Registrar entrada"
+                                                                onClick={() => abrirMovimentacao("entrada", produto)}
+                                                                className="text-gray-400 hover:text-emerald-400"
+                                                            >
+                                                                <ArrowDownToLine size={17} />
+                                                            </button>
 
-                                                    <td className="px-4 py-4 text-gray-200">
-                                                        {item.atual} un.
-                                                    </td>
-
-                                                    <td className="px-5 py-4">
-                                                        <p>{item.motivo}</p>
-                                                        {item.observacao && (
-                                                            <p className="mt-1 max-w-48 truncate text-xs text-gray-500">
-                                                                {item.observacao}
-                                                            </p>
-                                                        )}
+                                                            <button
+                                                                title="Registrar saída"
+                                                                onClick={() => abrirMovimentacao("saida", produto)}
+                                                                className="text-gray-400 hover:text-red-400"
+                                                            >
+                                                                <ArrowUpFromLine size={17} />
+                                                            </button>
+                                                        </div>
                                                     </td>
                                                 </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
+                                            );
+                                        })}
 
-                                    {movimentacoesFiltradas.length === 0 && (
-                                        <div className="px-5 py-14 text-center">
-                                            <History
-                                                size={34}
-                                                className="mx-auto text-[#f1b519]/50"
-                                            />
-                                            <p className="mt-3 text-sm text-gray-300">
-                                                Nenhuma movimentação encontrada.
-                                            </p>
-                                        </div>
+                                        {produtosPagina.length === 0 && (
+                                            <tr>
+                                                <td colSpan={6} className="px-4 py-12 text-center text-gray-500">
+                                                    Nenhum produto encontrado.
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#f1b519]/20 p-4">
+                                <p className="text-xs text-gray-500">
+                                    Mostrando{" "}
+                                    {produtosFiltrados.length === 0
+                                        ? 0
+                                        : (pagina - 1) * porPagina + 1}{" "}
+                                    a {Math.min(pagina * porPagina, produtosFiltrados.length)} de{" "}
+                                    {produtosFiltrados.length} produtos
+                                </p>
+
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        disabled={pagina === 1}
+                                        onClick={() => setPagina((p) => p - 1)}
+                                        className="rounded-md border border-white/20 p-2 text-gray-300 hover:border-[#f1b519] disabled:opacity-30"
+                                    >
+                                        <ChevronLeft size={17} />
+                                    </button>
+
+                                    <span className="rounded-md bg-[#f1b519] px-3 py-2 text-sm font-semibold text-black">
+                                        {pagina}
+                                    </span>
+
+                                    <button
+                                        disabled={pagina >= totalPaginas}
+                                        onClick={() => setPagina((p) => p + 1)}
+                                        className="rounded-md border border-white/20 p-2 text-gray-300 hover:border-[#f1b519] disabled:opacity-30"
+                                    >
+                                        <ChevronRight size={17} />
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Painel lateral */}
+                        <div className="space-y-5">
+                            {/* Alertas */}
+                            <div className="rounded-lg border border-[#f1b519]/40 bg-[#050505]">
+                                <div className="flex items-center gap-2 border-b border-[#f1b519]/25 p-4">
+                                    <AlertTriangle size={20} className="text-[#f1b519]" />
+                                    <h2 className="text-base text-[#f1b519]">Alerta de Estoque</h2>
+                                </div>
+
+                                <div className="divide-y divide-white/10 px-4">
+                                    {produtos
+                                        .filter((produto) => obterStatus(produto) !== "Normal")
+                                        .slice(0, 5)
+                                        .map((produto) => (
+                                            <div key={produto.id} className="flex items-center justify-between gap-3 py-3">
+                                                <div className="min-w-0">
+                                                    <p className="truncate text-sm text-gray-200">{produto.nome}</p>
+                                                    <p className="mt-1 text-xs text-gray-500">
+                                                        {produto.quantidade === 0
+                                                            ? "Sem estoque"
+                                                            : `${produto.quantidade} unidades`}
+                                                    </p>
+                                                </div>
+
+                                                <span className={produto.quantidade === 0 ? "text-red-400" : "text-[#f1b519]"}>
+                                                    <AlertTriangle size={17} />
+                                                </span>
+                                            </div>
+                                        ))}
+
+                                    {produtosBaixos + produtosSemEstoque === 0 && (
+                                        <p className="py-5 text-sm text-gray-500">
+                                            Nenhum alerta no momento.
+                                        </p>
                                     )}
                                 </div>
+                            </div>
 
-                                <div className="border-t border-[#f1b519]/20 px-5 py-4">
-                                    <p className="text-xs text-gray-500">
-                                        {movimentacoesFiltradas.length} movimentação(ões) encontrada(s).
-                                    </p>
+                            {/* Categorias */}
+                            <div className="rounded-lg border border-[#f1b519]/40 bg-[#050505]">
+                                <div className="flex items-center gap-2 border-b border-[#f1b519]/25 p-4">
+                                    <ClipboardList size={20} className="text-[#f1b519]" />
+                                    <h2 className="text-base text-[#f1b519]">Categorias</h2>
                                 </div>
-                            </>
-                        )}
+
+                                <div className="space-y-1 p-3">
+                                    {categorias.map((categoria) => (
+                                        <button
+                                            key={categoria}
+                                            onClick={() => {
+                                                setCategoriaSelecionada(
+                                                    categoriaSelecionada === categoria
+                                                        ? "Todas"
+                                                        : categoria
+                                                );
+                                                setPagina(1);
+                                            }}
+                                            className={`flex w-full items-center justify-between rounded-md px-3 py-2.5 text-sm transition hover:bg-[#f1b519]/10 ${
+                                                categoriaSelecionada === categoria
+                                                    ? "text-[#f1b519]"
+                                                    : "text-gray-300"
+                                            }`}
+                                        >
+                                            <span>{categoria}</span>
+                                            <span className="rounded-full bg-[#f1b519]/10 px-2.5 py-1 text-xs text-[#f1b519]">
+                                                {quantidadePorCategoria(categoria)}
+                                            </span>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Ações rápidas */}
+                            <div className="rounded-lg border border-[#f1b519]/40 bg-[#050505] p-4">
+                                <div className="mb-4 flex items-center gap-2">
+                                    <Plus size={20} className="text-[#f1b519]" />
+                                    <h2 className="text-base text-[#f1b519]">Ações Rápidas</h2>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-3">
+                                    <button
+                                        onClick={() => navegar("/produtos")}
+                                        className="flex min-h-24 flex-col items-center justify-center gap-2 rounded-md border border-[#f1b519]/40 p-3 text-center text-xs text-gray-300 transition hover:bg-[#f1b519]/10 hover:text-[#f1b519]"
+                                    >
+                                        <Package size={23} className="text-[#f1b519]" />
+                                        Cadastrar Produto
+                                    </button>
+
+                                    <button
+                                        onClick={() => abrirMovimentacao("entrada")}
+                                        className="flex min-h-24 flex-col items-center justify-center gap-2 rounded-md border border-[#f1b519]/40 p-3 text-center text-xs text-gray-300 transition hover:bg-[#f1b519]/10 hover:text-[#f1b519]"
+                                    >
+                                        <ArrowDownToLine size={23} className="text-[#f1b519]" />
+                                        Entrada de Estoque
+                                    </button>
+
+                                    <button
+                                        onClick={() => abrirMovimentacao("saida")}
+                                        className="flex min-h-24 flex-col items-center justify-center gap-2 rounded-md border border-red-500/30 p-3 text-center text-xs text-gray-300 transition hover:bg-red-500/10 hover:text-red-400"
+                                    >
+                                        <ArrowUpFromLine size={23} className="text-red-400" />
+                                        Saída de Estoque
+                                    </button>
+
+                                    <button
+                                        onClick={() => navegar("/relatorios")}
+                                        className="flex min-h-24 flex-col items-center justify-center gap-2 rounded-md border border-[#f1b519]/40 p-3 text-center text-xs text-gray-300 transition hover:bg-[#f1b519]/10 hover:text-[#f1b519]"
+                                    >
+                                        <ChartNoAxesCombined size={23} className="text-[#f1b519]" />
+                                        Ver Relatórios
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </section>
                 </main>
             </div>
 
-            {/* Modal de movimentação */}
-            {modalAberto && (
+            {/* Modal de detalhes e movimentação */}
+            {produtoSelecionado && (
                 <div
-                    className="fixed inset-0 z-[60] flex items-center justify-center overflow-y-auto bg-black/80 p-4 backdrop-blur-sm"
-                    onMouseDown={(evento) => {
-                        if (evento.target === evento.currentTarget) {
-                            setModalAberto(false);
-                        }
+                    className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/80 p-4 backdrop-blur-sm"
+                    onMouseDown={(e) => {
+                        if (e.target === e.currentTarget) fecharModal();
                     }}
                 >
-                    <div className="my-auto w-full max-w-xl overflow-hidden rounded-lg border border-[#f1b519]/40 bg-[#080808] shadow-2xl">
-
-                        <div className="flex items-center justify-between border-b border-[#f1b519]/25 p-5">
-                            <div>
-                                <h2 className="text-lg text-[#f1b519]">
-                                    Registrar movimentação
-                                </h2>
-                                <p className="mt-1 text-xs text-gray-500">
-                                    Atualize a quantidade e registre o motivo.
-                                </p>
-                            </div>
+                    <div className="my-auto w-full max-w-md rounded-lg border border-[#f1b519]/50 bg-[#080808] p-6 shadow-2xl">
+                        <div className="mb-5 flex items-center justify-between">
+                            <h2 className="text-lg text-[#f1b519]">
+                                {produtoSelecionado.tipo === "detalhes"
+                                    ? "Detalhes do Produto"
+                                    : produtoSelecionado.tipo === "entrada"
+                                        ? "Entrada de Estoque"
+                                        : "Saída de Estoque"}
+                            </h2>
 
                             <button
-                                onClick={() => setModalAberto(false)}
+                                onClick={fecharModal}
                                 aria-label="Fechar modal"
-                                className="rounded-md p-2 text-gray-400 transition hover:bg-white/5 hover:text-[#f1b519]"
+                                className="text-gray-400 hover:text-white"
                             >
-                                <X size={21} />
+                                <X size={20} />
                             </button>
                         </div>
 
-                        <form onSubmit={registrarMovimentacao}>
-                            <div className="space-y-5 p-5">
-
-                                <div>
-                                    <label className="text-sm text-gray-300">
-                                        Tipo de movimentação *
-                                    </label>
-
-                                    <div className="mt-2 grid grid-cols-3 gap-2">
-                                        {[
-                                            {
-                                                nome: "Entrada",
-                                                icone: ArrowDownToLine
-                                            },
-                                            {
-                                                nome: "Saída",
-                                                icone: ArrowUpFromLine
-                                            },
-                                            {
-                                                nome: "Ajuste",
-                                                icone: SlidersHorizontal
-                                            }
-                                        ].map((tipo) => {
-                                            const Icone = tipo.icone;
-
-                                            return (
-                                                <button
-                                                    key={tipo.nome}
-                                                    type="button"
-                                                    onClick={() => {
-                                                        atualizarCampo("tipo", tipo.nome);
-
-                                                        if (tipo.nome === "Ajuste") {
-                                                            atualizarCampo("motivo", "Inventário");
-                                                        } else if (tipo.nome === "Saída") {
-                                                            atualizarCampo("motivo", "Venda");
-                                                        } else {
-                                                            atualizarCampo("motivo", "Reposição");
-                                                        }
-                                                    }}
-                                                    className={`flex flex-col items-center gap-2 rounded-md border px-2 py-3 text-xs transition ${
-                                                        formulario.tipo === tipo.nome
-                                                            ? "border-[#f1b519] bg-[#f1b519]/10 text-[#f1b519]"
-                                                            : "border-white/10 text-gray-400 hover:border-[#f1b519]/40"
-                                                    }`}
-                                                >
-                                                    <Icone size={20} />
-                                                    {tipo.nome}
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
-
-                                <label className="block text-sm text-gray-300">
-                                    Produto *
-                                    <select
-                                        required
-                                        value={formulario.produtoId}
-                                        onChange={(evento) => {
-                                            const id = evento.target.value;
-                                            const produto = produtos.find(
-                                                (item) => item.id === Number(id)
-                                            );
-
-                                            setFormulario((anterior) => ({
-                                                ...anterior,
-                                                produtoId: id,
-                                                quantidade:
-                                                    anterior.tipo === "Ajuste" && produto
-                                                        ? String(produto.quantidade)
-                                                        : ""
-                                            }));
-                                        }}
-                                        className={classeCampo}
-                                    >
-                                        <option value="">
-                                            Selecione um produto
-                                        </option>
-                                        {produtos
-                                            .filter((produto) => produto.status === "Ativo")
-                                            .map((produto) => (
-                                                <option
-                                                    key={produto.id}
-                                                    value={produto.id}
-                                                >
-                                                    {produto.codigo} — {produto.nome} ({produto.quantidade} un.)
-                                                </option>
-                                            ))}
-                                    </select>
+                        {/* Seleção de produto para os botões rápidos */}
+                        {produtoSelecionado.id === null ? (
+                            <div className="mb-5">
+                                <label className="mb-2 block text-sm text-gray-300">
+                                    Selecione o produto
                                 </label>
 
-                                {formulario.produtoId && (
-                                    <div className="rounded-md border border-[#f1b519]/20 bg-[#f1b519]/[0.04] p-3">
-                                        <p className="text-xs text-gray-400">
-                                            Saldo atual
-                                        </p>
-                                        <p className="mt-1 text-lg text-[#f1b519]">
-                                            {produtos.find(
-                                                (item) =>
-                                                    item.id === Number(formulario.produtoId)
-                                            )?.quantidade ?? 0}{" "}
-                                            unidades
-                                        </p>
-                                    </div>
-                                )}
+                                <select
+                                    value=""
+                                    onChange={(e) => {
+                                        const produto = produtos.find(
+                                            (p) => p.id === Number(e.target.value)
+                                        );
 
-                                <label className="block text-sm text-gray-300">
-                                    {formulario.tipo === "Ajuste"
-                                        ? "Nova quantidade física no estoque *"
-                                        : "Quantidade a movimentar *"}
+                                        if (produto) {
+                                            setProdutoSelecionado({
+                                                ...produto,
+                                                tipo: produtoSelecionado.tipo
+                                            });
+                                            setMensagem("");
+                                        }
+                                    }}
+                                    className="w-full rounded-md border border-white/20 bg-black px-3 py-3 text-sm text-white outline-none focus:border-[#f1b519]"
+                                >
+                                    <option value="">Escolher produto</option>
+                                    {produtos.map((produto) => (
+                                        <option key={produto.id} value={produto.id}>
+                                            {produto.nome} — {produto.quantidade} un.
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        ) : (
+                            <div className="mb-5 rounded-md border border-white/10 p-4">
+                                <p className="text-base text-gray-100">
+                                    {produtoSelecionado.nome}
+                                </p>
+                                <p className="mt-1 text-sm text-gray-500">
+                                    {produtoSelecionado.categoria}
+                                </p>
+                                <p className="mt-3 text-sm text-gray-300">
+                                    Quantidade atual:{" "}
+                                    <span className="text-[#f1b519]">
+                                        {produtoSelecionado.quantidade} unidades
+                                    </span>
+                                </p>
+                                <p className="mt-1 text-sm text-gray-300">
+                                    Estoque mínimo: {produtoSelecionado.minimo} unidades
+                                </p>
+                                <p className="mt-1 text-sm text-gray-300">
+                                    Valor unitário: {moeda(produtoSelecionado.preco)}
+                                </p>
+                            </div>
+                        )}
+
+                        {/* Quantidade aparece após selecionar um produto */}
+                        {produtoSelecionado.tipo !== "detalhes" &&
+                            produtoSelecionado.id !== null && (
+                                <div className="mb-4">
+                                    <label className="mb-2 block text-sm text-gray-300">
+                                        Quantidade de unidades
+                                    </label>
 
                                     <input
-                                        required
+                                        autoFocus
                                         type="number"
-                                        min="0"
+                                        min="1"
                                         step="1"
-                                        value={formulario.quantidade}
-                                        onChange={(evento) =>
-                                            atualizarCampo(
-                                                "quantidade",
-                                                evento.target.value
-                                            )
+                                        value={
+                                            produtoSelecionado.tipo === "entrada"
+                                                ? quantidadeEntrada
+                                                : quantidadeSaida
                                         }
-                                        placeholder="Informe a quantidade"
-                                        className={classeCampo}
-                                    />
-
-                                    {formulario.tipo === "Ajuste" && (
-                                        <span className="mt-2 block text-xs text-gray-500">
-                                            Informe o saldo real contado. O sistema calculará a diferença.
-                                        </span>
-                                    )}
-                                </label>
-
-                                {formulario.tipo !== "Ajuste" && (
-                                    <label className="block text-sm text-gray-300">
-                                        Motivo *
-                                        <select
-                                            required
-                                            value={formulario.motivo}
-                                            onChange={(evento) =>
-                                                atualizarCampo("motivo", evento.target.value)
+                                        onChange={(e) => {
+                                            if (produtoSelecionado.tipo === "entrada") {
+                                                setQuantidadeEntrada(e.target.value);
+                                            } else {
+                                                setQuantidadeSaida(e.target.value);
                                             }
-                                            className={classeCampo}
-                                        >
-                                            {(
-                                                formulario.tipo === "Entrada"
-                                                    ? [
-                                                        "Reposição",
-                                                        "Devolução",
-                                                        "Compra",
-                                                        "Outros"
-                                                    ]
-                                                    : [
-                                                        "Venda",
-                                                        "Devolução ao fornecedor",
-                                                        "Perda ou avaria",
-                                                        "Uso interno",
-                                                        "Outros"
-                                                    ]
-                                            ).map((motivo) => (
-                                                <option key={motivo} value={motivo}>
-                                                    {motivo}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </label>
-                                )}
-
-                                <label className="block text-sm text-gray-300">
-                                    Observação
-                                    <textarea
-                                        rows={3}
-                                        maxLength={300}
-                                        value={formulario.observacao}
-                                        onChange={(evento) =>
-                                            atualizarCampo(
-                                                "observacao",
-                                                evento.target.value
-                                            )
-                                        }
-                                        placeholder="Detalhes adicionais (opcional)"
-                                        className={`${classeCampo} resize-y`}
+                                            setMensagem("");
+                                        }}
+                                        onKeyDown={(e) => {
+                                            if (e.key === "Enter") {
+                                                e.preventDefault();
+                                                registrarMovimentacao(produtoSelecionado.tipo);
+                                            }
+                                        }}
+                                        placeholder="Digite a quantidade"
+                                        className="w-full rounded-md border border-white/20 bg-black px-3 py-3 text-sm text-white outline-none focus:border-[#f1b519]"
                                     />
-                                </label>
-
-                                <div className="flex items-start gap-2 rounded-md border border-[#f1b519]/20 bg-[#f1b519]/[0.04] p-3">
-                                    <AlertTriangle
-                                        size={16}
-                                        className="mt-0.5 shrink-0 text-[#f1b519]"
-                                    />
-                                    <p className="text-xs leading-5 text-gray-400">
-                                        Ao confirmar, o saldo do produto será atualizado e a movimentação será adicionada ao histórico.
-                                    </p>
                                 </div>
-                            </div>
+                            )}
 
-                            <div className="flex flex-col-reverse gap-3 border-t border-[#f1b519]/20 p-5 sm:flex-row sm:justify-end">
-                                <button
-                                    type="button"
-                                    onClick={() => setModalAberto(false)}
-                                    className="rounded-md border border-[#f1b519]/30 px-5 py-3 text-sm text-gray-300 transition hover:bg-white/5"
-                                >
-                                    Cancelar
-                                </button>
+                        {mensagem && (
+                            <p
+                                className={`mb-4 text-sm ${
+                                    mensagem.includes("sucesso")
+                                        ? "text-emerald-400"
+                                        : "text-red-400"
+                                }`}
+                            >
+                                {mensagem}
+                            </p>
+                        )}
 
-                                <button
-                                    type="submit"
-                                    className="flex items-center justify-center gap-2 rounded-md bg-[#f1b519] px-5 py-3 text-sm font-medium text-black transition hover:bg-[#d9a30f]"
-                                >
-                                    {formulario.tipo === "Entrada" ? (
-                                        <ArrowDownToLine size={17} />
-                                    ) : formulario.tipo === "Saída" ? (
-                                        <ArrowUpFromLine size={17} />
-                                    ) : (
-                                        <SlidersHorizontal size={17} />
-                                    )}
+                        <div className="flex justify-end gap-3">
+                            <button
+                                onClick={fecharModal}
+                                className="rounded-md border border-white/20 px-4 py-2 text-sm text-gray-300 hover:bg-white/5"
+                            >
+                                Fechar
+                            </button>
 
-                                    Confirmar movimentação
-                                </button>
-                            </div>
-                        </form>
+                            {produtoSelecionado.tipo !== "detalhes" &&
+                                produtoSelecionado.id !== null && (
+                                    <button
+                                        onClick={() =>
+                                            registrarMovimentacao(produtoSelecionado.tipo)
+                                        }
+                                        className={`rounded-md px-4 py-2 text-sm font-semibold text-black transition ${
+                                            produtoSelecionado.tipo === "entrada"
+                                                ? "bg-[#f1b519] hover:bg-[#d9a30f]"
+                                                : "bg-red-400 hover:bg-red-300"
+                                        }`}
+                                    >
+                                        Confirmar{" "}
+                                        {produtoSelecionado.tipo === "entrada"
+                                            ? "entrada"
+                                            : "saída"}
+                                    </button>
+                                )}
+                        </div>
                     </div>
                 </div>
             )}
@@ -1372,4 +902,4 @@ export const EstoquePage = () => {
     );
 };
 
-export default EstoquePage;
+export default Estoque;
