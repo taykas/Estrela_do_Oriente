@@ -1,28 +1,18 @@
 import {
-    Home,
     Package,
-    Warehouse,
     ShoppingCart,
     ClipboardList,
     Truck,
     ChartNoAxesCombined,
-    Settings,
-    UserRound,
     Menu,
-    Search,
-    Bell,
     ArrowUpRight,
-    ArrowDownRight,
     Plus,
     Eye,
     AlertTriangle,
-    CalendarDays,
-    Zap,
-    LogOut
+    Zap
 } from "lucide-react";
 
-import estrela from '../assets/icon estrela.png'
-import {Navigate, useNavigate} from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 
 const vendasRecentes = [
@@ -103,32 +93,22 @@ const atalhos = [
     }
 ];
 
-const formatarData = () => {
-    return new Date().toLocaleDateString("pt-BR", {
-        day: "2-digit",
-        month: "long",
-        year: "numeric"
-    });
-};
-
 export const MainPage = () => {
-
     const navegar = useNavigate();
 
     return (
-        <div className="min-h-screen bg-black text-white">
+        <div className="min-h-screen bg-[#f3f1eb] text-[#35342f]">
 
             <Sidebar />
 
-            {/* Área principal */}
             <div className="min-h-screen lg:ml-60">
 
                 {/* Cabeçalho */}
-                <header className="sticky top-0 z-30 flex h-24 items-center justify-between border-b border-[#f1b519]/50 bg-black px-4 sm:px-6 lg:px-8">
+                <header className="sticky top-0 z-30 flex h-24 items-center justify-between border-b border-[#e3dcc9] bg-[#faf9f5]/95 px-4 backdrop-blur-sm sm:px-6 lg:px-8">
 
                     <div className="flex items-center gap-3">
                         <button
-                            className="text-[#f1b519] lg:hidden"
+                            className="text-[#98700a] lg:hidden"
                             aria-label="Abrir menu"
                         >
                             <Menu size={25} />
@@ -136,12 +116,13 @@ export const MainPage = () => {
 
                         <div>
                             <h2
-                                className="text-lg text-[#f1b519] sm:text-xl"
+                                className="text-lg text-[#98700a] sm:text-xl"
                                 style={{ fontFamily: "Corvel" }}
                             >
                                 Painel de Controle
                             </h2>
-                            <p className="hidden text-xs text-gray-400 sm:block">
+
+                            <p className="hidden text-xs text-[#89867d] sm:block">
                                 Gerenciamento da loja
                             </p>
                         </div>
@@ -153,12 +134,12 @@ export const MainPage = () => {
 
                     {/* Indicadores */}
                     <section>
-                        <div className="mb-4 flex items-center justify-between">
-                            <h2 className="text-lg text-[#f1b519]">
+                        <div className="mb-4 flex items-center justify-between gap-3">
+                            <h2 className="text-lg font-medium text-[#78601e]">
                                 Resumo da loja
                             </h2>
 
-                            <span className="text-xs text-gray-500">
+                            <span className="text-xs text-[#918d83]">
                                 Dados demonstrativos
                             </span>
                         </div>
@@ -170,42 +151,44 @@ export const MainPage = () => {
                                 return (
                                     <div
                                         key={item.titulo}
-                                        className="rounded-lg border border-[#f1b519]/40 bg-[#080808] p-5 transition-colors hover:border-[#f1b519]"
+                                        className="rounded-xl border border-[#e6dfcd] bg-[#fffefa] p-5 shadow-sm transition-all hover:border-[#d4b65e] hover:shadow-md"
                                     >
-                                        <div className="flex items-center justify-between">
-                                            <p className="text-sm text-gray-300">
+                                        <div className="flex items-center justify-between gap-2">
+                                            <p className="text-sm text-[#77746b]">
                                                 {item.titulo}
                                             </p>
 
-                                            <Icone
-                                                size={22}
-                                                className="text-[#f1b519]"
-                                                strokeWidth={1.7}
-                                            />
+                                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#f5edda]">
+                                                <Icone
+                                                    size={21}
+                                                    className="text-[#a77b08]"
+                                                    strokeWidth={1.7}
+                                                />
+                                            </div>
                                         </div>
 
-                                        <p className="mt-5 break-words text-2xl text-[#f1b519]">
+                                        <p className="mt-5 break-words text-2xl font-semibold text-[#8b690e]">
                                             {item.valor}
                                         </p>
 
-                                        <p className="mt-1 text-xs text-gray-500">
+                                        <p className="mt-1 text-xs text-[#969187]">
                                             {item.descricao}
                                         </p>
 
-                                        <div className="mt-4 flex items-center gap-1 border-t border-[#f1b519]/15 pt-3 text-xs">
+                                        <div className="mt-4 flex items-center gap-1 border-t border-[#eee7d7] pt-3 text-xs">
                                             {item.positivo ? (
                                                 <ArrowUpRight
                                                     size={15}
-                                                    className="text-[#f1b519]"
+                                                    className="text-emerald-600"
                                                 />
                                             ) : (
                                                 <AlertTriangle
                                                     size={14}
-                                                    className="text-[#f1b519]"
+                                                    className="text-amber-600"
                                                 />
                                             )}
 
-                                            <span className="text-gray-300">
+                                            <span className="text-[#77746b]">
                                                 {item.variacao}
                                             </span>
                                         </div>
@@ -219,22 +202,23 @@ export const MainPage = () => {
                     <section className="grid grid-cols-1 gap-5 xl:grid-cols-5">
 
                         {/* Vendas recentes */}
-                        <div className="overflow-hidden rounded-lg border border-[#f1b519]/40 bg-[#050505] xl:col-span-3">
+                        <div className="overflow-hidden rounded-xl border border-[#e6dfcd] bg-[#fffefa] shadow-sm xl:col-span-3">
 
-                            <div className="flex items-center justify-between border-b border-[#f1b519]/25 p-5">
+                            <div className="flex items-center justify-between border-b border-[#eee7d7] p-5">
                                 <div className="flex items-center gap-2">
                                     <ShoppingCart
                                         size={20}
-                                        className="text-[#f1b519]"
+                                        className="text-[#a77b08]"
                                     />
-                                    <h2 className="text-lg text-[#f1b519]">
+
+                                    <h2 className="text-lg font-medium text-[#78601e]">
                                         Vendas Recentes
                                     </h2>
                                 </div>
 
                                 <button
-                                    onClick={() => navegar("Vendas")}
-                                    className="flex items-center gap-1 text-xs text-[#f1b519] hover:underline"
+                                    onClick={() => navegar("/Vendas")}
+                                    className="flex items-center gap-1 text-xs text-[#98700a] transition hover:text-[#6f5200] hover:underline"
                                 >
                                     Ver todas
                                     <ArrowUpRight size={14} />
@@ -244,7 +228,7 @@ export const MainPage = () => {
                             <div className="overflow-x-auto">
                                 <table className="w-full min-w-[580px] text-left text-sm">
                                     <thead>
-                                        <tr className="bg-[#f1b519]/[0.07] text-xs text-[#c5a64a]">
+                                        <tr className="bg-[#f5f1e7] text-xs text-[#81734e]">
                                             <th className="px-4 py-3 font-medium">Pedido</th>
                                             <th className="px-4 py-3 font-medium">Data</th>
                                             <th className="px-4 py-3 font-medium">Cliente</th>
@@ -254,29 +238,35 @@ export const MainPage = () => {
                                     </thead>
 
                                     <tbody>
-                                        {vendasRecentes.map((venda) => (
+                                        {vendasRecentes.map((venda, index) => (
                                             <tr
                                                 key={venda.id}
-                                                className="border-t border-white/10 text-gray-300 transition-colors hover:bg-white/[0.03]"
+                                                className={`border-t border-[#eeeae0] text-[#5f5c54] transition-colors hover:bg-[#f8f5ed] ${
+                                                    index % 2 === 1 ? "bg-[#fcfbf7]" : ""
+                                                }`}
                                             >
-                                                <td className="whitespace-nowrap px-4 py-4 text-[#f1b519]">
+                                                <td className="whitespace-nowrap px-4 py-4 font-medium text-[#98700a]">
                                                     {venda.id}
                                                 </td>
+
                                                 <td className="whitespace-nowrap px-4 py-4">
                                                     {venda.data}
                                                 </td>
+
                                                 <td className="whitespace-nowrap px-4 py-4">
                                                     {venda.cliente}
                                                 </td>
-                                                <td className="whitespace-nowrap px-4 py-4">
+
+                                                <td className="whitespace-nowrap px-4 py-4 font-medium text-[#45433d]">
                                                     {venda.total}
                                                 </td>
+
                                                 <td className="px-4 py-4">
                                                     <span
-                                                        className={`whitespace-nowrap rounded-full px-2.5 py-1 text-xs ${
+                                                        className={`whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium ${
                                                             venda.status === "Concluída"
-                                                                ? "bg-emerald-500/10 text-emerald-400"
-                                                                : "bg-[#f1b519]/10 text-[#f1b519]"
+                                                                ? "bg-emerald-100 text-emerald-700"
+                                                                : "bg-amber-100 text-amber-800"
                                                         }`}
                                                     >
                                                         {venda.status}
@@ -288,10 +278,10 @@ export const MainPage = () => {
                                 </table>
                             </div>
 
-                            <div className="border-t border-[#f1b519]/20 p-4">
+                            <div className="border-t border-[#eee7d7] p-4">
                                 <button
-                                    onClick={() => navegar("Vendas")}
-                                    className="flex items-center gap-2 text-sm text-gray-400 transition hover:text-[#f1b519]"
+                                    onClick={() => navegar("/Vendas")}
+                                    className="flex items-center gap-2 text-sm text-[#817d72] transition hover:text-[#98700a]"
                                 >
                                     <Eye size={16} />
                                     Consultar movimentações
@@ -300,56 +290,59 @@ export const MainPage = () => {
                         </div>
 
                         {/* Estoque baixo */}
-                        <div className="overflow-hidden rounded-lg border border-[#f1b519]/40 bg-[#050505] xl:col-span-2">
+                        <div className="overflow-hidden rounded-xl border border-[#e6dfcd] bg-[#fffefa] shadow-sm xl:col-span-2">
 
-                            <div className="flex items-center justify-between border-b border-[#f1b519]/25 p-5">
+                            <div className="flex items-center justify-between border-b border-[#eee7d7] p-5">
                                 <div className="flex items-center gap-2">
                                     <AlertTriangle
                                         size={20}
-                                        className="text-[#f1b519]"
+                                        className="text-[#a77b08]"
                                     />
-                                    <h2 className="text-lg text-[#f1b519]">
+
+                                    <h2 className="text-lg font-medium text-[#78601e]">
                                         Estoque Baixo
                                     </h2>
                                 </div>
 
                                 <button
-                                    onClick={() => navegar("Estoque")}
-                                    className="text-xs text-[#f1b519] hover:underline"
+                                    onClick={() => navegar("/Estoque")}
+                                    className="text-xs text-[#98700a] transition hover:text-[#6f5200] hover:underline"
                                 >
                                     Ver estoque
                                 </button>
                             </div>
 
-                            <div className="divide-y divide-white/10 px-4">
+                            <div className="divide-y divide-[#eeeae0] px-4">
                                 {estoqueBaixo.map((produto) => (
                                     <div
                                         key={produto.nome}
                                         className="flex items-center justify-between gap-3 py-4"
                                     >
                                         <div className="flex min-w-0 items-center gap-3">
-                                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-[#f1b519]/25 bg-[#f1b519]/[0.06]">
+                                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-[#e9dfc4] bg-[#f6f0e1]">
                                                 <Package
                                                     size={19}
-                                                    className="text-[#f1b519]"
+                                                    className="text-[#a77b08]"
                                                 />
                                             </div>
 
                                             <div className="min-w-0">
-                                                <p className="truncate text-sm text-gray-200">
+                                                <p className="truncate text-sm font-medium text-[#45433d]">
                                                     {produto.nome}
                                                 </p>
-                                                <p className="mt-1 text-xs text-gray-500">
+
+                                                <p className="mt-1 text-xs text-[#918d83]">
                                                     {produto.categoria}
                                                 </p>
                                             </div>
                                         </div>
 
                                         <div className="shrink-0 text-right">
-                                            <p className="text-sm text-[#f1b519]">
+                                            <p className="text-sm font-semibold text-[#98700a]">
                                                 {produto.quantidade} un.
                                             </p>
-                                            <p className="mt-1 text-[10px] text-gray-500">
+
+                                            <p className="mt-1 text-[10px] text-[#969187]">
                                                 Em estoque
                                             </p>
                                         </div>
@@ -357,8 +350,8 @@ export const MainPage = () => {
                                 ))}
                             </div>
 
-                            <div className="border-t border-[#f1b519]/20 p-4">
-                                <p className="text-xs text-gray-500">
+                            <div className="border-t border-[#eee7d7] bg-[#faf8f1] p-4">
+                                <p className="text-xs text-[#817d72]">
                                     Produtos que precisam de reposição.
                                 </p>
                             </div>
@@ -366,11 +359,17 @@ export const MainPage = () => {
                     </section>
 
                     {/* Acesso rápido */}
-                    <section className="rounded-lg border border-[#f1b519]/40 bg-[#050505] p-5 sm:p-6">
+                    <section className="rounded-xl border border-[#e6dfcd] bg-[#faf9f5] p-5 shadow-sm sm:p-6">
 
                         <div className="mb-5 flex items-center gap-2">
-                            <Zap size={21} className="text-[#f1b519]" />
-                            <h2 className="text-lg text-[#f1b519]">
+                            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#f1e8d1]">
+                                <Zap
+                                    size={20}
+                                    className="text-[#98700a]"
+                                />
+                            </div>
+
+                            <h2 className="text-lg font-medium text-[#78601e]">
                                 Acesso Rápido
                             </h2>
                         </div>
@@ -382,25 +381,29 @@ export const MainPage = () => {
                                 return (
                                     <button
                                         key={atalho.titulo}
-                                        onClick={() => navegar(atalho.destino)}
-                                        className="group flex items-center gap-4 rounded-md border border-[#f1b519]/30 p-4 text-left transition-colors hover:border-[#f1b519] hover:bg-[#f1b519]/[0.06]"
+                                        onClick={() => navegar(`/${atalho.destino}`)}
+                                        className="group flex items-center gap-4 rounded-lg border border-[#e6dfcd] bg-[#fffefa] p-4 text-left transition-all hover:border-[#cfb15a] hover:bg-[#f8f3e6] hover:shadow-sm"
                                     >
-                                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-[#f1b519]/10 text-[#f1b519] transition-colors group-hover:bg-[#f1b519] group-hover:text-black">
-                                            <Icone size={22} strokeWidth={1.7} />
+                                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-[#f3ead3] text-[#98700a] transition-colors group-hover:bg-[#e9d7a4]">
+                                            <Icone
+                                                size={22}
+                                                strokeWidth={1.7}
+                                            />
                                         </div>
 
                                         <div className="min-w-0">
-                                            <p className="text-sm text-gray-200 group-hover:text-[#f1b519]">
+                                            <p className="text-sm font-medium text-[#45433d] transition-colors group-hover:text-[#98700a]">
                                                 {atalho.titulo}
                                             </p>
-                                            <p className="mt-1 text-xs text-gray-500">
+
+                                            <p className="mt-1 text-xs text-[#918d83]">
                                                 {atalho.descricao}
                                             </p>
                                         </div>
 
                                         <Plus
                                             size={17}
-                                            className="ml-auto shrink-0 text-[#f1b519]/60"
+                                            className="ml-auto shrink-0 text-[#b49a51] transition-transform group-hover:rotate-90"
                                         />
                                     </button>
                                 );

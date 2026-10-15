@@ -1,13 +1,6 @@
 import { useState } from "react";
 import {
-    Home,
     Package,
-    Warehouse,
-    ShoppingCart,
-    ClipboardList,
-    Truck,
-    ChartNoAxesCombined,
-    Settings,
     Menu,
     Search,
     Plus,
@@ -21,9 +14,8 @@ import {
     ChevronDown
 } from "lucide-react";
 
-import estrela from "../assets/icon estrela.png";
 import Sidebar from "../components/Sidebar";
-    
+
 const produtosIniciais = [
     {
         id: 1,
@@ -140,6 +132,9 @@ const produtoVazio = {
     status: "Ativo"
 };
 
+const campoClasse =
+    "mt-2 w-full rounded-lg border border-[#e3dcc9] bg-[#faf9f5] px-3 py-3 text-sm text-[#45433d] outline-none transition placeholder:text-[#aaa59a] focus:border-[#b99a43] focus:ring-2 focus:ring-[#b99a43]/10";
+
 export const ProdutosPage = () => {
     const [produtos, setProdutos] = useState(produtosIniciais);
     const [busca, setBusca] = useState("");
@@ -166,8 +161,7 @@ export const ProdutosPage = () => {
     ).length;
 
     const valorEstoque = produtos.reduce(
-        (total, produto) =>
-            total + produto.estoque * produto.custo,
+        (total, produto) => total + produto.estoque * produto.custo,
         0
     );
 
@@ -193,12 +187,6 @@ export const ProdutosPage = () => {
             correspondeStatus
         );
     });
-
-    const navegar = (destino) => {
-        // Integre com o React Router quando as páginas existirem.
-        console.log("Navegar para:", destino);
-        setMenuAberto(false);
-    };
 
     const abrirCadastro = () => {
         setProdutoEditando(null);
@@ -255,7 +243,9 @@ export const ProdutosPage = () => {
             !Number.isInteger(estoque) ||
             !Number.isInteger(estoqueMinimo)
         ) {
-            alert("Preencha os campos corretamente. Estoque e estoque mínimo devem ser números inteiros não negativos.");
+            alert(
+                "Preencha os campos corretamente. Estoque e estoque mínimo devem ser números inteiros não negativos."
+            );
             return;
         }
 
@@ -311,11 +301,11 @@ export const ProdutosPage = () => {
         );
     };
 
-    const campoClasse =
-        "mt-2 w-full rounded-md border border-[#f1b519]/25 bg-black px-3 py-3 text-sm text-gray-200 outline-none transition focus:border-[#f1b519]";
+    const indicadorClasse =
+        "rounded-xl border border-[#e6dfcd] bg-[#fffefa] p-5 shadow-sm transition-all hover:border-[#d4bd7c] hover:shadow-md";
 
     return (
-        <div className="min-h-screen bg-black text-white">
+        <div className="min-h-screen bg-[#f3f1eb] text-[#35342f]">
 
             <Sidebar />
 
@@ -324,7 +314,7 @@ export const ProdutosPage = () => {
                 <button
                     aria-label="Fechar menu"
                     onClick={() => setMenuAberto(false)}
-                    className="fixed inset-0 z-40 bg-black/70 lg:hidden"
+                    className="fixed inset-0 z-40 bg-[#35342f]/40 backdrop-blur-sm lg:hidden"
                 />
             )}
 
@@ -332,11 +322,11 @@ export const ProdutosPage = () => {
             <div className="min-h-screen lg:ml-60">
 
                 {/* Cabeçalho */}
-                <header className="sticky top-0 z-30 flex h-24 items-center justify-between border-b border-[#f1b519]/50 bg-black px-4 sm:px-6 lg:px-8">
+                <header className="sticky top-0 z-30 flex h-24 items-center justify-between border-b border-[#e3dcc9] bg-[#faf9f5]/95 px-4 backdrop-blur-sm sm:px-6 lg:px-8">
                     <div className="flex items-center gap-3">
                         <button
                             onClick={() => setMenuAberto(true)}
-                            className="text-[#f1b519] lg:hidden"
+                            className="text-[#98700a] lg:hidden"
                             aria-label="Abrir menu"
                         >
                             <Menu size={25} />
@@ -344,11 +334,15 @@ export const ProdutosPage = () => {
 
                         <div>
                             <h2
-                                className="text-lg text-[#f1b519] sm:text-xl"
+                                className="text-lg text-[#98700a] sm:text-xl"
                                 style={{ fontFamily: "Corvel" }}
                             >
                                 Gerenciamento de Produtos
                             </h2>
+
+                            <p className="hidden text-xs text-[#89867d] sm:block">
+                                Gerencie o catálogo da loja
+                            </p>
                         </div>
                     </div>
                 </header>
@@ -358,17 +352,18 @@ export const ProdutosPage = () => {
                     {/* Título e ação */}
                     <section className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
                         <div>
-                            <h2 className="text-xl text-[#f1b519]">
+                            <h2 className="text-xl font-medium text-[#78601e]">
                                 Produtos
                             </h2>
-                            <p className="mt-1 text-sm text-gray-400">
+
+                            <p className="mt-1 text-sm text-[#89867d]">
                                 Gerencie o catálogo de produtos da loja.
                             </p>
                         </div>
 
                         <button
                             onClick={abrirCadastro}
-                            className="flex items-center justify-center gap-2 rounded-md bg-[#f1b519] px-5 py-3 text-sm font-medium text-black transition hover:bg-[#d9a30f]"
+                            className="flex items-center justify-center gap-2 rounded-lg bg-[#b18a20] px-5 py-3 text-sm font-medium text-white transition hover:bg-[#98700a]"
                         >
                             <Plus size={19} />
                             Cadastrar produto
@@ -378,66 +373,82 @@ export const ProdutosPage = () => {
                     {/* Indicadores */}
                     <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
 
-                        <div className="rounded-lg border border-[#f1b519]/40 bg-[#080808] p-5 transition-colors hover:border-[#f1b519]">
-                            <div className="flex items-center justify-between">
-                                <p className="text-sm text-gray-300">
+                        <div className={indicadorClasse}>
+                            <div className="flex items-center justify-between gap-3">
+                                <p className="text-sm text-[#77746b]">
                                     Produtos cadastrados
                                 </p>
-                                <Package size={22} className="text-[#f1b519]" />
+
+                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#f5edda]">
+                                    <Package size={21} className="text-[#98700a]" />
+                                </div>
                             </div>
 
-                            <p className="mt-5 text-3xl text-[#f1b519]">
+                            <p className="mt-5 text-3xl font-semibold text-[#8b690e]">
                                 {produtos.length}
                             </p>
-                            <p className="mt-1 text-xs text-gray-500">
+
+                            <p className="mt-1 text-xs text-[#969187]">
                                 Total de registros
                             </p>
                         </div>
 
-                        <div className="rounded-lg border border-[#f1b519]/40 bg-[#080808] p-5 transition-colors hover:border-[#f1b519]">
-                            <div className="flex items-center justify-between">
-                                <p className="text-sm text-gray-300">
+                        <div className={indicadorClasse}>
+                            <div className="flex items-center justify-between gap-3">
+                                <p className="text-sm text-[#77746b]">
                                     Produtos ativos
                                 </p>
-                                <Tags size={22} className="text-[#f1b519]" />
+
+                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#f5edda]">
+                                    <Tags size={21} className="text-[#98700a]" />
+                                </div>
                             </div>
 
-                            <p className="mt-5 text-3xl text-[#f1b519]">
+                            <p className="mt-5 text-3xl font-semibold text-[#8b690e]">
                                 {produtosAtivos}
                             </p>
-                            <p className="mt-1 text-xs text-gray-500">
+
+                            <p className="mt-1 text-xs text-[#969187]">
                                 Disponíveis no catálogo
                             </p>
                         </div>
 
-                        <div className="rounded-lg border border-[#f1b519]/40 bg-[#080808] p-5 transition-colors hover:border-[#f1b519]">
-                            <div className="flex items-center justify-between">
-                                <p className="text-sm text-gray-300">
+                        <div className={indicadorClasse}>
+                            <div className="flex items-center justify-between gap-3">
+                                <p className="text-sm text-[#77746b]">
                                     Unidades em estoque
                                 </p>
-                                <Boxes size={22} className="text-[#f1b519]" />
+
+                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#f5edda]">
+                                    <Boxes size={21} className="text-[#98700a]" />
+                                </div>
                             </div>
 
-                            <p className="mt-5 text-3xl text-[#f1b519]">
+                            <p className="mt-5 text-3xl font-semibold text-[#8b690e]">
                                 {totalEstoque}
                             </p>
-                            <p className="mt-1 text-xs text-gray-500">
+
+                            <p className="mt-1 text-xs text-[#969187]">
                                 Soma das quantidades
                             </p>
                         </div>
 
-                        <div className="rounded-lg border border-[#f1b519]/40 bg-[#080808] p-5 transition-colors hover:border-[#f1b519]">
-                            <div className="flex items-center justify-between">
-                                <p className="text-sm text-gray-300">
+                        <div className={indicadorClasse}>
+                            <div className="flex items-center justify-between gap-3">
+                                <p className="text-sm text-[#77746b]">
                                     Valor de custo do estoque
                                 </p>
-                                <DollarSign size={22} className="text-[#f1b519]" />
+
+                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#f5edda]">
+                                    <DollarSign size={21} className="text-[#98700a]" />
+                                </div>
                             </div>
 
-                            <p className="mt-5 break-words text-2xl text-[#f1b519]">
+                            <p className="mt-5 break-words text-2xl font-semibold text-[#8b690e]">
                                 {moeda(valorEstoque)}
                             </p>
-                            <p className="mt-1 text-xs text-gray-500">
+
+                            <p className="mt-1 text-xs text-[#969187]">
                                 Custo das unidades disponíveis
                             </p>
                         </div>
@@ -445,17 +456,18 @@ export const ProdutosPage = () => {
 
                     {/* Alerta de estoque */}
                     {produtosEstoqueBaixo > 0 && (
-                        <section className="flex items-start gap-3 rounded-lg border border-[#f1b519]/40 bg-[#f1b519]/[0.06] p-4">
+                        <section className="flex items-start gap-3 rounded-xl border border-[#e8d9b4] bg-[#f8f1df] p-4">
                             <AlertTriangle
                                 size={21}
-                                className="mt-0.5 shrink-0 text-[#f1b519]"
+                                className="mt-0.5 shrink-0 text-[#98700a]"
                             />
 
                             <div>
-                                <p className="text-sm text-[#f1b519]">
+                                <p className="text-sm font-medium text-[#78601e]">
                                     Atenção ao estoque
                                 </p>
-                                <p className="mt-1 text-sm text-gray-400">
+
+                                <p className="mt-1 text-sm text-[#81734e]">
                                     {produtosEstoqueBaixo}{" "}
                                     {produtosEstoqueBaixo === 1
                                         ? "produto está"
@@ -466,26 +478,30 @@ export const ProdutosPage = () => {
                         </section>
                     )}
 
-                    {/* Tabela de produtos */}
-                    <section className="overflow-hidden rounded-lg border border-[#f1b519]/40 bg-[#050505]">
+                    {/* Catálogo de produtos */}
+                    <section className="overflow-hidden rounded-xl border border-[#e6dfcd] bg-[#fffefa] shadow-sm">
 
-                        <div className="border-b border-[#f1b519]/25 p-5">
+                        <div className="border-b border-[#eee7d7] p-5">
                             <div className="flex flex-col justify-between gap-4 xl:flex-row xl:items-center">
                                 <div>
-                                    <h2 className="text-lg text-[#f1b519]">
+                                    <h2 className="text-lg font-medium text-[#78601e]">
                                         Catálogo de produtos
                                     </h2>
-                                    <p className="mt-1 text-xs text-gray-500">
+
+                                    <p className="mt-1 text-xs text-[#918d83]">
                                         Consulte e gerencie os itens cadastrados.
                                     </p>
                                 </div>
 
                                 <div className="flex flex-col gap-3 sm:flex-row">
+
+                                    {/* Busca */}
                                     <div className="relative min-w-0 sm:w-64">
                                         <Search
                                             size={17}
-                                            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"
+                                            className="absolute left-3 top-1/2 -translate-y-1/2 text-[#a49b85]"
                                         />
+
                                         <input
                                             type="text"
                                             value={busca}
@@ -493,21 +509,23 @@ export const ProdutosPage = () => {
                                                 setBusca(evento.target.value)
                                             }
                                             placeholder="Buscar produto ou código..."
-                                            className="w-full rounded-md border border-[#f1b519]/25 bg-black py-2.5 pl-9 pr-3 text-sm text-gray-200 outline-none transition focus:border-[#f1b519]"
+                                            className="w-full rounded-lg border border-[#e3dcc9] bg-[#faf9f5] py-2.5 pl-9 pr-3 text-sm text-[#45433d] outline-none transition placeholder:text-[#aaa59a] focus:border-[#b99a43] focus:ring-2 focus:ring-[#b99a43]/10"
                                         />
                                     </div>
 
+                                    {/* Filtro de categoria */}
                                     <div className="relative">
                                         <select
                                             value={categoriaFiltro}
                                             onChange={(evento) =>
                                                 setCategoriaFiltro(evento.target.value)
                                             }
-                                            className="w-full appearance-none rounded-md border border-[#f1b519]/25 bg-black py-2.5 pl-3 pr-9 text-sm text-gray-300 outline-none focus:border-[#f1b519] sm:w-40"
+                                            className="w-full appearance-none rounded-lg border border-[#e3dcc9] bg-[#faf9f5] py-2.5 pl-3 pr-9 text-sm text-[#5f5c54] outline-none focus:border-[#b99a43] sm:w-44"
                                         >
                                             <option value="Todas">
                                                 Todas as categorias
                                             </option>
+
                                             {categorias.map((categoria) => (
                                                 <option
                                                     key={categoria}
@@ -517,37 +535,43 @@ export const ProdutosPage = () => {
                                                 </option>
                                             ))}
                                         </select>
+
                                         <ChevronDown
                                             size={15}
-                                            className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#f1b519]"
+                                            className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#98700a]"
                                         />
                                     </div>
 
+                                    {/* Filtro de status */}
                                     <div className="relative">
                                         <select
                                             value={statusFiltro}
                                             onChange={(evento) =>
                                                 setStatusFiltro(evento.target.value)
                                             }
-                                            className="w-full appearance-none rounded-md border border-[#f1b519]/25 bg-black py-2.5 pl-3 pr-9 text-sm text-gray-300 outline-none focus:border-[#f1b519] sm:w-36"
+                                            className="w-full appearance-none rounded-lg border border-[#e3dcc9] bg-[#faf9f5] py-2.5 pl-3 pr-9 text-sm text-[#5f5c54] outline-none focus:border-[#b99a43] sm:w-36"
                                         >
-                                            <option value="Todos">Todos os status</option>
+                                            <option value="Todos">
+                                                Todos os status
+                                            </option>
                                             <option value="Ativo">Ativos</option>
                                             <option value="Inativo">Inativos</option>
                                         </select>
+
                                         <ChevronDown
                                             size={15}
-                                            className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#f1b519]"
+                                            className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#98700a]"
                                         />
                                     </div>
                                 </div>
                             </div>
                         </div>
 
+                        {/* Tabela */}
                         <div className="overflow-x-auto">
                             <table className="w-full min-w-[900px] text-left text-sm">
                                 <thead>
-                                    <tr className="bg-[#f1b519]/[0.07] text-xs text-[#c5a64a]">
+                                    <tr className="bg-[#f5f1e7] text-xs text-[#81734e]">
                                         <th className="px-5 py-4 font-medium">
                                             Produto
                                         </th>
@@ -570,29 +594,34 @@ export const ProdutosPage = () => {
                                 </thead>
 
                                 <tbody>
-                                    {produtosFiltrados.map((produto) => {
+                                    {produtosFiltrados.map((produto, index) => {
                                         const estoqueBaixo =
                                             produto.estoque <= produto.estoqueMinimo;
 
                                         return (
                                             <tr
                                                 key={produto.id}
-                                                className="border-t border-white/10 text-gray-300 transition-colors hover:bg-white/[0.025]"
+                                                className={`border-t border-[#eeeae0] text-[#5f5c54] transition-colors hover:bg-[#f8f5ed] ${
+                                                    index % 2 === 1
+                                                        ? "bg-[#fcfbf7]"
+                                                        : ""
+                                                }`}
                                             >
                                                 <td className="px-5 py-4">
                                                     <div className="flex items-center gap-3">
-                                                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-[#f1b519]/25 bg-[#f1b519]/[0.06]">
+                                                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-[#e9dfc4] bg-[#f5edda]">
                                                             <Package
                                                                 size={19}
-                                                                className="text-[#f1b519]"
+                                                                className="text-[#98700a]"
                                                             />
                                                         </div>
 
                                                         <div>
-                                                            <p className="font-medium text-gray-200">
+                                                            <p className="font-medium text-[#45433d]">
                                                                 {produto.nome}
                                                             </p>
-                                                            <p className="mt-1 text-xs text-gray-500">
+
+                                                            <p className="mt-1 text-xs text-[#969187]">
                                                                 {produto.codigo}
                                                             </p>
                                                         </div>
@@ -603,7 +632,7 @@ export const ProdutosPage = () => {
                                                     {produto.categoria}
                                                 </td>
 
-                                                <td className="whitespace-nowrap px-4 py-4 text-gray-200">
+                                                <td className="whitespace-nowrap px-4 py-4 font-medium text-[#45433d]">
                                                     {moeda(produto.preco)}
                                                 </td>
 
@@ -612,33 +641,33 @@ export const ProdutosPage = () => {
                                                         <span
                                                             className={
                                                                 estoqueBaixo
-                                                                    ? "text-[#f1b519]"
-                                                                    : "text-gray-200"
+                                                                    ? "font-medium text-amber-700"
+                                                                    : "text-[#5f5c54]"
                                                             }
                                                         >
                                                             {produto.estoque} un.
                                                         </span>
 
                                                         {estoqueBaixo && (
-                                                            <span
+                                                            <AlertTriangle
+                                                                size={14}
+                                                                className="text-amber-600"
                                                                 title="Estoque baixo"
-                                                                className="flex items-center gap-1 text-[#f1b519]"
-                                                            >
-                                                                <AlertTriangle size={14} />
-                                                            </span>
+                                                            />
                                                         )}
                                                     </div>
-                                                    <p className="mt-1 text-[11px] text-gray-500">
+
+                                                    <p className="mt-1 text-[11px] text-[#969187]">
                                                         Mínimo: {produto.estoqueMinimo}
                                                     </p>
                                                 </td>
 
                                                 <td className="px-4 py-4">
                                                     <span
-                                                        className={`rounded-full px-2.5 py-1 text-xs ${
+                                                        className={`rounded-full px-2.5 py-1 text-xs font-medium ${
                                                             produto.status === "Ativo"
-                                                                ? "bg-emerald-500/10 text-emerald-400"
-                                                                : "bg-gray-500/15 text-gray-400"
+                                                                ? "bg-emerald-100 text-emerald-700"
+                                                                : "bg-[#eeece6] text-[#77746b]"
                                                         }`}
                                                     >
                                                         {produto.status}
@@ -651,7 +680,7 @@ export const ProdutosPage = () => {
                                                             onClick={() => abrirEdicao(produto)}
                                                             title="Editar produto"
                                                             aria-label={`Editar ${produto.nome}`}
-                                                            className="rounded-md border border-[#f1b519]/25 p-2 text-[#f1b519] transition hover:bg-[#f1b519]/10"
+                                                            className="rounded-lg border border-[#e6dfcd] p-2 text-[#8b690e] transition hover:border-[#d4bd7c] hover:bg-[#f5edda]"
                                                         >
                                                             <Pencil size={16} />
                                                         </button>
@@ -660,7 +689,7 @@ export const ProdutosPage = () => {
                                                             onClick={() => excluirProduto(produto)}
                                                             title="Excluir produto"
                                                             aria-label={`Excluir ${produto.nome}`}
-                                                            className="rounded-md border border-red-500/25 p-2 text-red-400 transition hover:bg-red-500/10"
+                                                            className="rounded-lg border border-red-200 p-2 text-red-600 transition hover:bg-red-50"
                                                         >
                                                             <Trash2 size={16} />
                                                         </button>
@@ -674,25 +703,30 @@ export const ProdutosPage = () => {
 
                             {produtosFiltrados.length === 0 && (
                                 <div className="px-5 py-14 text-center">
-                                    <Package
-                                        size={34}
-                                        className="mx-auto text-[#f1b519]/50"
-                                    />
-                                    <p className="mt-3 text-sm text-gray-300">
+                                    <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-xl bg-[#f5f1e7]">
+                                        <Package
+                                            size={28}
+                                            className="text-[#b49a51]"
+                                        />
+                                    </div>
+
+                                    <p className="mt-3 text-sm font-medium text-[#45433d]">
                                         Nenhum produto encontrado.
                                     </p>
-                                    <p className="mt-1 text-xs text-gray-500">
+
+                                    <p className="mt-1 text-xs text-[#918d83]">
                                         Tente alterar a pesquisa ou os filtros.
                                     </p>
                                 </div>
                             )}
                         </div>
 
-                        <div className="flex flex-col gap-2 border-t border-[#f1b519]/20 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-                            <p className="text-xs text-gray-500">
+                        <div className="flex flex-col gap-2 border-t border-[#eee7d7] bg-[#faf9f5] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                            <p className="text-xs text-[#918d83]">
                                 Exibindo {produtosFiltrados.length} de {produtos.length} produtos
                             </p>
-                            <p className="text-xs text-gray-500">
+
+                            <p className="text-xs text-[#918d83]">
                                 Dados demonstrativos
                             </p>
                         </div>
@@ -703,23 +737,24 @@ export const ProdutosPage = () => {
             {/* Modal de cadastro e edição */}
             {modalAberto && (
                 <div
-                    className="fixed inset-0 z-[60] flex items-center justify-center overflow-y-auto bg-black/80 p-4 backdrop-blur-sm"
+                    className="fixed inset-0 z-[60] flex items-center justify-center overflow-y-auto bg-[#35342f]/45 p-4 backdrop-blur-sm"
                     onMouseDown={(evento) => {
                         if (evento.target === evento.currentTarget) {
                             setModalAberto(false);
                         }
                     }}
                 >
-                    <div className="my-auto w-full max-w-2xl overflow-hidden rounded-lg border border-[#f1b519]/40 bg-[#080808] shadow-2xl shadow-black/60">
+                    <div className="my-auto w-full max-w-2xl overflow-hidden rounded-2xl border border-[#e3dcc9] bg-[#fffefa] shadow-2xl">
 
-                        <div className="flex items-center justify-between border-b border-[#f1b519]/25 p-5">
+                        <div className="flex items-center justify-between border-b border-[#eee7d7] bg-[#faf9f5] p-5">
                             <div>
-                                <h2 className="text-lg text-[#f1b519]">
+                                <h2 className="text-lg font-medium text-[#78601e]">
                                     {produtoEditando
                                         ? "Editar produto"
                                         : "Cadastrar produto"}
                                 </h2>
-                                <p className="mt-1 text-xs text-gray-500">
+
+                                <p className="mt-1 text-xs text-[#918d83]">
                                     Preencha as informações do catálogo.
                                 </p>
                             </div>
@@ -727,7 +762,7 @@ export const ProdutosPage = () => {
                             <button
                                 onClick={() => setModalAberto(false)}
                                 aria-label="Fechar modal"
-                                className="rounded-md p-2 text-gray-400 transition hover:bg-white/5 hover:text-[#f1b519]"
+                                className="rounded-lg p-2 text-[#89867d] transition hover:bg-[#f0ece2] hover:text-[#78601e]"
                             >
                                 <X size={21} />
                             </button>
@@ -736,7 +771,7 @@ export const ProdutosPage = () => {
                         <form onSubmit={salvarProduto}>
                             <div className="grid grid-cols-1 gap-5 p-5 sm:grid-cols-2">
 
-                                <label className="text-sm text-gray-300 sm:col-span-2">
+                                <label className="text-sm font-medium text-[#5f5c54] sm:col-span-2">
                                     Nome do produto *
                                     <input
                                         required
@@ -752,7 +787,7 @@ export const ProdutosPage = () => {
                                     />
                                 </label>
 
-                                <label className="text-sm text-gray-300">
+                                <label className="text-sm font-medium text-[#5f5c54]">
                                     Categoria *
                                     <select
                                         required
@@ -770,7 +805,7 @@ export const ProdutosPage = () => {
                                     </select>
                                 </label>
 
-                                <label className="text-sm text-gray-300">
+                                <label className="text-sm font-medium text-[#5f5c54]">
                                     Status *
                                     <select
                                         required
@@ -785,7 +820,7 @@ export const ProdutosPage = () => {
                                     </select>
                                 </label>
 
-                                <label className="text-sm text-gray-300">
+                                <label className="text-sm font-medium text-[#5f5c54]">
                                     Preço de venda (R$) *
                                     <input
                                         required
@@ -801,7 +836,7 @@ export const ProdutosPage = () => {
                                     />
                                 </label>
 
-                                <label className="text-sm text-gray-300">
+                                <label className="text-sm font-medium text-[#5f5c54]">
                                     Preço de custo (R$) *
                                     <input
                                         required
@@ -817,7 +852,7 @@ export const ProdutosPage = () => {
                                     />
                                 </label>
 
-                                <label className="text-sm text-gray-300">
+                                <label className="text-sm font-medium text-[#5f5c54]">
                                     Quantidade em estoque *
                                     <input
                                         required
@@ -833,7 +868,7 @@ export const ProdutosPage = () => {
                                     />
                                 </label>
 
-                                <label className="text-sm text-gray-300">
+                                <label className="text-sm font-medium text-[#5f5c54]">
                                     Estoque mínimo *
                                     <input
                                         required
@@ -849,33 +884,35 @@ export const ProdutosPage = () => {
                                     />
                                 </label>
 
-                                <div className="rounded-md border border-[#f1b519]/20 bg-[#f1b519]/[0.04] p-3 sm:col-span-2">
+                                <div className="rounded-lg border border-[#e9dfc4] bg-[#f8f3e6] p-3 sm:col-span-2">
                                     <div className="flex items-start gap-2">
                                         <AlertTriangle
                                             size={17}
-                                            className="mt-0.5 shrink-0 text-[#f1b519]"
+                                            className="mt-0.5 shrink-0 text-[#98700a]"
                                         />
-                                        <p className="text-xs leading-5 text-gray-400">
+
+                                        <p className="text-xs leading-5 text-[#81734e]">
                                             O sistema sinalizará o produto quando a quantidade em estoque for igual ou inferior ao estoque mínimo.
                                         </p>
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="flex flex-col-reverse gap-3 border-t border-[#f1b519]/20 p-5 sm:flex-row sm:justify-end">
+                            <div className="flex flex-col-reverse gap-3 border-t border-[#eee7d7] bg-[#faf9f5] p-5 sm:flex-row sm:justify-end">
                                 <button
                                     type="button"
                                     onClick={() => setModalAberto(false)}
-                                    className="rounded-md border border-[#f1b519]/30 px-5 py-3 text-sm text-gray-300 transition hover:bg-white/5"
+                                    className="rounded-lg border border-[#e3dcc9] px-5 py-3 text-sm font-medium text-[#68645b] transition hover:bg-[#f0ece2]"
                                 >
                                     Cancelar
                                 </button>
 
                                 <button
                                     type="submit"
-                                    className="flex items-center justify-center gap-2 rounded-md bg-[#f1b519] px-5 py-3 text-sm font-medium text-black transition hover:bg-[#d9a30f]"
+                                    className="flex items-center justify-center gap-2 rounded-lg bg-[#b18a20] px-5 py-3 text-sm font-medium text-white transition hover:bg-[#98700a]"
                                 >
                                     <Plus size={17} />
+
                                     {produtoEditando
                                         ? "Salvar alterações"
                                         : "Cadastrar produto"}

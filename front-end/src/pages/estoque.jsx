@@ -1,5 +1,5 @@
-
 import { useState } from "react";
+import Sidebar from "../components/Sidebar";
 import {
     Home,
     Package,
@@ -238,56 +238,21 @@ export const Estoque = () => {
         }
     ];
 
+    const campoClasse =
+        "w-full rounded-md border border-[#e3dcc9] bg-[#faf9f5] px-3 py-3 text-sm text-[#45433d] outline-none transition placeholder:text-[#918d83] focus:border-[#b18a20]";
+
+    const botaoSecundario =
+        "rounded-md border border-[#e3dcc9] px-4 py-2 text-sm text-[#68645b] transition hover:bg-[#f5f1e7]";
+
     return (
-        <div className="min-h-screen bg-black text-white">
-            {/* Menu lateral */}
-            <aside className="fixed left-0 top-0 z-40 hidden h-screen w-60 flex-col border-r border-[#f1b519]/30 bg-black lg:flex">
-                <div className="flex h-24 items-center gap-3 border-b border-[#f1b519]/60 px-5">
-                    <img
-                        src={estrela}
-                        alt="Estrela do Oriente"
-                        className="h-12 w-12 shrink-0 object-contain"
-                    />
-                    <h1
-                        className="text-lg leading-tight text-[#f1b519]"
-                        style={{ fontFamily: "Corvel" }}
-                    >
-                        ESTRELA DO ORIENTE
-                    </h1>
-                </div>
+        <div className="min-h-screen bg-[#f3f1eb] text-[#35342f]">
+            <Sidebar />
 
-                <nav className="flex-1 space-y-2 overflow-y-auto px-3 py-6">
-                    {menuItems.map((item) => {
-                        const Icone = item.icone;
-                        const ativo = item.nome === "Estoque";
-
-                        return (
-                            <button
-                                key={item.nome}
-                                onClick={() => navegar(item.rota)}
-                                className={`flex w-full items-center gap-3 rounded-md px-4 py-3 text-left text-sm transition-colors ${
-                                    ativo
-                                        ? "bg-[#f1b519]/20 text-[#f1b519]"
-                                        : "text-gray-300 hover:bg-[#f1b519]/10 hover:text-[#f1b519]"
-                                }`}
-                            >
-                                <Icone size={19} strokeWidth={1.8} />
-                                <span>{item.nome}</span>
-                                {ativo && (
-                                    <span className="ml-auto h-2 w-2 rounded-full bg-[#f1b519]" />
-                                )}
-                            </button>
-                        );
-                    })}
-                </nav>
-            </aside>
-
-            {/* Conteúdo */}
             <div className="min-h-screen lg:ml-60">
-                <header className="sticky top-0 z-30 flex h-24 items-center justify-between border-b border-[#f1b519]/50 bg-black px-4 sm:px-6 lg:px-8">
+                <header className="sticky top-0 z-30 flex h-24 items-center justify-between border-b border-[#e6dfcd] bg-[#faf9f5]/95 px-4 backdrop-blur-sm sm:px-6 lg:px-8">
                     <div className="flex items-center gap-3">
                         <button
-                            className="text-[#f1b519] lg:hidden"
+                            className="text-[#98700a] lg:hidden"
                             aria-label="Menu"
                         >
                             <Menu size={25} />
@@ -295,20 +260,20 @@ export const Estoque = () => {
 
                         <div>
                             <h2
-                                className="text-xl text-[#f1b519] sm:text-2xl"
+                                className="text-xl text-[#89670d] sm:text-2xl"
                                 style={{ fontFamily: "Corvel" }}
                             >
                                 Estoque
                             </h2>
-                            <p className="text-xs text-gray-400">
+                            <p className="text-xs text-[#77746b]">
                                 Controle de produtos e inventário
                             </p>
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-4">
-                        <div className="hidden items-center gap-2 rounded-md border border-white/15 px-3 py-2 sm:flex">
-                            <Search size={17} className="text-gray-400" />
+                    <div className="flex items-center gap-3 sm:gap-4">
+                        <div className="hidden items-center gap-2 rounded-md border border-[#e3dcc9] bg-[#fffefa] px-3 py-2 sm:flex">
+                            <Search size={17} className="text-[#918d83]" />
                             <input
                                 value={busca}
                                 onChange={(e) => {
@@ -316,17 +281,22 @@ export const Estoque = () => {
                                     setPagina(1);
                                 }}
                                 placeholder="Buscar produto..."
-                                className="w-36 bg-transparent text-sm outline-none placeholder:text-gray-500 lg:w-48"
+                                className="w-36 bg-transparent text-sm text-[#45433d] outline-none placeholder:text-[#918d83] lg:w-48"
                             />
                         </div>
 
-                        <Bell size={21} className="text-[#f1b519]" />
+                        <button
+                            aria-label="Notificações"
+                            className="text-[#98700a] transition hover:text-[#6e5208]"
+                        >
+                            <Bell size={21} />
+                        </button>
 
-                        <div className="hidden border-l border-[#f1b519]/30 pl-4 sm:block">
-                            <p className="text-sm text-[#f1b519]">
+                        <div className="hidden border-l border-[#e3dcc9] pl-4 sm:block">
+                            <p className="text-sm text-[#89670d]">
                                 Estrela do Oriente
                             </p>
-                            <p className="text-xs text-gray-500">
+                            <p className="text-xs text-[#918d83]">
                                 {new Date().toLocaleDateString("pt-BR")}
                             </p>
                         </div>
@@ -334,20 +304,19 @@ export const Estoque = () => {
                 </header>
 
                 <main className="space-y-6 p-4 sm:p-6 lg:p-8">
-                    {/* Ações principais */}
                     <section className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <button
                             onClick={() => abrirMovimentacao("entrada")}
-                            className="flex items-center gap-4 rounded-lg bg-[#f1b519] p-5 text-left text-black transition hover:bg-[#d9a30f]"
+                            className="flex items-center gap-4 rounded-lg bg-[#98700a] p-5 text-left text-white transition hover:bg-[#806009]"
                         >
-                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-black/10">
+                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-white/15">
                                 <ArrowDownToLine size={26} />
                             </div>
                             <div>
                                 <p className="text-base font-semibold">
                                     Entrada de estoque
                                 </p>
-                                <p className="mt-1 text-sm text-black/70">
+                                <p className="mt-1 text-sm text-white/80">
                                     Adicionar unidades aos produtos
                                 </p>
                             </div>
@@ -356,26 +325,25 @@ export const Estoque = () => {
 
                         <button
                             onClick={() => abrirMovimentacao("saida")}
-                            className="flex items-center gap-4 rounded-lg border border-red-500/40 bg-red-500/[0.06] p-5 text-left transition hover:bg-red-500/10"
+                            className="flex items-center gap-4 rounded-lg border border-[#e6c8c3] bg-[#fff9f7] p-5 text-left transition hover:bg-[#fdf0ed]"
                         >
-                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-red-500/10 text-red-400">
+                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-[#f8e7e3] text-[#b34b40]">
                                 <ArrowUpFromLine size={26} />
                             </div>
                             <div>
-                                <p className="text-base font-semibold text-red-300">
+                                <p className="text-base font-semibold text-[#a94338]">
                                     Saída de estoque
                                 </p>
-                                <p className="mt-1 text-sm text-gray-400">
+                                <p className="mt-1 text-sm text-[#77746b]">
                                     Registrar retirada de produtos
                                 </p>
                             </div>
-                            <Plus size={20} className="ml-auto shrink-0 text-red-400" />
+                            <Plus size={20} className="ml-auto shrink-0 text-[#b34b40]" />
                         </button>
                     </section>
 
-                    {/* Indicadores */}
                     <section>
-                        <h2 className="mb-4 text-lg text-[#f1b519]">
+                        <h2 className="mb-4 text-lg text-[#89670d]">
                             Resumo do Estoque
                         </h2>
 
@@ -386,22 +354,22 @@ export const Estoque = () => {
                                 return (
                                     <div
                                         key={item.titulo}
-                                        className="rounded-lg border border-[#f1b519]/40 bg-[#080808] p-5 transition-colors hover:border-[#f1b519]"
+                                        className="rounded-lg border border-[#e6dfcd] bg-[#fffefa] p-5 transition-colors hover:border-[#c8b77e]"
                                     >
                                         <div className="flex items-center justify-between gap-2">
-                                            <p className="text-sm text-gray-300">
+                                            <p className="text-sm text-[#68645b]">
                                                 {item.titulo}
                                             </p>
                                             <Icone
                                                 size={23}
-                                                className="shrink-0 text-[#f1b519]"
+                                                className="shrink-0 text-[#98700a]"
                                                 strokeWidth={1.7}
                                             />
                                         </div>
-                                        <p className="mt-5 break-words text-2xl font-semibold text-[#f1b519]">
+                                        <p className="mt-5 break-words text-2xl font-semibold text-[#89670d]">
                                             {item.valor}
                                         </p>
-                                        <p className="mt-1 text-xs text-gray-500">
+                                        <p className="mt-1 text-xs text-[#918d83]">
                                             {item.descricao}
                                         </p>
                                     </div>
@@ -410,21 +378,19 @@ export const Estoque = () => {
                         </div>
                     </section>
 
-                    {/* Tabela e painel lateral */}
                     <section className="grid grid-cols-1 items-start gap-5 2xl:grid-cols-4">
-                        {/* Produtos */}
-                        <div className="overflow-hidden rounded-lg border border-[#f1b519]/40 bg-[#050505] 2xl:col-span-3">
-                            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#f1b519]/25 p-5">
+                        <div className="overflow-hidden rounded-lg border border-[#e6dfcd] bg-[#fffefa] 2xl:col-span-3">
+                            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#e6dfcd] p-5">
                                 <div className="flex items-center gap-2">
-                                    <Package size={21} className="text-[#f1b519]" />
-                                    <h2 className="text-lg text-[#f1b519]">
+                                    <Package size={21} className="text-[#98700a]" />
+                                    <h2 className="text-lg text-[#89670d]">
                                         Produtos em Estoque
                                     </h2>
                                 </div>
 
                                 <button
                                     onClick={() => navegar("/produtos")}
-                                    className="flex items-center gap-2 rounded-md border border-[#f1b519]/60 px-3 py-2 text-sm text-[#f1b519] transition hover:bg-[#f1b519] hover:text-black"
+                                    className="flex items-center gap-2 rounded-md border border-[#c8b77e] px-3 py-2 text-sm text-[#89670d] transition hover:bg-[#f1e8d1]"
                                 >
                                     <Plus size={17} />
                                     Cadastrar Produto
@@ -432,8 +398,8 @@ export const Estoque = () => {
                             </div>
 
                             <div className="grid grid-cols-1 gap-3 p-4 md:grid-cols-3">
-                                <div className="flex items-center gap-2 rounded-md border border-white/20 px-3 py-2 md:col-span-1">
-                                    <Search size={17} className="shrink-0 text-gray-400" />
+                                <div className="flex items-center gap-2 rounded-md border border-[#e3dcc9] bg-[#faf9f5] px-3 py-2 md:col-span-1">
+                                    <Search size={17} className="shrink-0 text-[#918d83]" />
                                     <input
                                         value={busca}
                                         onChange={(e) => {
@@ -441,7 +407,7 @@ export const Estoque = () => {
                                             setPagina(1);
                                         }}
                                         placeholder="Buscar por nome ou categoria..."
-                                        className="w-full bg-transparent text-sm outline-none placeholder:text-gray-500"
+                                        className="w-full bg-transparent text-sm text-[#45433d] outline-none placeholder:text-[#918d83]"
                                     />
                                 </div>
 
@@ -451,7 +417,7 @@ export const Estoque = () => {
                                         setCategoriaSelecionada(e.target.value);
                                         setPagina(1);
                                     }}
-                                    className="rounded-md border border-white/20 bg-black px-3 py-2 text-sm text-gray-300 outline-none focus:border-[#f1b519]"
+                                    className="rounded-md border border-[#e3dcc9] bg-[#faf9f5] px-3 py-2 text-sm text-[#68645b] outline-none focus:border-[#b18a20]"
                                 >
                                     <option value="Todas">Todas as categorias</option>
                                     {categorias.map((categoria) => (
@@ -467,7 +433,7 @@ export const Estoque = () => {
                                         setStatusSelecionado(e.target.value);
                                         setPagina(1);
                                     }}
-                                    className="rounded-md border border-white/20 bg-black px-3 py-2 text-sm text-gray-300 outline-none focus:border-[#f1b519]"
+                                    className="rounded-md border border-[#e3dcc9] bg-[#faf9f5] px-3 py-2 text-sm text-[#68645b] outline-none focus:border-[#b18a20]"
                                 >
                                     <option value="Todos">Todos os status</option>
                                     <option value="Normal">Normal</option>
@@ -479,7 +445,7 @@ export const Estoque = () => {
                             <div className="overflow-x-auto px-4">
                                 <table className="w-full min-w-[760px] text-left text-sm">
                                     <thead>
-                                        <tr className="bg-[#f1b519]/[0.07] text-xs text-[#c5a64a]">
+                                        <tr className="bg-[#f5f1e7] text-xs text-[#89670d]">
                                             <th className="px-3 py-4 font-medium">Produto</th>
                                             <th className="px-3 py-4 font-medium">Categoria</th>
                                             <th className="px-3 py-4 font-medium">Estoque Atual</th>
@@ -496,26 +462,28 @@ export const Estoque = () => {
                                             return (
                                                 <tr
                                                     key={produto.id}
-                                                    className="border-t border-white/10 text-gray-300 transition-colors hover:bg-white/[0.03]"
+                                                    className="border-t border-[#eee8dc] text-[#68645b] transition-colors hover:bg-[#faf8f2]"
                                                 >
                                                     <td className="whitespace-nowrap px-3 py-4">
                                                         <div className="flex items-center gap-3">
-                                                            <div className="flex h-9 w-9 items-center justify-center rounded-md border border-[#f1b519]/25 bg-[#f1b519]/[0.06]">
-                                                                <Package size={18} className="text-[#f1b519]" />
+                                                            <div className="flex h-9 w-9 items-center justify-center rounded-md border border-[#e6dfcd] bg-[#f5f1e7]">
+                                                                <Package size={18} className="text-[#98700a]" />
                                                             </div>
-                                                            <span>{produto.nome}</span>
+                                                            <span className="font-medium text-[#45433d]">
+                                                                {produto.nome}
+                                                            </span>
                                                         </div>
                                                     </td>
 
                                                     <td className="px-3 py-4">{produto.categoria}</td>
 
                                                     <td
-                                                        className={`px-3 py-4 ${
+                                                        className={`px-3 py-4 font-medium ${
                                                             produto.quantidade === 0
-                                                                ? "text-red-400"
+                                                                ? "text-[#b34b40]"
                                                                 : produto.quantidade <= produto.minimo
-                                                                    ? "text-[#f1b519]"
-                                                                    : ""
+                                                                    ? "text-[#98700a]"
+                                                                    : "text-[#45433d]"
                                                         }`}
                                                     >
                                                         {produto.quantidade}
@@ -527,10 +495,10 @@ export const Estoque = () => {
                                                         <span
                                                             className={`whitespace-nowrap rounded-full border px-2.5 py-1 text-xs ${
                                                                 status === "Normal"
-                                                                    ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-400"
+                                                                    ? "border-[#b9d9c5] bg-[#edf7f0] text-[#32734a]"
                                                                     : status === "Sem estoque"
-                                                                        ? "border-red-500/40 bg-red-500/10 text-red-400"
-                                                                        : "border-[#f1b519]/40 bg-[#f1b519]/10 text-[#f1b519]"
+                                                                        ? "border-[#e6c8c3] bg-[#fdf0ed] text-[#b34b40]"
+                                                                        : "border-[#e6d5a5] bg-[#fbf4df] text-[#89670d]"
                                                             }`}
                                                         >
                                                             {status}
@@ -547,7 +515,7 @@ export const Estoque = () => {
                                                                         tipo: "detalhes"
                                                                     })
                                                                 }
-                                                                className="text-gray-400 hover:text-[#f1b519]"
+                                                                className="text-[#918d83] transition hover:text-[#98700a]"
                                                             >
                                                                 <Eye size={17} />
                                                             </button>
@@ -555,7 +523,7 @@ export const Estoque = () => {
                                                             <button
                                                                 title="Registrar entrada"
                                                                 onClick={() => abrirMovimentacao("entrada", produto)}
-                                                                className="text-gray-400 hover:text-emerald-400"
+                                                                className="text-[#918d83] transition hover:text-[#32734a]"
                                                             >
                                                                 <ArrowDownToLine size={17} />
                                                             </button>
@@ -563,7 +531,7 @@ export const Estoque = () => {
                                                             <button
                                                                 title="Registrar saída"
                                                                 onClick={() => abrirMovimentacao("saida", produto)}
-                                                                className="text-gray-400 hover:text-red-400"
+                                                                className="text-[#918d83] transition hover:text-[#b34b40]"
                                                             >
                                                                 <ArrowUpFromLine size={17} />
                                                             </button>
@@ -575,7 +543,7 @@ export const Estoque = () => {
 
                                         {produtosPagina.length === 0 && (
                                             <tr>
-                                                <td colSpan={6} className="px-4 py-12 text-center text-gray-500">
+                                                <td colSpan={6} className="px-4 py-12 text-center text-[#918d83]">
                                                     Nenhum produto encontrado.
                                                 </td>
                                             </tr>
@@ -584,8 +552,8 @@ export const Estoque = () => {
                                 </table>
                             </div>
 
-                            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#f1b519]/20 p-4">
-                                <p className="text-xs text-gray-500">
+                            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#e6dfcd] p-4">
+                                <p className="text-xs text-[#918d83]">
                                     Mostrando{" "}
                                     {produtosFiltrados.length === 0
                                         ? 0
@@ -598,19 +566,19 @@ export const Estoque = () => {
                                     <button
                                         disabled={pagina === 1}
                                         onClick={() => setPagina((p) => p - 1)}
-                                        className="rounded-md border border-white/20 p-2 text-gray-300 hover:border-[#f1b519] disabled:opacity-30"
+                                        className="rounded-md border border-[#e3dcc9] p-2 text-[#68645b] transition hover:border-[#b18a20] disabled:opacity-30"
                                     >
                                         <ChevronLeft size={17} />
                                     </button>
 
-                                    <span className="rounded-md bg-[#f1b519] px-3 py-2 text-sm font-semibold text-black">
+                                    <span className="rounded-md bg-[#98700a] px-3 py-2 text-sm font-semibold text-white">
                                         {pagina}
                                     </span>
 
                                     <button
                                         disabled={pagina >= totalPaginas}
                                         onClick={() => setPagina((p) => p + 1)}
-                                        className="rounded-md border border-white/20 p-2 text-gray-300 hover:border-[#f1b519] disabled:opacity-30"
+                                        className="rounded-md border border-[#e3dcc9] p-2 text-[#68645b] transition hover:border-[#b18a20] disabled:opacity-30"
                                     >
                                         <ChevronRight size={17} />
                                     </button>
@@ -618,49 +586,46 @@ export const Estoque = () => {
                             </div>
                         </div>
 
-                        {/* Painel lateral */}
                         <div className="space-y-5">
-                            {/* Alertas */}
-                            <div className="rounded-lg border border-[#f1b519]/40 bg-[#050505]">
-                                <div className="flex items-center gap-2 border-b border-[#f1b519]/25 p-4">
-                                    <AlertTriangle size={20} className="text-[#f1b519]" />
-                                    <h2 className="text-base text-[#f1b519]">Alerta de Estoque</h2>
+                            <div className="rounded-lg border border-[#e6dfcd] bg-[#fffefa]">
+                                <div className="flex items-center gap-2 border-b border-[#e6dfcd] p-4">
+                                    <AlertTriangle size={20} className="text-[#98700a]" />
+                                    <h2 className="text-base text-[#89670d]">Alerta de Estoque</h2>
                                 </div>
 
-                                <div className="divide-y divide-white/10 px-4">
+                                <div className="divide-y divide-[#eee8dc] px-4">
                                     {produtos
                                         .filter((produto) => obterStatus(produto) !== "Normal")
                                         .slice(0, 5)
                                         .map((produto) => (
                                             <div key={produto.id} className="flex items-center justify-between gap-3 py-3">
                                                 <div className="min-w-0">
-                                                    <p className="truncate text-sm text-gray-200">{produto.nome}</p>
-                                                    <p className="mt-1 text-xs text-gray-500">
+                                                    <p className="truncate text-sm text-[#45433d]">{produto.nome}</p>
+                                                    <p className="mt-1 text-xs text-[#918d83]">
                                                         {produto.quantidade === 0
                                                             ? "Sem estoque"
                                                             : `${produto.quantidade} unidades`}
                                                     </p>
                                                 </div>
 
-                                                <span className={produto.quantidade === 0 ? "text-red-400" : "text-[#f1b519]"}>
+                                                <span className={produto.quantidade === 0 ? "text-[#b34b40]" : "text-[#98700a]"}>
                                                     <AlertTriangle size={17} />
                                                 </span>
                                             </div>
                                         ))}
 
                                     {produtosBaixos + produtosSemEstoque === 0 && (
-                                        <p className="py-5 text-sm text-gray-500">
+                                        <p className="py-5 text-sm text-[#918d83]">
                                             Nenhum alerta no momento.
                                         </p>
                                     )}
                                 </div>
                             </div>
 
-                            {/* Categorias */}
-                            <div className="rounded-lg border border-[#f1b519]/40 bg-[#050505]">
-                                <div className="flex items-center gap-2 border-b border-[#f1b519]/25 p-4">
-                                    <ClipboardList size={20} className="text-[#f1b519]" />
-                                    <h2 className="text-base text-[#f1b519]">Categorias</h2>
+                            <div className="rounded-lg border border-[#e6dfcd] bg-[#fffefa]">
+                                <div className="flex items-center gap-2 border-b border-[#e6dfcd] p-4">
+                                    <ClipboardList size={20} className="text-[#98700a]" />
+                                    <h2 className="text-base text-[#89670d]">Categorias</h2>
                                 </div>
 
                                 <div className="space-y-1 p-3">
@@ -675,14 +640,14 @@ export const Estoque = () => {
                                                 );
                                                 setPagina(1);
                                             }}
-                                            className={`flex w-full items-center justify-between rounded-md px-3 py-2.5 text-sm transition hover:bg-[#f1b519]/10 ${
+                                            className={`flex w-full items-center justify-between rounded-md px-3 py-2.5 text-sm transition hover:bg-[#f5f1e7] ${
                                                 categoriaSelecionada === categoria
-                                                    ? "text-[#f1b519]"
-                                                    : "text-gray-300"
+                                                    ? "bg-[#f1e8d1] text-[#89670d]"
+                                                    : "text-[#68645b]"
                                             }`}
                                         >
                                             <span>{categoria}</span>
-                                            <span className="rounded-full bg-[#f1b519]/10 px-2.5 py-1 text-xs text-[#f1b519]">
+                                            <span className="rounded-full bg-[#f1e8d1] px-2.5 py-1 text-xs text-[#89670d]">
                                                 {quantidadePorCategoria(categoria)}
                                             </span>
                                         </button>
@@ -690,43 +655,42 @@ export const Estoque = () => {
                                 </div>
                             </div>
 
-                            {/* Ações rápidas */}
-                            <div className="rounded-lg border border-[#f1b519]/40 bg-[#050505] p-4">
+                            <div className="rounded-lg border border-[#e6dfcd] bg-[#fffefa] p-4">
                                 <div className="mb-4 flex items-center gap-2">
-                                    <Plus size={20} className="text-[#f1b519]" />
-                                    <h2 className="text-base text-[#f1b519]">Ações Rápidas</h2>
+                                    <Plus size={20} className="text-[#98700a]" />
+                                    <h2 className="text-base text-[#89670d]">Ações Rápidas</h2>
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-3">
                                     <button
                                         onClick={() => navegar("/produtos")}
-                                        className="flex min-h-24 flex-col items-center justify-center gap-2 rounded-md border border-[#f1b519]/40 p-3 text-center text-xs text-gray-300 transition hover:bg-[#f1b519]/10 hover:text-[#f1b519]"
+                                        className="flex min-h-24 flex-col items-center justify-center gap-2 rounded-md border border-[#e3dcc9] p-3 text-center text-xs text-[#68645b] transition hover:bg-[#f5f1e7] hover:text-[#89670d]"
                                     >
-                                        <Package size={23} className="text-[#f1b519]" />
+                                        <Package size={23} className="text-[#98700a]" />
                                         Cadastrar Produto
                                     </button>
 
                                     <button
                                         onClick={() => abrirMovimentacao("entrada")}
-                                        className="flex min-h-24 flex-col items-center justify-center gap-2 rounded-md border border-[#f1b519]/40 p-3 text-center text-xs text-gray-300 transition hover:bg-[#f1b519]/10 hover:text-[#f1b519]"
+                                        className="flex min-h-24 flex-col items-center justify-center gap-2 rounded-md border border-[#e3dcc9] p-3 text-center text-xs text-[#68645b] transition hover:bg-[#f5f1e7] hover:text-[#89670d]"
                                     >
-                                        <ArrowDownToLine size={23} className="text-[#f1b519]" />
+                                        <ArrowDownToLine size={23} className="text-[#98700a]" />
                                         Entrada de Estoque
                                     </button>
 
                                     <button
                                         onClick={() => abrirMovimentacao("saida")}
-                                        className="flex min-h-24 flex-col items-center justify-center gap-2 rounded-md border border-red-500/30 p-3 text-center text-xs text-gray-300 transition hover:bg-red-500/10 hover:text-red-400"
+                                        className="flex min-h-24 flex-col items-center justify-center gap-2 rounded-md border border-[#e6c8c3] p-3 text-center text-xs text-[#68645b] transition hover:bg-[#fdf0ed] hover:text-[#b34b40]"
                                     >
-                                        <ArrowUpFromLine size={23} className="text-red-400" />
+                                        <ArrowUpFromLine size={23} className="text-[#b34b40]" />
                                         Saída de Estoque
                                     </button>
 
                                     <button
                                         onClick={() => navegar("/relatorios")}
-                                        className="flex min-h-24 flex-col items-center justify-center gap-2 rounded-md border border-[#f1b519]/40 p-3 text-center text-xs text-gray-300 transition hover:bg-[#f1b519]/10 hover:text-[#f1b519]"
+                                        className="flex min-h-24 flex-col items-center justify-center gap-2 rounded-md border border-[#e3dcc9] p-3 text-center text-xs text-[#68645b] transition hover:bg-[#f5f1e7] hover:text-[#89670d]"
                                     >
-                                        <ChartNoAxesCombined size={23} className="text-[#f1b519]" />
+                                        <ChartNoAxesCombined size={23} className="text-[#98700a]" />
                                         Ver Relatórios
                                     </button>
                                 </div>
@@ -736,17 +700,16 @@ export const Estoque = () => {
                 </main>
             </div>
 
-            {/* Modal de detalhes e movimentação */}
             {produtoSelecionado && (
                 <div
-                    className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/80 p-4 backdrop-blur-sm"
+                    className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-[#35342f]/40 p-4 backdrop-blur-sm"
                     onMouseDown={(e) => {
                         if (e.target === e.currentTarget) fecharModal();
                     }}
                 >
-                    <div className="my-auto w-full max-w-md rounded-lg border border-[#f1b519]/50 bg-[#080808] p-6 shadow-2xl">
+                    <div className="my-auto w-full max-w-md rounded-lg border border-[#e3dcc9] bg-[#fffefa] p-6 shadow-2xl">
                         <div className="mb-5 flex items-center justify-between">
-                            <h2 className="text-lg text-[#f1b519]">
+                            <h2 className="text-lg text-[#89670d]">
                                 {produtoSelecionado.tipo === "detalhes"
                                     ? "Detalhes do Produto"
                                     : produtoSelecionado.tipo === "entrada"
@@ -757,16 +720,15 @@ export const Estoque = () => {
                             <button
                                 onClick={fecharModal}
                                 aria-label="Fechar modal"
-                                className="text-gray-400 hover:text-white"
+                                className="text-[#918d83] transition hover:text-[#45433d]"
                             >
                                 <X size={20} />
                             </button>
                         </div>
 
-                        {/* Seleção de produto para os botões rápidos */}
                         {produtoSelecionado.id === null ? (
                             <div className="mb-5">
-                                <label className="mb-2 block text-sm text-gray-300">
+                                <label className="mb-2 block text-sm text-[#68645b]">
                                     Selecione o produto
                                 </label>
 
@@ -785,7 +747,7 @@ export const Estoque = () => {
                                             setMensagem("");
                                         }
                                     }}
-                                    className="w-full rounded-md border border-white/20 bg-black px-3 py-3 text-sm text-white outline-none focus:border-[#f1b519]"
+                                    className={campoClasse}
                                 >
                                     <option value="">Escolher produto</option>
                                     {produtos.map((produto) => (
@@ -796,33 +758,32 @@ export const Estoque = () => {
                                 </select>
                             </div>
                         ) : (
-                            <div className="mb-5 rounded-md border border-white/10 p-4">
-                                <p className="text-base text-gray-100">
+                            <div className="mb-5 rounded-md border border-[#e6dfcd] bg-[#faf9f5] p-4">
+                                <p className="text-base font-medium text-[#45433d]">
                                     {produtoSelecionado.nome}
                                 </p>
-                                <p className="mt-1 text-sm text-gray-500">
+                                <p className="mt-1 text-sm text-[#918d83]">
                                     {produtoSelecionado.categoria}
                                 </p>
-                                <p className="mt-3 text-sm text-gray-300">
+                                <p className="mt-3 text-sm text-[#68645b]">
                                     Quantidade atual:{" "}
-                                    <span className="text-[#f1b519]">
+                                    <span className="font-medium text-[#89670d]">
                                         {produtoSelecionado.quantidade} unidades
                                     </span>
                                 </p>
-                                <p className="mt-1 text-sm text-gray-300">
+                                <p className="mt-1 text-sm text-[#68645b]">
                                     Estoque mínimo: {produtoSelecionado.minimo} unidades
                                 </p>
-                                <p className="mt-1 text-sm text-gray-300">
+                                <p className="mt-1 text-sm text-[#68645b]">
                                     Valor unitário: {moeda(produtoSelecionado.preco)}
                                 </p>
                             </div>
                         )}
 
-                        {/* Quantidade aparece após selecionar um produto */}
                         {produtoSelecionado.tipo !== "detalhes" &&
                             produtoSelecionado.id !== null && (
                                 <div className="mb-4">
-                                    <label className="mb-2 block text-sm text-gray-300">
+                                    <label className="mb-2 block text-sm text-[#68645b]">
                                         Quantidade de unidades
                                     </label>
 
@@ -851,7 +812,7 @@ export const Estoque = () => {
                                             }
                                         }}
                                         placeholder="Digite a quantidade"
-                                        className="w-full rounded-md border border-white/20 bg-black px-3 py-3 text-sm text-white outline-none focus:border-[#f1b519]"
+                                        className={campoClasse}
                                     />
                                 </div>
                             )}
@@ -860,8 +821,8 @@ export const Estoque = () => {
                             <p
                                 className={`mb-4 text-sm ${
                                     mensagem.includes("sucesso")
-                                        ? "text-emerald-400"
-                                        : "text-red-400"
+                                        ? "text-[#32734a]"
+                                        : "text-[#b34b40]"
                                 }`}
                             >
                                 {mensagem}
@@ -871,7 +832,7 @@ export const Estoque = () => {
                         <div className="flex justify-end gap-3">
                             <button
                                 onClick={fecharModal}
-                                className="rounded-md border border-white/20 px-4 py-2 text-sm text-gray-300 hover:bg-white/5"
+                                className={botaoSecundario}
                             >
                                 Fechar
                             </button>
@@ -882,10 +843,10 @@ export const Estoque = () => {
                                         onClick={() =>
                                             registrarMovimentacao(produtoSelecionado.tipo)
                                         }
-                                        className={`rounded-md px-4 py-2 text-sm font-semibold text-black transition ${
+                                        className={`rounded-md px-4 py-2 text-sm font-semibold text-white transition ${
                                             produtoSelecionado.tipo === "entrada"
-                                                ? "bg-[#f1b519] hover:bg-[#d9a30f]"
-                                                : "bg-red-400 hover:bg-red-300"
+                                                ? "bg-[#98700a] hover:bg-[#806009]"
+                                                : "bg-[#b34b40] hover:bg-[#963b32]"
                                         }`}
                                     >
                                         Confirmar{" "}
@@ -902,4 +863,4 @@ export const Estoque = () => {
     );
 };
 
-export default Estoque;
+export default Estoque; 
