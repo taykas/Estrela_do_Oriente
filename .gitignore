@@ -1,0 +1,32 @@
+# Dependências
+node_modules/
+front-end/node_modules/
+
+# Builds do React
+dist/
+dist-ssr/
+front-end/dist/
+
+# Builds e instaladores do Electron
+release/
+front-end/release/
+
+# Arquivos de log
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Arquivos do sistema
+.DS_Store
+Thumbs.db
+
+# Editores
+.vscode/
+.idea/
+
+# Arquivos locais
+*.local
