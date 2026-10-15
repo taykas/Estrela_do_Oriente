@@ -22,4 +22,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-/front-end/release/
+
+# Electron - arquivos gerados
+front-end/release/
+front-end/dist/
+front-end/node_modules/

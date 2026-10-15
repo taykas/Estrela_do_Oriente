@@ -2,7 +2,6 @@ import {
     Package,
     ShoppingCart,
     ClipboardList,
-    Truck,
     ChartNoAxesCombined,
     Menu,
     ArrowUpRight,
@@ -12,10 +11,12 @@ import {
     Zap
 } from "lucide-react";
 
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
+import { useEffect } from "react";
 import Sidebar from "../components/Sidebar";
 
 const vendasRecentes = [
+    { id: "#0049", data: "15/10/2026", cliente: "Cliente 021", total: "R$ 89,90", status: "Concluída" },
     { id: "#0048", data: "13/10/2026", cliente: "Cliente 045", total: "R$ 189,90", status: "Concluída" },
     { id: "#0047", data: "13/10/2026", cliente: "Cliente 032", total: "R$ 254,70", status: "Concluída" },
     { id: "#0046", data: "12/10/2026", cliente: "Cliente 017", total: "R$ 129,90", status: "Concluída" },
@@ -36,33 +37,19 @@ const indicadores = [
         titulo: "Total de Produtos",
         valor: "248",
         descricao: "Produtos cadastrados",
-        icone: Package,
-        variacao: "+12 este mês",
-        positivo: true
+        icone: Package
     },
     {
         titulo: "Vendas do Mês",
         valor: "R$ 4.892,30",
         descricao: "Faturamento mensal",
-        icone: ShoppingCart,
-        variacao: "+8,5% este mês",
-        positivo: true
+        icone: ShoppingCart
     },
     {
         titulo: "Pedidos em Aberto",
         valor: "7",
         descricao: "Aguardando conclusão",
-        icone: ClipboardList,
-        variacao: "3 prioritários",
-        positivo: false
-    },
-    {
-        titulo: "Fornecedores Ativos",
-        valor: "12",
-        descricao: "Cadastrados no sistema",
-        icone: Truck,
-        variacao: "Todos cadastrados",
-        positivo: true
+        icone: ClipboardList
     }
 ];
 
@@ -95,17 +82,18 @@ const atalhos = [
 
 export const MainPage = () => {
     const navegar = useNavigate();
+    const { pathname } = useLocation();
+
+    useEffect(() => {
+        window.scrollTo(0, 0);
+    }, [pathname]);
 
     return (
         <div className="min-h-screen bg-[#f3f1eb] text-[#35342f]">
-
             <Sidebar />
 
             <div className="min-h-screen lg:ml-60">
-
-                {/* Cabeçalho */}
                 <header className="sticky top-0 z-30 flex h-24 items-center justify-between border-b border-[#e3dcc9] bg-[#faf9f5]/95 px-4 backdrop-blur-sm sm:px-6 lg:px-8">
-
                     <div className="flex items-center gap-3">
                         <button
                             className="text-[#98700a] lg:hidden"
@@ -127,24 +115,17 @@ export const MainPage = () => {
                             </p>
                         </div>
                     </div>
-
                 </header>
 
                 <main className="space-y-6 p-4 sm:p-6 lg:p-8">
-
-                    {/* Indicadores */}
                     <section>
                         <div className="mb-4 flex items-center justify-between gap-3">
                             <h2 className="text-lg font-medium text-[#78601e]">
                                 Resumo da loja
                             </h2>
-
-                            <span className="text-xs text-[#918d83]">
-                                Dados demonstrativos
-                            </span>
                         </div>
 
-                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
                             {indicadores.map((item) => {
                                 const Icone = item.icone;
 
@@ -158,13 +139,15 @@ export const MainPage = () => {
                                                 {item.titulo}
                                             </p>
 
-                                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#f5edda]">
-                                                <Icone
-                                                    size={21}
-                                                    className="text-[#a77b08]"
-                                                    strokeWidth={1.7}
-                                                />
-                                            </div>
+                                            {Icone && (
+                                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#f5edda]">
+                                                    <Icone
+                                                        size={21}
+                                                        className="text-[#a77b08]"
+                                                        strokeWidth={1.7}
+                                                    />
+                                                </div>
+                                            )}
                                         </div>
 
                                         <p className="mt-5 break-words text-2xl font-semibold text-[#8b690e]">
@@ -175,35 +158,33 @@ export const MainPage = () => {
                                             {item.descricao}
                                         </p>
 
-                                        <div className="mt-4 flex items-center gap-1 border-t border-[#eee7d7] pt-3 text-xs">
-                                            {item.positivo ? (
-                                                <ArrowUpRight
-                                                    size={15}
-                                                    className="text-emerald-600"
-                                                />
-                                            ) : (
-                                                <AlertTriangle
-                                                    size={14}
-                                                    className="text-amber-600"
-                                                />
-                                            )}
+                                        {item.variacao && (
+                                            <div className="mt-4 flex items-center gap-1 border-t border-[#eee7d7] pt-3 text-xs">
+                                                {item.positivo ? (
+                                                    <ArrowUpRight
+                                                        size={15}
+                                                        className="text-emerald-600"
+                                                    />
+                                                ) : (
+                                                    <AlertTriangle
+                                                        size={14}
+                                                        className="text-amber-600"
+                                                    />
+                                                )}
 
-                                            <span className="text-[#77746b]">
-                                                {item.variacao}
-                                            </span>
-                                        </div>
+                                                <span className="text-[#77746b]">
+                                                    {item.variacao}
+                                                </span>
+                                            </div>
+                                        )}
                                     </div>
                                 );
                             })}
                         </div>
                     </section>
 
-                    {/* Vendas e estoque */}
                     <section className="grid grid-cols-1 gap-5 xl:grid-cols-5">
-
-                        {/* Vendas recentes */}
                         <div className="overflow-hidden rounded-xl border border-[#e6dfcd] bg-[#fffefa] shadow-sm xl:col-span-3">
-
                             <div className="flex items-center justify-between border-b border-[#eee7d7] p-5">
                                 <div className="flex items-center gap-2">
                                     <ShoppingCart
@@ -238,7 +219,7 @@ export const MainPage = () => {
                                     </thead>
 
                                     <tbody>
-                                        {vendasRecentes.map((venda, index) => (
+                                        {vendasRecentes.slice(0, 5).map((venda, index) => (
                                             <tr
                                                 key={venda.id}
                                                 className={`border-t border-[#eeeae0] text-[#5f5c54] transition-colors hover:bg-[#f8f5ed] ${
@@ -277,21 +258,9 @@ export const MainPage = () => {
                                     </tbody>
                                 </table>
                             </div>
-
-                            <div className="border-t border-[#eee7d7] p-4">
-                                <button
-                                    onClick={() => navegar("/Vendas")}
-                                    className="flex items-center gap-2 text-sm text-[#817d72] transition hover:text-[#98700a]"
-                                >
-                                    <Eye size={16} />
-                                    Consultar movimentações
-                                </button>
-                            </div>
                         </div>
 
-                        {/* Estoque baixo */}
                         <div className="overflow-hidden rounded-xl border border-[#e6dfcd] bg-[#fffefa] shadow-sm xl:col-span-2">
-
                             <div className="flex items-center justify-between border-b border-[#eee7d7] p-5">
                                 <div className="flex items-center gap-2">
                                     <AlertTriangle
@@ -349,18 +318,10 @@ export const MainPage = () => {
                                     </div>
                                 ))}
                             </div>
-
-                            <div className="border-t border-[#eee7d7] bg-[#faf8f1] p-4">
-                                <p className="text-xs text-[#817d72]">
-                                    Produtos que precisam de reposição.
-                                </p>
-                            </div>
                         </div>
                     </section>
 
-                    {/* Acesso rápido */}
                     <section className="rounded-xl border border-[#e6dfcd] bg-[#faf9f5] p-5 shadow-sm sm:p-6">
-
                         <div className="mb-5 flex items-center gap-2">
                             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#f1e8d1]">
                                 <Zap
@@ -410,7 +371,6 @@ export const MainPage = () => {
                             })}
                         </div>
                     </section>
-
                 </main>
             </div>
         </div>
