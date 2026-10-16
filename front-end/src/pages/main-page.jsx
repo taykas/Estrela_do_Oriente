@@ -114,7 +114,16 @@ export const MainPage = () => {
                                 Gerenciamento da loja
                             </p>
                         </div>
+
                     </div>
+                        <div className="hidden border-l border-[#e3dcc9] pl-4 sm:block">
+                            <p className="text-sm text-[#89670d]">
+                                Estrela do Oriente
+                            </p>
+                            <p className="text-xs text-[#918d83]">
+                                {new Date().toLocaleDateString("pt-BR")}
+                            </p>
+                        </div>
                 </header>
 
                 <main className="space-y-6 p-4 sm:p-6 lg:p-8">

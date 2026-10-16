@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import Sidebar from "../components/Sidebar";
 import {
@@ -48,6 +49,7 @@ const vendasIniciais = [
             { id: 11, nome: "Vela Aromática", quantidade: 1, preco: 16.90 }
         ],
         pagamento: "Pix",
+        crediario: false,
         desconto: 0,
         status: "Concluída"
     },
@@ -60,6 +62,7 @@ const vendasIniciais = [
             { id: 3, nome: "Patuá", quantidade: 1, preco: 24.90 }
         ],
         pagamento: "Dinheiro",
+        crediario: false,
         desconto: 0,
         status: "Concluída"
     },
@@ -71,6 +74,7 @@ const vendasIniciais = [
             { id: 2, nome: "Vela de 7 Dias", quantidade: 2, preco: 18.90 }
         ],
         pagamento: "Cartão de débito",
+        crediario: false,
         desconto: 0,
         status: "Concluída"
     },
@@ -82,6 +86,7 @@ const vendasIniciais = [
             { id: 12, nome: "Incenso de Mirra", quantidade: 3, preco: 11.90 }
         ],
         pagamento: "Pix",
+        crediario: false,
         desconto: 0,
         status: "Cancelada"
     },
@@ -94,6 +99,7 @@ const vendasIniciais = [
             { id: 5, nome: "Óleo de Unção", quantidade: 1, preco: 15.90 }
         ],
         pagamento: "Cartão de crédito",
+        crediario: false,
         desconto: 0,
         status: "Concluída"
     }
@@ -127,6 +133,9 @@ const subtotalVenda = (venda) =>
 const totalVenda = (venda) =>
     subtotalVenda(venda) * (1 - (venda.desconto || 0) / 100);
 
+const ehCrediario = (venda) =>
+    venda.crediario === true || venda.pagamento === "Crediário";
+
 const campoClasse =
     "w-full rounded-lg border border-[#e6dfcd] bg-[#faf9f5] px-3 py-2.5 text-sm text-[#45433d] outline-none transition placeholder:text-[#918d83] focus:border-[#b18a20]";
 
@@ -149,6 +158,7 @@ export const Vendas = () => {
     const [carrinho, setCarrinho] = useState([]);
     const [cliente, setCliente] = useState("");
     const [pagamento, setPagamento] = useState("Pix");
+    const [crediario, setCrediario] = useState(false);
     const [desconto, setDesconto] = useState("0");
 
     const [mensagem, setMensagem] = useState("");
@@ -171,7 +181,9 @@ export const Vendas = () => {
 
         const correspondePagamento =
             filtroPagamento === "Todos" ||
-            venda.pagamento === filtroPagamento;
+            (filtroPagamento === "Crediário"
+                ? ehCrediario(venda)
+                : venda.pagamento === filtroPagamento);
 
         return correspondeBusca && correspondeStatus && correspondePagamento;
     });
@@ -246,6 +258,7 @@ export const Vendas = () => {
         setCarrinho([]);
         setCliente("");
         setPagamento("Pix");
+        setCrediario(false);
         setDesconto("0");
         setBuscaProduto("");
         setMensagem("");
@@ -263,6 +276,16 @@ export const Vendas = () => {
         setModalAberto(false);
         setVendaSelecionada(null);
         setMensagem("");
+    };
+
+    const alterarCrediario = (marcado) => {
+        setCrediario(marcado);
+        setPagamento(marcado ? "Crediário" : pagamento === "Crediário" ? "Pix" : pagamento);
+    };
+
+    const alterarPagamento = (forma) => {
+        setPagamento(forma);
+        setCrediario(forma === "Crediário");
     };
 
     const adicionarProduto = (produto) => {
@@ -380,6 +403,7 @@ export const Vendas = () => {
                 quantidade
             })),
             pagamento,
+            crediario,
             desconto: descontoNumerico,
             status: "Concluída"
         };
@@ -405,6 +429,8 @@ export const Vendas = () => {
 
         setCarrinho([]);
         setCliente("");
+        setPagamento("Pix");
+        setCrediario(false);
         setDesconto("0");
 
         mostrarMensagem("Venda registrada com sucesso!", "sucesso");
@@ -443,6 +469,7 @@ export const Vendas = () => {
     ];
 
     return (
+        
         <div className="min-h-screen bg-[#f3f1eb] text-[#35342f]">
             <Sidebar />
 
@@ -464,7 +491,6 @@ export const Vendas = () => {
                             >
                                 Vendas
                             </h2>
-
                             <p className="hidden text-xs text-[#89867d] sm:block">
                                 Gerenciamento da loja
                             </p>
@@ -484,13 +510,6 @@ export const Vendas = () => {
                                 className="w-36 bg-transparent text-sm text-[#45433d] outline-none placeholder:text-[#918d83] lg:w-48"
                             />
                         </div>
-
-                        <button
-                            aria-label="Notificações"
-                            className="text-[#98700a] transition hover:text-[#6f5200]"
-                        >
-                            <Bell size={21} />
-                        </button>
 
                         <div className="hidden border-l border-[#e3dcc9] pl-4 sm:block">
                             <p className="text-sm text-[#89670d]">
@@ -530,7 +549,6 @@ export const Vendas = () => {
                             <h2 className="text-lg font-medium text-[#78601e]">
                                 Indicadores
                             </h2>
-
                             <span className="text-xs text-[#918d83]">
                                 Dados demonstrativos
                             </span>
@@ -549,7 +567,6 @@ export const Vendas = () => {
                                             <p className="text-sm text-[#77746b]">
                                                 {item.titulo}
                                             </p>
-
                                             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#f5edda]">
                                                 <Icone
                                                     size={21}
@@ -579,10 +596,7 @@ export const Vendas = () => {
                         <div className={`${cardClasse} overflow-hidden xl:col-span-3`}>
                             <div className="flex items-center justify-between border-b border-[#eee7d7] p-5">
                                 <div className="flex items-center gap-2">
-                                    <ChartNoAxesCombined
-                                        size={20}
-                                        className="text-[#a77b08]"
-                                    />
+                                    <ChartNoAxesCombined size={20} className="text-[#a77b08]" />
                                     <h2 className="text-lg font-medium text-[#78601e]">
                                         Resumo financeiro
                                     </h2>
@@ -593,7 +607,6 @@ export const Vendas = () => {
                                 <p className="text-sm text-[#77746b]">
                                     Faturamento acumulado
                                 </p>
-
                                 <p className="mt-2 text-3xl font-semibold text-[#8b690e]">
                                     {moeda(faturamentoTotal)}
                                 </p>
@@ -632,10 +645,7 @@ export const Vendas = () => {
                         <div className={`${cardClasse} overflow-hidden xl:col-span-2`}>
                             <div className="flex items-center justify-between border-b border-[#eee7d7] p-5">
                                 <div className="flex items-center gap-2">
-                                    <CalendarDays
-                                        size={20}
-                                        className="text-[#a77b08]"
-                                    />
+                                    <CalendarDays size={20} className="text-[#a77b08]" />
                                     <h2 className="text-lg font-medium text-[#78601e]">
                                         Vendas recentes
                                     </h2>
@@ -650,10 +660,7 @@ export const Vendas = () => {
                                     >
                                         <div className="flex min-w-0 items-center gap-3">
                                             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-[#e9dfc4] bg-[#f6f0e1]">
-                                                <ShoppingCart
-                                                    size={18}
-                                                    className="text-[#a77b08]"
-                                                />
+                                                <ShoppingCart size={18} className="text-[#a77b08]" />
                                             </div>
 
                                             <div className="min-w-0">
@@ -696,11 +703,7 @@ export const Vendas = () => {
                     <section className={`${cardClasse} overflow-hidden`}>
                         <div className="flex items-center justify-between border-b border-[#eee7d7] p-5">
                             <div className="flex items-center gap-2">
-                                <ReceiptText
-                                    size={20}
-                                    className="text-[#a77b08]"
-                                />
-
+                                <ReceiptText size={20} className="text-[#a77b08]" />
                                 <div>
                                     <h2 className="text-lg font-medium text-[#78601e]">
                                         Histórico de vendas
@@ -715,10 +718,7 @@ export const Vendas = () => {
                         {/* Filtros */}
                         <div className="grid grid-cols-1 gap-3 p-4 md:grid-cols-3">
                             <div className="flex items-center gap-2 rounded-lg border border-[#e6dfcd] bg-[#faf9f5] px-3 py-2.5">
-                                <Search
-                                    size={17}
-                                    className="shrink-0 text-[#918d83]"
-                                />
+                                <Search size={17} className="shrink-0 text-[#918d83]" />
                                 <input
                                     value={busca}
                                     onChange={(e) => {
@@ -756,12 +756,13 @@ export const Vendas = () => {
                                 <option value="Dinheiro">Dinheiro</option>
                                 <option value="Cartão de débito">Cartão de débito</option>
                                 <option value="Cartão de crédito">Cartão de crédito</option>
+                                <option value="Crediário">Crediário</option>
                             </select>
                         </div>
 
                         {/* Tabela */}
                         <div className="overflow-x-auto px-4">
-                            <table className="w-full min-w-[850px] text-left text-sm">
+                            <table className="w-full min-w-[950px] text-left text-sm">
                                 <thead>
                                     <tr className="bg-[#f5f1e7] text-xs text-[#81734e]">
                                         <th className="px-4 py-3 font-medium">Venda</th>
@@ -769,6 +770,7 @@ export const Vendas = () => {
                                         <th className="px-4 py-3 font-medium">Data</th>
                                         <th className="px-4 py-3 font-medium">Itens</th>
                                         <th className="px-4 py-3 font-medium">Pagamento</th>
+                                        <th className="px-4 py-3 font-medium">Crediário</th>
                                         <th className="px-4 py-3 font-medium">Total</th>
                                         <th className="px-4 py-3 font-medium">Status</th>
                                         <th className="px-4 py-3 text-center font-medium">Ações</th>
@@ -786,30 +788,35 @@ export const Vendas = () => {
                                             <td className="whitespace-nowrap px-4 py-4 font-medium text-[#98700a]">
                                                 #{venda.id}
                                             </td>
-
                                             <td className="whitespace-nowrap px-4 py-4 text-[#45433d]">
                                                 {venda.cliente}
                                             </td>
-
                                             <td className="whitespace-nowrap px-4 py-4">
                                                 {formatarData(venda.data)}
                                             </td>
-
                                             <td className="px-4 py-4">
                                                 {venda.itens.reduce(
                                                     (total, item) => total + item.quantidade,
                                                     0
                                                 )}
                                             </td>
-
                                             <td className="whitespace-nowrap px-4 py-4">
                                                 {venda.pagamento}
                                             </td>
-
+                                            <td className="px-4 py-4">
+                                                <span
+                                                    className={`whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium ${
+                                                        ehCrediario(venda)
+                                                            ? "bg-amber-100 text-amber-800"
+                                                            : "bg-stone-100 text-stone-600"
+                                                    }`}
+                                                >
+                                                    {ehCrediario(venda) ? "Sim" : "Não"}
+                                                </span>
+                                            </td>
                                             <td className="whitespace-nowrap px-4 py-4 font-medium text-[#45433d]">
                                                 {moeda(totalVenda(venda))}
                                             </td>
-
                                             <td className="px-4 py-4">
                                                 <span
                                                     className={`whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium ${
@@ -821,7 +828,6 @@ export const Vendas = () => {
                                                     {venda.status}
                                                 </span>
                                             </td>
-
                                             <td className="px-4 py-4">
                                                 <div className="flex items-center justify-center">
                                                     <button
@@ -839,7 +845,7 @@ export const Vendas = () => {
                                     {vendasPagina.length === 0 && (
                                         <tr>
                                             <td
-                                                colSpan={8}
+                                                colSpan={9}
                                                 className="px-4 py-12 text-center text-[#918d83]"
                                             >
                                                 Nenhuma venda encontrada.
@@ -889,7 +895,8 @@ export const Vendas = () => {
                 </main>
             </div>
 
-            {/* Modal */}
+            {/* O modal continua na Parte 3 */}
+            
             {modalAberto && (
                 <div
                     className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-[#35342f]/40 p-4 backdrop-blur-sm"
@@ -926,7 +933,7 @@ export const Vendas = () => {
                         {/* Detalhes de uma venda existente */}
                         {vendaSelecionada ? (
                             <div className="space-y-5 p-5">
-                                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
                                     <div className="rounded-lg border border-[#e6dfcd] bg-[#faf9f5] p-4">
                                         <p className="text-xs text-[#918d83]">Cliente</p>
                                         <p className="mt-2 font-medium text-[#45433d]">
@@ -945,6 +952,19 @@ export const Vendas = () => {
                                         <p className="text-xs text-[#918d83]">Pagamento</p>
                                         <p className="mt-2 font-medium text-[#45433d]">
                                             {vendaSelecionada.pagamento}
+                                        </p>
+                                    </div>
+
+                                    <div className="rounded-lg border border-[#e6dfcd] bg-[#faf9f5] p-4">
+                                        <p className="text-xs text-[#918d83]">Venda no crediário?</p>
+                                        <p
+                                            className={`mt-2 font-medium ${
+                                                ehCrediario(vendaSelecionada)
+                                                    ? "text-amber-700"
+                                                    : "text-[#45433d]"
+                                            }`}
+                                        >
+                                            {ehCrediario(vendaSelecionada) ? "Sim" : "Não"}
                                         </p>
                                     </div>
                                 </div>
@@ -1075,10 +1095,7 @@ export const Vendas = () => {
                                                 >
                                                     <div className="flex min-w-0 items-center gap-3">
                                                         <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-[#e9dfc4] bg-[#f6f0e1]">
-                                                            <Package
-                                                                size={19}
-                                                                className="text-[#a77b08]"
-                                                            />
+                                                            <Package size={19} className="text-[#a77b08]" />
                                                         </div>
 
                                                         <div className="min-w-0">
@@ -1128,10 +1145,7 @@ export const Vendas = () => {
                                         <div className="mb-4 flex items-center justify-between">
                                             <div className="flex items-center gap-2">
                                                 <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#f1e8d1]">
-                                                    <ShoppingCart
-                                                        size={19}
-                                                        className="text-[#98700a]"
-                                                    />
+                                                    <ShoppingCart size={19} className="text-[#98700a]" />
                                                 </div>
 
                                                 <h3 className="font-medium text-[#78601e]">
@@ -1201,10 +1215,7 @@ export const Vendas = () => {
 
                                             {carrinho.length === 0 && (
                                                 <div className="rounded-lg border border-dashed border-[#d8cfba] py-10 text-center">
-                                                    <ShoppingCart
-                                                        size={28}
-                                                        className="mx-auto text-[#c4b99e]"
-                                                    />
+                                                    <ShoppingCart size={28} className="mx-auto text-[#c4b99e]" />
 
                                                     <p className="mt-3 text-sm text-[#77746b]">
                                                         Seu carrinho está vazio.
@@ -1218,19 +1229,36 @@ export const Vendas = () => {
                                         </div>
 
                                         <div className="mt-4 border-t border-[#e6dfcd] pt-4">
+                                            {/* Checkbox de crediário */}
+                                            <label className="mb-4 flex cursor-pointer items-start gap-3 rounded-lg border border-[#e6dfcd] bg-[#fffefa] p-3 transition hover:border-[#d4b65e]">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={crediario}
+                                                    onChange={(e) => alterarCrediario(e.target.checked)}
+                                                    className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer accent-[#98700a]"
+                                                />
+
+                                                <span>
+                                                    <span className="block text-sm font-medium text-[#45433d]">
+                                                        Venda no crediário?
+                                                    </span>
+                                                </span>
+                                            </label>
+
                                             <label className="mb-2 block text-sm font-medium text-[#68645b]">
                                                 Forma de pagamento
                                             </label>
 
                                             <select
                                                 value={pagamento}
-                                                onChange={(e) => setPagamento(e.target.value)}
+                                                onChange={(e) => alterarPagamento(e.target.value)}
                                                 className={campoClasse}
                                             >
                                                 <option value="Pix">Pix</option>
                                                 <option value="Dinheiro">Dinheiro</option>
                                                 <option value="Cartão de débito">Cartão de débito</option>
                                                 <option value="Cartão de crédito">Cartão de crédito</option>
+                                                <option value="Crediário">Crediário</option>
                                             </select>
 
                                             <label className="mb-2 mt-4 block text-sm font-medium text-[#68645b]">
@@ -1281,15 +1309,9 @@ export const Vendas = () => {
                                             }`}
                                         >
                                             {tipoMensagem === "sucesso" ? (
-                                                <CheckCircle2
-                                                    size={18}
-                                                    className="mt-0.5 shrink-0"
-                                                />
+                                                <CheckCircle2 size={18} className="mt-0.5 shrink-0" />
                                             ) : (
-                                                <CircleAlert
-                                                    size={18}
-                                                    className="mt-0.5 shrink-0"
-                                                />
+                                                <CircleAlert size={18} className="mt-0.5 shrink-0" />
                                             )}
 
                                             <p>{mensagem}</p>
@@ -1325,3 +1347,4 @@ export const Vendas = () => {
 };
 
 export default Vendas;
+

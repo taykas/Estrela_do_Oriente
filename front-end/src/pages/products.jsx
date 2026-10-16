@@ -345,6 +345,14 @@ export const ProdutosPage = () => {
                             </p>
                         </div>
                     </div>
+                    <div className="hidden border-l border-[#e3dcc9] pl-4 sm:block">
+                        <p className="text-sm text-[#89670d]">
+                            Estrela do Oriente
+                        </p>
+                        <p className="text-xs text-[#918d83]">
+                            {new Date().toLocaleDateString("pt-BR")}
+                        </p>
+                    </div>
                 </header>
 
                 <main className="space-y-6 p-4 sm:p-6 lg:p-8">
@@ -724,10 +732,6 @@ export const ProdutosPage = () => {
                         <div className="flex flex-col gap-2 border-t border-[#eee7d7] bg-[#faf9f5] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
                             <p className="text-xs text-[#918d83]">
                                 Exibindo {produtosFiltrados.length} de {produtos.length} produtos
-                            </p>
-
-                            <p className="text-xs text-[#918d83]">
-                                Dados demonstrativos
                             </p>
                         </div>
                     </section>

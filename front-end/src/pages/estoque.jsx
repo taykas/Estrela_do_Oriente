@@ -25,18 +25,6 @@ import {
     ChevronRight
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import estrela from "../assets/icon estrela.png";
-
-const menuItems = [
-    { nome: "Início", icone: Home, rota: "/" },
-    { nome: "Produtos", icone: Package, rota: "/produtos" },
-    { nome: "Estoque", icone: Warehouse, rota: "/estoque" },
-    { nome: "Vendas", icone: ShoppingCart, rota: "/vendas" },
-    { nome: "Pedidos", icone: ClipboardList, rota: "/pedidos" },
-    { nome: "Fornecedores", icone: Truck, rota: "/fornecedores" },
-    { nome: "Relatórios", icone: ChartNoAxesCombined, rota: "/relatorios" },
-    { nome: "Configurações", icone: Settings, rota: "/configuracoes" }
-];
 
 const produtosIniciais = [
     { id: 1, nome: "Incenso Natural", categoria: "Incensos", quantidade: 3, minimo: 10, preco: 12.90 },
@@ -64,7 +52,7 @@ const categorias = [
 ];
 
 const moeda = (valor) =>
-    valor.toLocaleString("pt-BR", {
+    Number(valor || 0).toLocaleString("pt-BR", {
         style: "currency",
         currency: "BRL"
     });
@@ -75,6 +63,24 @@ const obterStatus = (produto) => {
     return "Normal";
 };
 
+const classeStatus = (status) => {
+    if (status === "Normal") {
+        return "border-[#b9d9c5] bg-[#edf7f0] text-[#32734a]";
+    }
+
+    if (status === "Sem estoque") {
+        return "border-[#e6c8c3] bg-[#fdf0ed] text-[#b34b40]";
+    }
+
+    return "border-[#e6d5a5] bg-[#fbf4df] text-[#89670d]";
+};
+
+const campoClasse =
+    "w-full rounded-md border border-[#e3dcc9] bg-[#faf9f5] px-3 py-3 text-sm text-[#45433d] outline-none transition placeholder:text-[#918d83] focus:border-[#b18a20]";
+
+const botaoSecundario =
+    "rounded-md border border-[#e3dcc9] px-4 py-2 text-sm text-[#68645b] transition hover:bg-[#f5f1e7]";
+
 export const Estoque = () => {
     const navegar = useNavigate();
 
@@ -83,15 +89,19 @@ export const Estoque = () => {
     const [categoriaSelecionada, setCategoriaSelecionada] = useState("Todas");
     const [statusSelecionado, setStatusSelecionado] = useState("Todos");
     const [pagina, setPagina] = useState(1);
-    const [produtoSelecionado, setProdutoSelecionado] = useState(null);
-    const [quantidadeEntrada, setQuantidadeEntrada] = useState("");
-    const [quantidadeSaida, setQuantidadeSaida] = useState("");
+
+    const [movimentacao, setMovimentacao] = useState(null);
+    const [buscaCatalogo, setBuscaCatalogo] = useState("");
+    const [categoriaCatalogo, setCategoriaCatalogo] = useState("Todas");
+    const [itensMovimentacao, setItensMovimentacao] = useState([]);
     const [mensagem, setMensagem] = useState("");
+
+    const [produtoDetalhes, setProdutoDetalhes] = useState(null);
 
     const porPagina = 10;
 
     const produtosFiltrados = produtos.filter((produto) => {
-        const termo = busca.toLowerCase();
+        const termo = busca.toLowerCase().trim();
 
         const correspondeBusca =
             produto.nome.toLowerCase().includes(termo) ||
@@ -106,7 +116,11 @@ export const Estoque = () => {
             statusSelecionado === "Todos" ||
             obterStatus(produto) === statusSelecionado;
 
-        return correspondeBusca && correspondeCategoria && correspondeStatus;
+        return (
+            correspondeBusca &&
+            correspondeCategoria &&
+            correspondeStatus
+        );
     });
 
     const totalPaginas = Math.max(
@@ -114,15 +128,18 @@ export const Estoque = () => {
         Math.ceil(produtosFiltrados.length / porPagina)
     );
 
+    const paginaAtual = Math.min(pagina, totalPaginas);
+
     const produtosPagina = produtosFiltrados.slice(
-        (pagina - 1) * porPagina,
-        pagina * porPagina
+        (paginaAtual - 1) * porPagina,
+        paginaAtual * porPagina
     );
 
     const totalProdutos = produtos.length;
 
     const valorEstoque = produtos.reduce(
-        (total, produto) => total + produto.quantidade * produto.preco,
+        (total, produto) =>
+            total + produto.quantidade * produto.preco,
         0
     );
 
@@ -139,77 +156,10 @@ export const Estoque = () => {
     const quantidadePorCategoria = (categoria) =>
         produtos
             .filter((produto) => produto.categoria === categoria)
-            .reduce((total, produto) => total + produto.quantidade, 0);
-
-    const abrirMovimentacao = (tipo, produto = null) => {
-        setMensagem("");
-        setQuantidadeEntrada("");
-        setQuantidadeSaida("");
-
-        setProdutoSelecionado(
-            produto
-                ? { ...produto, tipo }
-                : { id: null, tipo }
-        );
-    };
-
-    const fecharModal = () => {
-        setProdutoSelecionado(null);
-        setMensagem("");
-        setQuantidadeEntrada("");
-        setQuantidadeSaida("");
-    };
-
-    const registrarMovimentacao = (tipo) => {
-        const quantidade = Number(
-            tipo === "entrada" ? quantidadeEntrada : quantidadeSaida
-        );
-
-        if (
-            !produtoSelecionado ||
-            produtoSelecionado.id === null ||
-            !Number.isInteger(quantidade) ||
-            quantidade <= 0
-        ) {
-            setMensagem("Informe uma quantidade inteira maior que zero.");
-            return;
-        }
-
-        const produtoAtual = produtos.find(
-            (produto) => produto.id === produtoSelecionado.id
-        );
-
-        if (!produtoAtual) {
-            setMensagem("Produto não encontrado.");
-            return;
-        }
-
-        if (tipo === "saida" && quantidade > produtoAtual.quantidade) {
-            setMensagem("A quantidade de saída é maior que o estoque disponível.");
-            return;
-        }
-
-        setProdutos((atuais) =>
-            atuais.map((produto) =>
-                produto.id === produtoAtual.id
-                    ? {
-                        ...produto,
-                        quantidade:
-                            produto.quantidade +
-                            (tipo === "entrada" ? quantidade : -quantidade)
-                    }
-                    : produto
-            )
-        );
-
-        setMensagem(
-            `${tipo === "entrada" ? "Entrada" : "Saída"} de ${quantidade} unidade(s) registrada com sucesso.`
-        );
-
-        setProdutoSelecionado(null);
-        setQuantidadeEntrada("");
-        setQuantidadeSaida("");
-    };
+            .reduce(
+                (total, produto) => total + produto.quantidade,
+                0
+            );
 
     const indicadores = [
         {
@@ -238,13 +188,234 @@ export const Estoque = () => {
         }
     ];
 
-    const campoClasse =
-        "w-full rounded-md border border-[#e3dcc9] bg-[#faf9f5] px-3 py-3 text-sm text-[#45433d] outline-none transition placeholder:text-[#918d83] focus:border-[#b18a20]";
+    // Abre o catálogo para entrada ou saída.
+    const abrirMovimentacao = (tipo, produto = null) => {
+        setMensagem("");
+        setBuscaCatalogo("");
+        setCategoriaCatalogo("Todas");
 
-    const botaoSecundario =
-        "rounded-md border border-[#e3dcc9] px-4 py-2 text-sm text-[#68645b] transition hover:bg-[#f5f1e7]";
+        setItensMovimentacao(
+            produto
+                ? [{
+                    ...produto,
+                    quantidadeMovimentacao: 1
+                }]
+                : []
+        );
 
-    return (
+        setMovimentacao({ tipo });
+    };
+
+    const fecharMovimentacao = () => {
+        setMovimentacao(null);
+        setItensMovimentacao([]);
+        setMensagem("");
+        setBuscaCatalogo("");
+        setCategoriaCatalogo("Todas");
+    };
+
+    // Adiciona vários produtos à mesma movimentação.
+    const adicionarItem = (produto) => {
+        if (
+            movimentacao?.tipo === "saida" &&
+            produto.quantidade === 0
+        ) {
+            setMensagem(
+                `${produto.nome} não possui estoque disponível.`
+            );
+            return;
+        }
+
+        setMensagem("");
+
+        setItensMovimentacao((atuais) => {
+            const existente = atuais.find(
+                (item) => item.id === produto.id
+            );
+
+            if (existente) {
+                return atuais.map((item) => {
+                    if (item.id !== produto.id) return item;
+
+                    const novaQuantidade =
+                        Number(item.quantidadeMovimentacao) + 1;
+
+                    return {
+                        ...item,
+                        quantidadeMovimentacao:
+                            movimentacao?.tipo === "saida"
+                                ? Math.min(
+                                    novaQuantidade,
+                                    produto.quantidade
+                                )
+                                : novaQuantidade
+                    };
+                });
+            }
+
+            return [
+                ...atuais,
+                {
+                    ...produto,
+                    quantidadeMovimentacao: 1
+                }
+            ];
+        });
+    };
+
+    const alterarQuantidadeItem = (id, valor) => {
+        setMensagem("");
+
+        setItensMovimentacao((atuais) =>
+            atuais.map((item) => {
+                if (item.id !== id) return item;
+
+                if (valor === "") {
+                    return {
+                        ...item,
+                        quantidadeMovimentacao: ""
+                    };
+                }
+
+                const numero = Number(valor);
+
+                return {
+                    ...item,
+                    quantidadeMovimentacao:
+                        movimentacao?.tipo === "saida"
+                            ? Math.min(numero, item.quantidade)
+                            : numero
+                };
+            })
+        );
+    };
+
+    const removerItem = (id) => {
+        setItensMovimentacao((atuais) =>
+            atuais.filter((item) => item.id !== id)
+        );
+
+        setMensagem("");
+    };
+
+    const produtosCatalogo = produtos.filter((produto) => {
+        const termo = buscaCatalogo.toLowerCase().trim();
+
+        const correspondeBusca =
+            produto.nome.toLowerCase().includes(termo) ||
+            produto.categoria.toLowerCase().includes(termo) ||
+            String(produto.id).includes(termo);
+
+        const correspondeCategoria =
+            categoriaCatalogo === "Todas" ||
+            produto.categoria === categoriaCatalogo;
+
+        const jaAdicionado = itensMovimentacao.some(
+            (item) => item.id === produto.id
+        );
+
+        const disponivelParaSaida =
+            movimentacao?.tipo !== "saida" ||
+            produto.quantidade > 0;
+
+        return (
+            correspondeBusca &&
+            correspondeCategoria &&
+            !jaAdicionado &&
+            disponivelParaSaida
+        );
+    });
+
+    const quantidadeTotalMovimentacao =
+        itensMovimentacao.reduce(
+            (total, item) =>
+                total +
+                (Number(item.quantidadeMovimentacao) || 0),
+            0
+        );
+
+    const valorTotalMovimentacao =
+        itensMovimentacao.reduce(
+            (total, item) =>
+                total +
+                item.preco *
+                    (Number(item.quantidadeMovimentacao) || 0),
+            0
+        );
+
+    // Valida todos os itens antes de alterar qualquer estoque.
+    const registrarMovimentacao = () => {
+        if (itensMovimentacao.length === 0) {
+            setMensagem(
+                "Adicione pelo menos um produto à movimentação."
+            );
+            return;
+        }
+
+        for (const item of itensMovimentacao) {
+            const quantidade = Number(
+                item.quantidadeMovimentacao
+            );
+
+            if (
+                !Number.isInteger(quantidade) ||
+                quantidade <= 0
+            ) {
+                setMensagem(
+                    `Informe uma quantidade inteira válida para ${item.nome}.`
+                );
+                return;
+            }
+
+            const produtoAtual = produtos.find(
+                (produto) => produto.id === item.id
+            );
+
+            if (!produtoAtual) {
+                setMensagem(
+                    `O produto ${item.nome} não foi encontrado.`
+                );
+                return;
+            }
+
+            if (
+                movimentacao.tipo === "saida" &&
+                quantidade > produtoAtual.quantidade
+            ) {
+                setMensagem(
+                    `Estoque insuficiente para ${item.nome}. Disponível: ${produtoAtual.quantidade} unidade(s).`
+                );
+                return;
+            }
+        }
+
+        setProdutos((atuais) =>
+            atuais.map((produto) => {
+                const item = itensMovimentacao.find(
+                    (selecionado) =>
+                        selecionado.id === produto.id
+                );
+
+                if (!item) return produto;
+
+                const quantidade = Number(
+                    item.quantidadeMovimentacao
+                );
+
+                return {
+                    ...produto,
+                    quantidade:
+                        produto.quantidade +
+                        (movimentacao.tipo === "entrada"
+                            ? quantidade
+                            : -quantidade)
+                };
+            })
+        );
+
+        fecharMovimentacao();
+    };
+        return (
         <div className="min-h-screen bg-[#f3f1eb] text-[#35342f]">
             <Sidebar />
 
@@ -257,15 +428,24 @@ export const Estoque = () => {
                         >
                             <Menu size={25} />
                         </button>
-
-                        <div>
+                        <div className="flex flex-col justify-center gap-1">
                             <h2
-                                className="text-xl text-[#89670d] sm:text-2xl"
-                                style={{ fontFamily: "Corvel" }}
+                                className="m-0 text-xl text-[#89670d] sm:text-2xl"
+                                style={{
+                                    fontFamily: "Corvel",
+                                    fontWeight: "normal",
+                                    fontSize: "26px",
+                                    lineHeight: "1.6",
+                                    letterSpacing: "1px",
+                                    wordSpacing: "2px",
+                                    padding: "4px 2px 6px",
+                                    display: "block"
+                                }}
                             >
                                 Estoque
                             </h2>
-                            <p className="text-xs text-[#77746b]">
+
+                            <p className="m-0 text-xs leading-5 text-[#77746b]">
                                 Controle de produtos e inventário
                             </p>
                         </div>
@@ -273,7 +453,10 @@ export const Estoque = () => {
 
                     <div className="flex items-center gap-3 sm:gap-4">
                         <div className="hidden items-center gap-2 rounded-md border border-[#e3dcc9] bg-[#fffefa] px-3 py-2 sm:flex">
-                            <Search size={17} className="text-[#918d83]" />
+                            <Search
+                                size={17}
+                                className="text-[#918d83]"
+                            />
                             <input
                                 value={busca}
                                 onChange={(e) => {
@@ -284,13 +467,6 @@ export const Estoque = () => {
                                 className="w-36 bg-transparent text-sm text-[#45433d] outline-none placeholder:text-[#918d83] lg:w-48"
                             />
                         </div>
-
-                        <button
-                            aria-label="Notificações"
-                            className="text-[#98700a] transition hover:text-[#6e5208]"
-                        >
-                            <Bell size={21} />
-                        </button>
 
                         <div className="hidden border-l border-[#e3dcc9] pl-4 sm:block">
                             <p className="text-sm text-[#89670d]">
@@ -304,32 +480,43 @@ export const Estoque = () => {
                 </header>
 
                 <main className="space-y-6 p-4 sm:p-6 lg:p-8">
+                    {/* Ações de entrada e saída */}
                     <section className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <button
-                            onClick={() => abrirMovimentacao("entrada")}
+                            onClick={() =>
+                                abrirMovimentacao("entrada")
+                            }
                             className="flex items-center gap-4 rounded-lg bg-[#98700a] p-5 text-left text-white transition hover:bg-[#806009]"
                         >
                             <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-white/15">
                                 <ArrowDownToLine size={26} />
                             </div>
+
                             <div>
                                 <p className="text-base font-semibold">
                                     Entrada de estoque
                                 </p>
                                 <p className="mt-1 text-sm text-white/80">
-                                    Adicionar unidades aos produtos
+                                    Adicionar vários produtos
                                 </p>
                             </div>
-                            <Plus size={20} className="ml-auto shrink-0" />
+
+                            <Plus
+                                size={20}
+                                className="ml-auto shrink-0"
+                            />
                         </button>
 
                         <button
-                            onClick={() => abrirMovimentacao("saida")}
+                            onClick={() =>
+                                abrirMovimentacao("saida")
+                            }
                             className="flex items-center gap-4 rounded-lg border border-[#e6c8c3] bg-[#fff9f7] p-5 text-left transition hover:bg-[#fdf0ed]"
                         >
                             <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-[#f8e7e3] text-[#b34b40]">
                                 <ArrowUpFromLine size={26} />
                             </div>
+
                             <div>
                                 <p className="text-base font-semibold text-[#a94338]">
                                     Saída de estoque
@@ -338,10 +525,15 @@ export const Estoque = () => {
                                     Registrar retirada de produtos
                                 </p>
                             </div>
-                            <Plus size={20} className="ml-auto shrink-0 text-[#b34b40]" />
+
+                            <Plus
+                                size={20}
+                                className="ml-auto shrink-0 text-[#b34b40]"
+                            />
                         </button>
                     </section>
 
+                    {/* Indicadores */}
                     <section>
                         <h2 className="mb-4 text-lg text-[#89670d]">
                             Resumo do Estoque
@@ -366,9 +558,11 @@ export const Estoque = () => {
                                                 strokeWidth={1.7}
                                             />
                                         </div>
+
                                         <p className="mt-5 break-words text-2xl font-semibold text-[#89670d]">
                                             {item.valor}
                                         </p>
+
                                         <p className="mt-1 text-xs text-[#918d83]">
                                             {item.descricao}
                                         </p>
@@ -378,11 +572,15 @@ export const Estoque = () => {
                         </div>
                     </section>
 
+                    {/* Tabela e painéis laterais */}
                     <section className="grid grid-cols-1 items-start gap-5 2xl:grid-cols-4">
                         <div className="overflow-hidden rounded-lg border border-[#e6dfcd] bg-[#fffefa] 2xl:col-span-3">
                             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#e6dfcd] p-5">
                                 <div className="flex items-center gap-2">
-                                    <Package size={21} className="text-[#98700a]" />
+                                    <Package
+                                        size={21}
+                                        className="text-[#98700a]"
+                                    />
                                     <h2 className="text-lg text-[#89670d]">
                                         Produtos em Estoque
                                     </h2>
@@ -397,16 +595,20 @@ export const Estoque = () => {
                                 </button>
                             </div>
 
+                            {/* Pesquisa e filtros da tabela */}
                             <div className="grid grid-cols-1 gap-3 p-4 md:grid-cols-3">
-                                <div className="flex items-center gap-2 rounded-md border border-[#e3dcc9] bg-[#faf9f5] px-3 py-2 md:col-span-1">
-                                    <Search size={17} className="shrink-0 text-[#918d83]" />
+                                <div className="flex items-center gap-2 rounded-md border border-[#e3dcc9] bg-[#faf9f5] px-3 py-2">
+                                    <Search
+                                        size={17}
+                                        className="shrink-0 text-[#918d83]"
+                                    />
                                     <input
                                         value={busca}
                                         onChange={(e) => {
                                             setBusca(e.target.value);
                                             setPagina(1);
                                         }}
-                                        placeholder="Buscar por nome ou categoria..."
+                                        placeholder="Buscar produto..."
                                         className="w-full bg-transparent text-sm text-[#45433d] outline-none placeholder:text-[#918d83]"
                                     />
                                 </div>
@@ -414,14 +616,21 @@ export const Estoque = () => {
                                 <select
                                     value={categoriaSelecionada}
                                     onChange={(e) => {
-                                        setCategoriaSelecionada(e.target.value);
+                                        setCategoriaSelecionada(
+                                            e.target.value
+                                        );
                                         setPagina(1);
                                     }}
                                     className="rounded-md border border-[#e3dcc9] bg-[#faf9f5] px-3 py-2 text-sm text-[#68645b] outline-none focus:border-[#b18a20]"
                                 >
-                                    <option value="Todas">Todas as categorias</option>
+                                    <option value="Todas">
+                                        Todas as categorias
+                                    </option>
                                     {categorias.map((categoria) => (
-                                        <option key={categoria} value={categoria}>
+                                        <option
+                                            key={categoria}
+                                            value={categoria}
+                                        >
                                             {categoria}
                                         </option>
                                     ))}
@@ -430,15 +639,25 @@ export const Estoque = () => {
                                 <select
                                     value={statusSelecionado}
                                     onChange={(e) => {
-                                        setStatusSelecionado(e.target.value);
+                                        setStatusSelecionado(
+                                            e.target.value
+                                        );
                                         setPagina(1);
                                     }}
                                     className="rounded-md border border-[#e3dcc9] bg-[#faf9f5] px-3 py-2 text-sm text-[#68645b] outline-none focus:border-[#b18a20]"
                                 >
-                                    <option value="Todos">Todos os status</option>
-                                    <option value="Normal">Normal</option>
-                                    <option value="Estoque baixo">Estoque baixo</option>
-                                    <option value="Sem estoque">Sem estoque</option>
+                                    <option value="Todos">
+                                        Todos os status
+                                    </option>
+                                    <option value="Normal">
+                                        Normal
+                                    </option>
+                                    <option value="Estoque baixo">
+                                        Estoque baixo
+                                    </option>
+                                    <option value="Sem estoque">
+                                        Sem estoque
+                                    </option>
                                 </select>
                             </div>
 
@@ -446,12 +665,24 @@ export const Estoque = () => {
                                 <table className="w-full min-w-[760px] text-left text-sm">
                                     <thead>
                                         <tr className="bg-[#f5f1e7] text-xs text-[#89670d]">
-                                            <th className="px-3 py-4 font-medium">Produto</th>
-                                            <th className="px-3 py-4 font-medium">Categoria</th>
-                                            <th className="px-3 py-4 font-medium">Estoque Atual</th>
-                                            <th className="px-3 py-4 font-medium">Estoque Mínimo</th>
-                                            <th className="px-3 py-4 font-medium">Status</th>
-                                            <th className="px-3 py-4 text-center font-medium">Ações</th>
+                                            <th className="px-3 py-4 font-medium">
+                                                Produto
+                                            </th>
+                                            <th className="px-3 py-4 font-medium">
+                                                Categoria
+                                            </th>
+                                            <th className="px-3 py-4 font-medium">
+                                                Estoque Atual
+                                            </th>
+                                            <th className="px-3 py-4 font-medium">
+                                                Estoque Mínimo
+                                            </th>
+                                            <th className="px-3 py-4 font-medium">
+                                                Status
+                                            </th>
+                                            <th className="px-3 py-4 text-center font-medium">
+                                                Ações
+                                            </th>
                                         </tr>
                                     </thead>
 
@@ -467,7 +698,10 @@ export const Estoque = () => {
                                                     <td className="whitespace-nowrap px-3 py-4">
                                                         <div className="flex items-center gap-3">
                                                             <div className="flex h-9 w-9 items-center justify-center rounded-md border border-[#e6dfcd] bg-[#f5f1e7]">
-                                                                <Package size={18} className="text-[#98700a]" />
+                                                                <Package
+                                                                    size={18}
+                                                                    className="text-[#98700a]"
+                                                                />
                                                             </div>
                                                             <span className="font-medium text-[#45433d]">
                                                                 {produto.nome}
@@ -475,7 +709,9 @@ export const Estoque = () => {
                                                         </div>
                                                     </td>
 
-                                                    <td className="px-3 py-4">{produto.categoria}</td>
+                                                    <td className="px-3 py-4">
+                                                        {produto.categoria}
+                                                    </td>
 
                                                     <td
                                                         className={`px-3 py-4 font-medium ${
@@ -489,17 +725,13 @@ export const Estoque = () => {
                                                         {produto.quantidade}
                                                     </td>
 
-                                                    <td className="px-3 py-4">{produto.minimo}</td>
+                                                    <td className="px-3 py-4">
+                                                        {produto.minimo}
+                                                    </td>
 
                                                     <td className="px-3 py-4">
                                                         <span
-                                                            className={`whitespace-nowrap rounded-full border px-2.5 py-1 text-xs ${
-                                                                status === "Normal"
-                                                                    ? "border-[#b9d9c5] bg-[#edf7f0] text-[#32734a]"
-                                                                    : status === "Sem estoque"
-                                                                        ? "border-[#e6c8c3] bg-[#fdf0ed] text-[#b34b40]"
-                                                                        : "border-[#e6d5a5] bg-[#fbf4df] text-[#89670d]"
-                                                            }`}
+                                                            className={`whitespace-nowrap rounded-full border px-2.5 py-1 text-xs ${classeStatus(status)}`}
                                                         >
                                                             {status}
                                                         </span>
@@ -510,10 +742,9 @@ export const Estoque = () => {
                                                             <button
                                                                 title="Ver detalhes"
                                                                 onClick={() =>
-                                                                    setProdutoSelecionado({
-                                                                        ...produto,
-                                                                        tipo: "detalhes"
-                                                                    })
+                                                                    setProdutoDetalhes(
+                                                                        produto
+                                                                    )
                                                                 }
                                                                 className="text-[#918d83] transition hover:text-[#98700a]"
                                                             >
@@ -522,7 +753,12 @@ export const Estoque = () => {
 
                                                             <button
                                                                 title="Registrar entrada"
-                                                                onClick={() => abrirMovimentacao("entrada", produto)}
+                                                                onClick={() =>
+                                                                    abrirMovimentacao(
+                                                                        "entrada",
+                                                                        produto
+                                                                    )
+                                                                }
                                                                 className="text-[#918d83] transition hover:text-[#32734a]"
                                                             >
                                                                 <ArrowDownToLine size={17} />
@@ -530,8 +766,16 @@ export const Estoque = () => {
 
                                                             <button
                                                                 title="Registrar saída"
-                                                                onClick={() => abrirMovimentacao("saida", produto)}
-                                                                className="text-[#918d83] transition hover:text-[#b34b40]"
+                                                                onClick={() =>
+                                                                    abrirMovimentacao(
+                                                                        "saida",
+                                                                        produto
+                                                                    )
+                                                                }
+                                                                disabled={
+                                                                    produto.quantidade === 0
+                                                                }
+                                                                className="text-[#918d83] transition hover:text-[#b34b40] disabled:cursor-not-allowed disabled:opacity-30"
                                                             >
                                                                 <ArrowUpFromLine size={17} />
                                                             </button>
@@ -543,7 +787,10 @@ export const Estoque = () => {
 
                                         {produtosPagina.length === 0 && (
                                             <tr>
-                                                <td colSpan={6} className="px-4 py-12 text-center text-[#918d83]">
+                                                <td
+                                                    colSpan={6}
+                                                    className="px-4 py-12 text-center text-[#918d83]"
+                                                >
                                                     Nenhum produto encontrado.
                                                 </td>
                                             </tr>
@@ -552,32 +799,43 @@ export const Estoque = () => {
                                 </table>
                             </div>
 
+                            {/* Paginação */}
                             <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#e6dfcd] p-4">
                                 <p className="text-xs text-[#918d83]">
                                     Mostrando{" "}
                                     {produtosFiltrados.length === 0
                                         ? 0
-                                        : (pagina - 1) * porPagina + 1}{" "}
-                                    a {Math.min(pagina * porPagina, produtosFiltrados.length)} de{" "}
-                                    {produtosFiltrados.length} produtos
+                                        : (paginaAtual - 1) * porPagina + 1}{" "}
+                                    a{" "}
+                                    {Math.min(
+                                        paginaAtual * porPagina,
+                                        produtosFiltrados.length
+                                    )}{" "}
+                                    de {produtosFiltrados.length} produtos
                                 </p>
 
                                 <div className="flex items-center gap-2">
                                     <button
-                                        disabled={pagina === 1}
-                                        onClick={() => setPagina((p) => p - 1)}
+                                        disabled={paginaAtual === 1}
+                                        onClick={() =>
+                                            setPagina((p) => Math.max(1, p - 1))
+                                        }
                                         className="rounded-md border border-[#e3dcc9] p-2 text-[#68645b] transition hover:border-[#b18a20] disabled:opacity-30"
                                     >
                                         <ChevronLeft size={17} />
                                     </button>
 
                                     <span className="rounded-md bg-[#98700a] px-3 py-2 text-sm font-semibold text-white">
-                                        {pagina}
+                                        {paginaAtual}
                                     </span>
 
                                     <button
-                                        disabled={pagina >= totalPaginas}
-                                        onClick={() => setPagina((p) => p + 1)}
+                                        disabled={paginaAtual >= totalPaginas}
+                                        onClick={() =>
+                                            setPagina((p) =>
+                                                Math.min(totalPaginas, p + 1)
+                                            )
+                                        }
                                         className="rounded-md border border-[#e3dcc9] p-2 text-[#68645b] transition hover:border-[#b18a20] disabled:opacity-30"
                                     >
                                         <ChevronRight size={17} />
@@ -586,21 +844,35 @@ export const Estoque = () => {
                             </div>
                         </div>
 
+                        {/* Painéis laterais */}
                         <div className="space-y-5">
                             <div className="rounded-lg border border-[#e6dfcd] bg-[#fffefa]">
                                 <div className="flex items-center gap-2 border-b border-[#e6dfcd] p-4">
-                                    <AlertTriangle size={20} className="text-[#98700a]" />
-                                    <h2 className="text-base text-[#89670d]">Alerta de Estoque</h2>
+                                    <AlertTriangle
+                                        size={20}
+                                        className="text-[#98700a]"
+                                    />
+                                    <h2 className="text-base text-[#89670d]">
+                                        Alerta de Estoque
+                                    </h2>
                                 </div>
 
                                 <div className="divide-y divide-[#eee8dc] px-4">
                                     {produtos
-                                        .filter((produto) => obterStatus(produto) !== "Normal")
+                                        .filter(
+                                            (produto) =>
+                                                obterStatus(produto) !== "Normal"
+                                        )
                                         .slice(0, 5)
                                         .map((produto) => (
-                                            <div key={produto.id} className="flex items-center justify-between gap-3 py-3">
+                                            <div
+                                                key={produto.id}
+                                                className="flex items-center justify-between gap-3 py-3"
+                                            >
                                                 <div className="min-w-0">
-                                                    <p className="truncate text-sm text-[#45433d]">{produto.nome}</p>
+                                                    <p className="truncate text-sm text-[#45433d]">
+                                                        {produto.nome}
+                                                    </p>
                                                     <p className="mt-1 text-xs text-[#918d83]">
                                                         {produto.quantidade === 0
                                                             ? "Sem estoque"
@@ -608,9 +880,14 @@ export const Estoque = () => {
                                                     </p>
                                                 </div>
 
-                                                <span className={produto.quantidade === 0 ? "text-[#b34b40]" : "text-[#98700a]"}>
-                                                    <AlertTriangle size={17} />
-                                                </span>
+                                                <AlertTriangle
+                                                    size={17}
+                                                    className={
+                                                        produto.quantidade === 0
+                                                            ? "shrink-0 text-[#b34b40]"
+                                                            : "shrink-0 text-[#98700a]"
+                                                    }
+                                                />
                                             </div>
                                         ))}
 
@@ -622,43 +899,15 @@ export const Estoque = () => {
                                 </div>
                             </div>
 
-                            <div className="rounded-lg border border-[#e6dfcd] bg-[#fffefa]">
-                                <div className="flex items-center gap-2 border-b border-[#e6dfcd] p-4">
-                                    <ClipboardList size={20} className="text-[#98700a]" />
-                                    <h2 className="text-base text-[#89670d]">Categorias</h2>
-                                </div>
-
-                                <div className="space-y-1 p-3">
-                                    {categorias.map((categoria) => (
-                                        <button
-                                            key={categoria}
-                                            onClick={() => {
-                                                setCategoriaSelecionada(
-                                                    categoriaSelecionada === categoria
-                                                        ? "Todas"
-                                                        : categoria
-                                                );
-                                                setPagina(1);
-                                            }}
-                                            className={`flex w-full items-center justify-between rounded-md px-3 py-2.5 text-sm transition hover:bg-[#f5f1e7] ${
-                                                categoriaSelecionada === categoria
-                                                    ? "bg-[#f1e8d1] text-[#89670d]"
-                                                    : "text-[#68645b]"
-                                            }`}
-                                        >
-                                            <span>{categoria}</span>
-                                            <span className="rounded-full bg-[#f1e8d1] px-2.5 py-1 text-xs text-[#89670d]">
-                                                {quantidadePorCategoria(categoria)}
-                                            </span>
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-
                             <div className="rounded-lg border border-[#e6dfcd] bg-[#fffefa] p-4">
                                 <div className="mb-4 flex items-center gap-2">
-                                    <Plus size={20} className="text-[#98700a]" />
-                                    <h2 className="text-base text-[#89670d]">Ações Rápidas</h2>
+                                    <Plus
+                                        size={20}
+                                        className="text-[#98700a]"
+                                    />
+                                    <h2 className="text-base text-[#89670d]">
+                                        Ações Rápidas
+                                    </h2>
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-3">
@@ -666,31 +915,21 @@ export const Estoque = () => {
                                         onClick={() => navegar("/produtos")}
                                         className="flex min-h-24 flex-col items-center justify-center gap-2 rounded-md border border-[#e3dcc9] p-3 text-center text-xs text-[#68645b] transition hover:bg-[#f5f1e7] hover:text-[#89670d]"
                                     >
-                                        <Package size={23} className="text-[#98700a]" />
+                                        <Package
+                                            size={23}
+                                            className="text-[#98700a]"
+                                        />
                                         Cadastrar Produto
-                                    </button>
-
-                                    <button
-                                        onClick={() => abrirMovimentacao("entrada")}
-                                        className="flex min-h-24 flex-col items-center justify-center gap-2 rounded-md border border-[#e3dcc9] p-3 text-center text-xs text-[#68645b] transition hover:bg-[#f5f1e7] hover:text-[#89670d]"
-                                    >
-                                        <ArrowDownToLine size={23} className="text-[#98700a]" />
-                                        Entrada de Estoque
-                                    </button>
-
-                                    <button
-                                        onClick={() => abrirMovimentacao("saida")}
-                                        className="flex min-h-24 flex-col items-center justify-center gap-2 rounded-md border border-[#e6c8c3] p-3 text-center text-xs text-[#68645b] transition hover:bg-[#fdf0ed] hover:text-[#b34b40]"
-                                    >
-                                        <ArrowUpFromLine size={23} className="text-[#b34b40]" />
-                                        Saída de Estoque
                                     </button>
 
                                     <button
                                         onClick={() => navegar("/relatorios")}
                                         className="flex min-h-24 flex-col items-center justify-center gap-2 rounded-md border border-[#e3dcc9] p-3 text-center text-xs text-[#68645b] transition hover:bg-[#f5f1e7] hover:text-[#89670d]"
                                     >
-                                        <ChartNoAxesCombined size={23} className="text-[#98700a]" />
+                                        <ChartNoAxesCombined
+                                            size={23}
+                                            className="text-[#98700a]"
+                                        />
                                         Ver Relatórios
                                     </button>
                                 </div>
@@ -699,162 +938,526 @@ export const Estoque = () => {
                     </section>
                 </main>
             </div>
-
-            {produtoSelecionado && (
+                        {/* Modal do catálogo de entrada e saída */}
+            {movimentacao && (
                 <div
-                    className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-[#35342f]/40 p-4 backdrop-blur-sm"
+                    className="fixed inset-0 z-[60] flex items-center justify-center bg-[#35342f]/50 p-3 backdrop-blur-sm sm:p-6"
                     onMouseDown={(e) => {
-                        if (e.target === e.currentTarget) fecharModal();
+                        if (e.target === e.currentTarget) {
+                            fecharMovimentacao();
+                        }
                     }}
                 >
-                    <div className="my-auto w-full max-w-md rounded-lg border border-[#e3dcc9] bg-[#fffefa] p-6 shadow-2xl">
+                    <div className="flex max-h-[94vh] w-full max-w-6xl flex-col overflow-hidden rounded-xl border border-[#e6dfcd] bg-[#faf9f5] shadow-2xl">
+                        {/* Cabeçalho */}
+                        <div className="flex items-center justify-between border-b border-[#e6dfcd] bg-[#fffefa] px-5 py-4 sm:px-7">
+                            <div className="flex items-center gap-3">
+                                <div
+                                    className={`flex h-11 w-11 items-center justify-center rounded-lg ${
+                                        movimentacao.tipo === "entrada"
+                                            ? "bg-[#f1e8d1] text-[#98700a]"
+                                            : "bg-[#f8e7e3] text-[#b34b40]"
+                                    }`}
+                                >
+                                    {movimentacao.tipo === "entrada" ? (
+                                        <ArrowDownToLine size={23} />
+                                    ) : (
+                                        <ArrowUpFromLine size={23} />
+                                    )}
+                                </div>
+
+                                <div>
+                                    <h2 className="text-lg font-semibold text-[#89670d] sm:text-xl">
+                                        {movimentacao.tipo === "entrada"
+                                            ? "Entrada de Estoque"
+                                            : "Saída de Estoque"}
+                                    </h2>
+                                    <p className="mt-1 text-xs text-[#918d83]">
+                                        Selecione os produtos e defina as quantidades.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <button
+                                onClick={fecharMovimentacao}
+                                aria-label="Fechar catálogo"
+                                className="rounded-md p-2 text-[#918d83] transition hover:bg-[#f5f1e7] hover:text-[#45433d]"
+                            >
+                                <X size={22} />
+                            </button>
+                        </div>
+
+                        <div className="grid min-h-0 flex-1 grid-cols-1 overflow-y-auto lg:grid-cols-[1fr_340px] lg:overflow-hidden">
+                            {/* Catálogo */}
+                            <div className="min-w-0 p-4 sm:p-6 lg:overflow-y-auto">
+                                <div className="mb-5">
+                                    <h3 className="text-base font-semibold text-[#45433d]">
+                                        Catálogo de produtos
+                                    </h3>
+                                    <p className="mt-1 text-sm text-[#918d83]">
+                                        Escolha um ou vários produtos para movimentar.
+                                    </p>
+                                </div>
+
+                                {/* Barra de pesquisa */}
+                                <div className="mb-4 flex items-center gap-3 rounded-lg border border-[#e3dcc9] bg-[#fffefa] px-4 py-3 transition focus-within:border-[#b18a20] focus-within:ring-2 focus-within:ring-[#b18a20]/10">
+                                    <Search
+                                        size={20}
+                                        className="shrink-0 text-[#98700a]"
+                                    />
+
+                                    <input
+                                        autoFocus
+                                        value={buscaCatalogo}
+                                        onChange={(e) =>
+                                            setBuscaCatalogo(e.target.value)
+                                        }
+                                        placeholder="Buscar por nome, categoria ou código..."
+                                        className="w-full bg-transparent text-sm text-[#45433d] outline-none placeholder:text-[#aaa496]"
+                                    />
+
+                                    {buscaCatalogo && (
+                                        <button
+                                            onClick={() => setBuscaCatalogo("")}
+                                            aria-label="Limpar pesquisa"
+                                            className="text-[#918d83] hover:text-[#45433d]"
+                                        >
+                                            <X size={17} />
+                                        </button>
+                                    )}
+                                </div>
+
+                                {/* Filtros de categoria */}
+                                <div className="mb-5 flex gap-2 overflow-x-auto pb-2">
+                                    {["Todas", ...categorias].map((categoria) => (
+                                        <button
+                                            key={categoria}
+                                            onClick={() =>
+                                                setCategoriaCatalogo(categoria)
+                                            }
+                                            className={`shrink-0 rounded-full border px-4 py-2 text-xs font-medium transition ${
+                                                categoriaCatalogo === categoria
+                                                    ? "border-[#98700a] bg-[#98700a] text-white"
+                                                    : "border-[#e3dcc9] bg-[#fffefa] text-[#68645b] hover:border-[#c8b77e] hover:bg-[#f5f1e7]"
+                                            }`}
+                                        >
+                                            {categoria}
+                                        </button>
+                                    ))}
+                                </div>
+
+                                <div className="mb-3 flex items-center justify-between">
+                                    <p className="text-xs text-[#918d83]">
+                                        {produtosCatalogo.length} produto(s) disponível(is)
+                                    </p>
+                                    <p className="text-xs text-[#918d83]">
+                                        {itensMovimentacao.length} selecionado(s)
+                                    </p>
+                                </div>
+
+                                {/* Cards do catálogo */}
+                                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                                    {produtosCatalogo.map((produto) => {
+                                        const status = obterStatus(produto);
+
+                                        return (
+                                            <div
+                                                key={produto.id}
+                                                className="group flex flex-col rounded-lg border border-[#e6dfcd] bg-[#fffefa] p-4 transition hover:border-[#c8b77e] hover:shadow-md"
+                                            >
+                                                <div className="mb-3 flex items-start justify-between gap-2">
+                                                    <div className="flex h-11 w-11 items-center justify-center rounded-lg border border-[#e6dfcd] bg-[#f5f1e7]">
+                                                        <Package
+                                                            size={22}
+                                                            className="text-[#98700a]"
+                                                        />
+                                                    </div>
+
+                                                    <span
+                                                        className={`rounded-full border px-2 py-1 text-[10px] ${classeStatus(status)}`}
+                                                    >
+                                                        {status}
+                                                    </span>
+                                                </div>
+
+                                                <p className="text-[11px] text-[#98700a]">
+                                                    {produto.categoria}
+                                                </p>
+
+                                                <h4 className="mt-1 min-h-10 text-sm font-semibold text-[#45433d]">
+                                                    {produto.nome}
+                                                </h4>
+
+                                                <p className="mt-2 text-lg font-semibold text-[#89670d]">
+                                                    {moeda(produto.preco)}
+                                                </p>
+
+                                                <div className="mt-3 flex items-center justify-between border-t border-[#eee8dc] pt-3">
+                                                    <div>
+                                                        <p className="text-[11px] text-[#918d83]">
+                                                            Disponível
+                                                        </p>
+                                                        <p
+                                                            className={`mt-1 text-sm font-medium ${
+                                                                produto.quantidade === 0
+                                                                    ? "text-[#b34b40]"
+                                                                    : "text-[#45433d]"
+                                                            }`}
+                                                        >
+                                                            {produto.quantidade} un.
+                                                        </p>
+                                                    </div>
+
+                                                    <button
+                                                        onClick={() =>
+                                                            adicionarItem(produto)
+                                                        }
+                                                        className={`flex items-center gap-2 rounded-md px-3 py-2 text-xs font-semibold text-white transition ${
+                                                            movimentacao.tipo === "entrada"
+                                                                ? "bg-[#98700a] hover:bg-[#806009]"
+                                                                : "bg-[#b34b40] hover:bg-[#963b32]"
+                                                        }`}
+                                                    >
+                                                        <Plus size={15} />
+                                                        Adicionar
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+
+                                {produtosCatalogo.length === 0 && (
+                                    <div className="rounded-lg border border-dashed border-[#d9d0bc] bg-[#fffefa] px-4 py-12 text-center">
+                                        <Package
+                                            size={34}
+                                            className="mx-auto text-[#c8b77e]"
+                                        />
+                                        <p className="mt-3 text-sm font-medium text-[#68645b]">
+                                            Nenhum produto encontrado
+                                        </p>
+                                        <p className="mt-1 text-xs text-[#918d83]">
+                                            Tente outra pesquisa ou selecione outra categoria.
+                                        </p>
+                                        <button
+                                            onClick={() => {
+                                                setBuscaCatalogo("");
+                                                setCategoriaCatalogo("Todas");
+                                            }}
+                                            className="mt-4 text-xs font-semibold text-[#89670d] hover:underline"
+                                        >
+                                            Limpar filtros
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Resumo da movimentação */}
+                            <aside className="flex min-h-0 flex-col border-t border-[#e6dfcd] bg-[#fffefa] lg:border-l lg:border-t-0">
+                                <div className="border-b border-[#e6dfcd] p-5">
+                                    <div className="flex items-center justify-between">
+                                        <h3 className="font-semibold text-[#45433d]">
+                                            Resumo da movimentação
+                                        </h3>
+
+                                        <span className="flex h-7 min-w-7 items-center justify-center rounded-full bg-[#f1e8d1] px-2 text-xs font-semibold text-[#89670d]">
+                                            {itensMovimentacao.length}
+                                        </span>
+                                    </div>
+
+                                    <p className="mt-1 text-xs text-[#918d83]">
+                                        Produtos adicionados à lista
+                                    </p>
+                                </div>
+
+                                <div className="max-h-[340px] flex-1 divide-y divide-[#eee8dc] overflow-y-auto px-4 lg:max-h-none">
+                                    {itensMovimentacao.map((item) => (
+                                        <div key={item.id} className="py-4">
+                                            <div className="flex items-start justify-between gap-3">
+                                                <div className="min-w-0">
+                                                    <p className="text-sm font-medium text-[#45433d]">
+                                                        {item.nome}
+                                                    </p>
+                                                    <p className="mt-1 text-xs text-[#918d83]">
+                                                        {moeda(item.preco)} por unidade
+                                                    </p>
+                                                </div>
+
+                                                <button
+                                                    onClick={() =>
+                                                        removerItem(item.id)
+                                                    }
+                                                    aria-label={`Remover ${item.nome}`}
+                                                    className="shrink-0 rounded-md p-1 text-[#b34b40] transition hover:bg-[#fdf0ed]"
+                                                >
+                                                    <X size={17} />
+                                                </button>
+                                            </div>
+
+                                            <div className="mt-3 flex items-center justify-between gap-3">
+                                                <div className="flex items-center rounded-md border border-[#e3dcc9]">
+                                                    <button
+                                                        onClick={() =>
+                                                            alterarQuantidadeItem(
+                                                                item.id,
+                                                                Math.max(
+                                                                    1,
+                                                                    (Number(item.quantidadeMovimentacao) || 1) - 1
+                                                                )
+                                                            )
+                                                        }
+                                                        className="px-3 py-2 text-[#68645b] transition hover:bg-[#f5f1e7]"
+                                                    >
+                                                        −
+                                                    </button>
+
+                                                    <input
+                                                        type="number"
+                                                        min="1"
+                                                        step="1"
+                                                        max={
+                                                            movimentacao.tipo === "saida"
+                                                                ? item.quantidade
+                                                                : undefined
+                                                        }
+                                                        value={item.quantidadeMovimentacao}
+                                                        onChange={(e) =>
+                                                            alterarQuantidadeItem(
+                                                                item.id,
+                                                                e.target.value === ""
+                                                                    ? ""
+                                                                    : Math.max(
+                                                                        1,
+                                                                        Number(e.target.value)
+                                                                    )
+                                                            )
+                                                        }
+                                                        className="w-12 border-x border-[#e3dcc9] bg-transparent py-2 text-center text-sm text-[#45433d] outline-none"
+                                                    />
+
+                                                    <button
+                                                        disabled={
+                                                            movimentacao.tipo === "saida" &&
+                                                            Number(item.quantidadeMovimentacao) >= item.quantidade
+                                                        }
+                                                        onClick={() =>
+                                                            alterarQuantidadeItem(
+                                                                item.id,
+                                                                (Number(item.quantidadeMovimentacao) || 0) + 1
+                                                            )
+                                                        }
+                                                        className="px-3 py-2 text-[#68645b] transition hover:bg-[#f5f1e7] disabled:cursor-not-allowed disabled:opacity-30"
+                                                    >
+                                                        +
+                                                    </button>
+                                                </div>
+
+                                                <p className="text-sm font-semibold text-[#89670d]">
+                                                    {moeda(
+                                                        item.preco *
+                                                        (Number(item.quantidadeMovimentacao) || 0)
+                                                    )}
+                                                </p>
+                                            </div>
+
+                                            {movimentacao.tipo === "saida" && (
+                                                <p className="mt-2 text-[11px] text-[#918d83]">
+                                                    Disponível: {item.quantidade} unidade(s)
+                                                </p>
+                                            )}
+                                        </div>
+                                    ))}
+
+                                    {itensMovimentacao.length === 0 && (
+                                        <div className="flex min-h-44 flex-col items-center justify-center px-4 text-center">
+                                            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#f5f1e7]">
+                                                <ShoppingCart
+                                                    size={25}
+                                                    className="text-[#b8aa85]"
+                                                />
+                                            </div>
+
+                                            <p className="mt-3 text-sm font-medium text-[#68645b]">
+                                                Sua lista está vazia
+                                            </p>
+                                            <p className="mt-1 text-xs leading-5 text-[#918d83]">
+                                                Adicione produtos do catálogo para começar.
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Totais e confirmação */}
+                                <div className="border-t border-[#e6dfcd] bg-[#faf9f5] p-5">
+                                    <div className="mb-2 flex justify-between text-xs text-[#68645b]">
+                                        <span>Total de unidades</span>
+                                        <span>
+                                            {quantidadeTotalMovimentacao} un.
+                                        </span>
+                                    </div>
+
+                                    <div className="mb-4 flex items-center justify-between gap-2">
+                                        <span className="text-sm font-medium text-[#45433d]">
+                                            Valor dos produtos
+                                        </span>
+                                        <span className="text-lg font-semibold text-[#89670d]">
+                                            {moeda(valorTotalMovimentacao)}
+                                        </span>
+                                    </div>
+
+                                    {mensagem && (
+                                        <p className="mb-3 rounded-md border border-[#e6c8c3] bg-[#fdf0ed] p-3 text-xs leading-5 text-[#b34b40]">
+                                            {mensagem}
+                                        </p>
+                                    )}
+
+                                    <button
+                                        onClick={registrarMovimentacao}
+                                        disabled={itensMovimentacao.length === 0}
+                                        className={`w-full rounded-md px-4 py-3 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-40 ${
+                                            movimentacao.tipo === "entrada"
+                                                ? "bg-[#98700a] hover:bg-[#806009]"
+                                                : "bg-[#b34b40] hover:bg-[#963b32]"
+                                        }`}
+                                    >
+                                        {movimentacao.tipo === "entrada"
+                                            ? "Confirmar entrada"
+                                            : "Confirmar saída"}
+                                    </button>
+
+                                    <button
+                                        onClick={fecharMovimentacao}
+                                        className="mt-2 w-full rounded-md border border-[#e3dcc9] px-4 py-2.5 text-sm text-[#68645b] transition hover:bg-[#f5f1e7]"
+                                    >
+                                        Cancelar
+                                    </button>
+                                </div>
+                            </aside>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal de detalhes do produto */}
+            {produtoDetalhes && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-[#35342f]/40 p-4 backdrop-blur-sm"
+                    onMouseDown={(e) => {
+                        if (e.target === e.currentTarget) {
+                            setProdutoDetalhes(null);
+                        }
+                    }}
+                >
+                    <div className="w-full max-w-md rounded-lg border border-[#e3dcc9] bg-[#fffefa] p-6 shadow-2xl">
                         <div className="mb-5 flex items-center justify-between">
                             <h2 className="text-lg text-[#89670d]">
-                                {produtoSelecionado.tipo === "detalhes"
-                                    ? "Detalhes do Produto"
-                                    : produtoSelecionado.tipo === "entrada"
-                                        ? "Entrada de Estoque"
-                                        : "Saída de Estoque"}
+                                Detalhes do Produto
                             </h2>
 
                             <button
-                                onClick={fecharModal}
-                                aria-label="Fechar modal"
+                                onClick={() => setProdutoDetalhes(null)}
+                                aria-label="Fechar detalhes"
                                 className="text-[#918d83] transition hover:text-[#45433d]"
                             >
                                 <X size={20} />
                             </button>
                         </div>
 
-                        {produtoSelecionado.id === null ? (
-                            <div className="mb-5">
-                                <label className="mb-2 block text-sm text-[#68645b]">
-                                    Selecione o produto
-                                </label>
-
-                                <select
-                                    value=""
-                                    onChange={(e) => {
-                                        const produto = produtos.find(
-                                            (p) => p.id === Number(e.target.value)
-                                        );
-
-                                        if (produto) {
-                                            setProdutoSelecionado({
-                                                ...produto,
-                                                tipo: produtoSelecionado.tipo
-                                            });
-                                            setMensagem("");
-                                        }
-                                    }}
-                                    className={campoClasse}
-                                >
-                                    <option value="">Escolher produto</option>
-                                    {produtos.map((produto) => (
-                                        <option key={produto.id} value={produto.id}>
-                                            {produto.nome} — {produto.quantidade} un.
-                                        </option>
-                                    ))}
-                                </select>
+                        <div className="mb-5 flex items-center gap-4 rounded-md border border-[#e6dfcd] bg-[#faf9f5] p-4">
+                            <div className="flex h-14 w-14 items-center justify-center rounded-lg border border-[#e6dfcd] bg-[#f5f1e7]">
+                                <Package
+                                    size={28}
+                                    className="text-[#98700a]"
+                                />
                             </div>
-                        ) : (
-                            <div className="mb-5 rounded-md border border-[#e6dfcd] bg-[#faf9f5] p-4">
-                                <p className="text-base font-medium text-[#45433d]">
-                                    {produtoSelecionado.nome}
+
+                            <div>
+                                <p className="font-semibold text-[#45433d]">
+                                    {produtoDetalhes.nome}
                                 </p>
                                 <p className="mt-1 text-sm text-[#918d83]">
-                                    {produtoSelecionado.categoria}
+                                    {produtoDetalhes.categoria}
                                 </p>
-                                <p className="mt-3 text-sm text-[#68645b]">
-                                    Quantidade atual:{" "}
-                                    <span className="font-medium text-[#89670d]">
-                                        {produtoSelecionado.quantidade} unidades
-                                    </span>
-                                </p>
-                                <p className="mt-1 text-sm text-[#68645b]">
-                                    Estoque mínimo: {produtoSelecionado.minimo} unidades
-                                </p>
-                                <p className="mt-1 text-sm text-[#68645b]">
-                                    Valor unitário: {moeda(produtoSelecionado.preco)}
-                                </p>
+                                <span
+                                    className={`mt-2 inline-block rounded-full border px-2.5 py-1 text-xs ${classeStatus(obterStatus(produtoDetalhes))}`}
+                                >
+                                    {obterStatus(produtoDetalhes)}
+                                </span>
                             </div>
-                        )}
+                        </div>
 
-                        {produtoSelecionado.tipo !== "detalhes" &&
-                            produtoSelecionado.id !== null && (
-                                <div className="mb-4">
-                                    <label className="mb-2 block text-sm text-[#68645b]">
-                                        Quantidade de unidades
-                                    </label>
+                        <div className="space-y-3">
+                            <div className="flex justify-between text-sm">
+                                <span className="text-[#68645b]">
+                                    Código
+                                </span>
+                                <span className="font-medium text-[#45433d]">
+                                    #{produtoDetalhes.id}
+                                </span>
+                            </div>
 
-                                    <input
-                                        autoFocus
-                                        type="number"
-                                        min="1"
-                                        step="1"
-                                        value={
-                                            produtoSelecionado.tipo === "entrada"
-                                                ? quantidadeEntrada
-                                                : quantidadeSaida
-                                        }
-                                        onChange={(e) => {
-                                            if (produtoSelecionado.tipo === "entrada") {
-                                                setQuantidadeEntrada(e.target.value);
-                                            } else {
-                                                setQuantidadeSaida(e.target.value);
-                                            }
-                                            setMensagem("");
-                                        }}
-                                        onKeyDown={(e) => {
-                                            if (e.key === "Enter") {
-                                                e.preventDefault();
-                                                registrarMovimentacao(produtoSelecionado.tipo);
-                                            }
-                                        }}
-                                        placeholder="Digite a quantidade"
-                                        className={campoClasse}
-                                    />
-                                </div>
-                            )}
+                            <div className="flex justify-between text-sm">
+                                <span className="text-[#68645b]">
+                                    Estoque atual
+                                </span>
+                                <span className="font-medium text-[#45433d]">
+                                    {produtoDetalhes.quantidade} unidades
+                                </span>
+                            </div>
 
-                        {mensagem && (
-                            <p
-                                className={`mb-4 text-sm ${
-                                    mensagem.includes("sucesso")
-                                        ? "text-[#32734a]"
-                                        : "text-[#b34b40]"
-                                }`}
-                            >
-                                {mensagem}
-                            </p>
-                        )}
+                            <div className="flex justify-between text-sm">
+                                <span className="text-[#68645b]">
+                                    Estoque mínimo
+                                </span>
+                                <span className="font-medium text-[#45433d]">
+                                    {produtoDetalhes.minimo} unidades
+                                </span>
+                            </div>
 
-                        <div className="flex justify-end gap-3">
+                            <div className="flex justify-between text-sm">
+                                <span className="text-[#68645b]">
+                                    Valor unitário
+                                </span>
+                                <span className="font-semibold text-[#89670d]">
+                                    {moeda(produtoDetalhes.preco)}
+                                </span>
+                            </div>
+
+                            <div className="flex justify-between border-t border-[#e6dfcd] pt-3 text-sm">
+                                <span className="text-[#68645b]">
+                                    Valor total em estoque
+                                </span>
+                                <span className="font-semibold text-[#89670d]">
+                                    {moeda(
+                                        produtoDetalhes.quantidade *
+                                        produtoDetalhes.preco
+                                    )}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div className="mt-6 flex flex-wrap justify-end gap-3">
                             <button
-                                onClick={fecharModal}
+                                onClick={() => setProdutoDetalhes(null)}
                                 className={botaoSecundario}
                             >
                                 Fechar
                             </button>
 
-                            {produtoSelecionado.tipo !== "detalhes" &&
-                                produtoSelecionado.id !== null && (
-                                    <button
-                                        onClick={() =>
-                                            registrarMovimentacao(produtoSelecionado.tipo)
-                                        }
-                                        className={`rounded-md px-4 py-2 text-sm font-semibold text-white transition ${
-                                            produtoSelecionado.tipo === "entrada"
-                                                ? "bg-[#98700a] hover:bg-[#806009]"
-                                                : "bg-[#b34b40] hover:bg-[#963b32]"
-                                        }`}
-                                    >
-                                        Confirmar{" "}
-                                        {produtoSelecionado.tipo === "entrada"
-                                            ? "entrada"
-                                            : "saída"}
-                                    </button>
-                                )}
+                            <button
+                                onClick={() => {
+                                    const produto = produtos.find(
+                                        (p) => p.id === produtoDetalhes.id
+                                    );
+
+                                    setProdutoDetalhes(null);
+                                    abrirMovimentacao("entrada", produto);
+                                }}
+                                className="flex items-center gap-2 rounded-md bg-[#98700a] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#806009]"
+                            >
+                                <ArrowDownToLine size={16} />
+                                Registrar entrada
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -863,4 +1466,4 @@ export const Estoque = () => {
     );
 };
 
-export default Estoque; 
+export default Estoque;

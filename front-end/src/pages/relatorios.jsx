@@ -185,8 +185,25 @@ export const Relatorios = () => {
 
     const quantidadeVendas = vendasFiltradas.length;
 
-    const ticketMedio =
-        quantidadeVendas > 0 ? faturamento / quantidadeVendas : 0;
+    const quantidadeTotalVendas = vendasExemplo.filter((venda) => {
+        let inicio = dataInicio;
+        let fim = dataFim;
+
+        if (periodo === "hoje") {
+            inicio = hoje;
+            fim = hoje;
+        } else if (periodo === "7dias") {
+            const data = new Date();
+            data.setDate(data.getDate() - 6);
+            inicio = `${data.getFullYear()}-${String(data.getMonth() + 1).padStart(2, "0")}-${String(data.getDate()).padStart(2, "0")}`;
+            fim = hoje;
+        } else if (periodo === "mes") {
+            inicio = obterInicioMes(new Date());
+            fim = hoje;
+        }
+
+        return venda.data >= inicio && venda.data <= fim;
+    }).length;
 
     const produtosVendidos = produtosFiltrados.reduce(
         (total, produto) => total + produto.vendidos,
@@ -335,19 +352,13 @@ export const Relatorios = () => {
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-3">
-                        <div className="hidden text-right sm:block">
-                            <p className="text-sm font-medium text-[#35342f]">
-                                Estrela do Oriente
-                            </p>
-                            <p className="text-xs text-[#89867d]">
-                                Gestão da loja
-                            </p>
-                        </div>
-
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full border border-[#e6dfcd] bg-[#f5edda] text-[#98700a]">
-                            <Bell size={18} />
-                        </div>
+                    <div className="hidden border-l border-[#e3dcc9] pl-4 sm:block">
+                        <p className="text-sm text-[#89670d]">
+                            Estrela do Oriente
+                        </p>
+                        <p className="text-xs text-[#918d83]">
+                            {new Date().toLocaleDateString("pt-BR")}
+                        </p>
                     </div>
                 </header>
 
@@ -362,15 +373,6 @@ export const Relatorios = () => {
                                 Consulte o faturamento, as vendas e o desempenho dos produtos.
                             </p>
                         </div>
-
-                        <button
-                            type="button"
-                            onClick={exportarCSV}
-                            className="inline-flex items-center justify-center gap-2 rounded-lg border border-[#d8c99f] bg-[#fffefa] px-4 py-2.5 text-sm font-medium text-[#78601e] shadow-sm transition hover:bg-[#f8f1df]"
-                        >
-                            <Download size={17} />
-                            Exportar relatório
-                        </button>
                     </section>
 
                     {/* Filtros */}
@@ -530,10 +532,10 @@ export const Relatorios = () => {
                                 />
 
                                 <CardIndicador
-                                    titulo="Ticket médio"
-                                    valor={moeda(ticketMedio)}
-                                    descricao="Valor médio por venda"
-                                    icone={Wallet}
+                                    titulo="Total de vendas"
+                                    valor={quantidadeTotalVendas}
+                                    descricao="Inclui vendas concluídas"
+                                    icone={ShoppingCart}
                                 />
 
                                 <CardIndicador
