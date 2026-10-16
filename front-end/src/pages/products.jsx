@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
     Package,
     Menu,
@@ -7,105 +7,19 @@ import {
     Pencil,
     Trash2,
     X,
-    AlertTriangle,
+    Tags,
     Boxes,
     DollarSign,
-    Tags,
-    ChevronDown
+    AlertTriangle
 } from "lucide-react";
 
 import Sidebar from "../components/Sidebar";
-
-const produtosIniciais = [
-    {
-        id: 1,
-        codigo: "PRD-001",
-        nome: "Incenso Natural",
-        categoria: "Incensos",
-        preco: 12.9,
-        custo: 6.5,
-        estoque: 3,
-        estoqueMinimo: 10,
-        status: "Ativo"
-    },
-    {
-        id: 2,
-        codigo: "PRD-002",
-        nome: "Vela de 7 Dias",
-        categoria: "Velas",
-        preco: 18.9,
-        custo: 9.5,
-        estoque: 25,
-        estoqueMinimo: 10,
-        status: "Ativo"
-    },
-    {
-        id: 3,
-        codigo: "PRD-003",
-        nome: "Patua",
-        categoria: "Acessórios",
-        preco: 24.9,
-        custo: 12,
-        estoque: 2,
-        estoqueMinimo: 5,
-        status: "Ativo"
-    },
-    {
-        id: 4,
-        codigo: "PRD-004",
-        nome: "Erva de Proteção",
-        categoria: "Ervas",
-        preco: 9.9,
-        custo: 4.5,
-        estoque: 4,
-        estoqueMinimo: 10,
-        status: "Ativo"
-    },
-    {
-        id: 5,
-        codigo: "PRD-005",
-        nome: "Óleo de Unção",
-        categoria: "Óleos",
-        preco: 32.9,
-        custo: 16,
-        estoque: 2,
-        estoqueMinimo: 5,
-        status: "Ativo"
-    },
-    {
-        id: 6,
-        codigo: "PRD-006",
-        nome: "Vela Aromática",
-        categoria: "Velas",
-        preco: 22.5,
-        custo: 11,
-        estoque: 18,
-        estoqueMinimo: 5,
-        status: "Ativo"
-    },
-    {
-        id: 7,
-        codigo: "PRD-007",
-        nome: "Incenso de Mirra",
-        categoria: "Incensos",
-        preco: 15.9,
-        custo: 7,
-        estoque: 0,
-        estoqueMinimo: 8,
-        status: "Ativo"
-    },
-    {
-        id: 8,
-        codigo: "PRD-008",
-        nome: "Colar de Proteção",
-        categoria: "Acessórios",
-        preco: 39.9,
-        custo: 18,
-        estoque: 12,
-        estoqueMinimo: 4,
-        status: "Inativo"
-    }
-];
+import {
+    listarProdutos,
+    cadastrarProduto,
+    atualizarProduto,
+    excluirProduto
+} from "../services/products.js";
 
 const categorias = [
     "Incensos",
@@ -113,14 +27,10 @@ const categorias = [
     "Acessórios",
     "Ervas",
     "Óleos",
+    "Cristais",
+    "Insumos",
     "Outros"
 ];
-
-const moeda = (valor) =>
-    valor.toLocaleString("pt-BR", {
-        style: "currency",
-        currency: "BRL"
-    });
 
 const produtoVazio = {
     nome: "",
@@ -132,11 +42,20 @@ const produtoVazio = {
     status: "Ativo"
 };
 
+const moeda = (valor) =>
+    Number(valor || 0).toLocaleString("pt-BR", {
+        style: "currency",
+        currency: "BRL"
+    });
+
 const campoClasse =
-    "mt-2 w-full rounded-lg border border-[#e3dcc9] bg-[#faf9f5] px-3 py-3 text-sm text-[#45433d] outline-none transition placeholder:text-[#aaa59a] focus:border-[#b99a43] focus:ring-2 focus:ring-[#b99a43]/10";
+    "mt-2 w-full rounded-lg border border-[#e3dcc9] bg-[#faf9f5] px-3 py-3 text-sm text-[#45433d] outline-none transition focus:border-[#b99a43] focus:ring-2 focus:ring-[#b99a43]/10";
+
+const indicadorClasse =
+    "rounded-xl border border-[#e6dfcd] bg-[#fffefa] p-5 shadow-sm transition-all hover:border-[#d4bd7c]";
 
 export const ProdutosPage = () => {
-    const [produtos, setProdutos] = useState(produtosIniciais);
+    const [produtos, setProdutos] = useState([]);
     const [busca, setBusca] = useState("");
     const [categoriaFiltro, setCategoriaFiltro] = useState("Todas");
     const [statusFiltro, setStatusFiltro] = useState("Todos");
@@ -144,34 +63,60 @@ export const ProdutosPage = () => {
     const [produtoEditando, setProdutoEditando] = useState(null);
     const [formulario, setFormulario] = useState(produtoVazio);
     const [menuAberto, setMenuAberto] = useState(false);
+    const [carregando, setCarregando] = useState(true);
+    const [salvando, setSalvando] = useState(false);
+    const [erro, setErro] = useState("");
 
-    const totalEstoque = produtos.reduce(
-        (total, produto) => total + produto.estoque,
-        0
-    );
+    useEffect(() => {
+        carregarProdutos();
+    }, []);
+
+    async function carregarProdutos() {
+        setCarregando(true);
+        setErro("");
+
+        try {
+            const dados = await listarProdutos();
+            setProdutos(dados);
+        } catch (error) {
+            console.error("Erro ao carregar produtos:", error);
+            setErro("Não foi possível carregar os produtos.");
+        } finally {
+            setCarregando(false);
+        }
+    }
 
     const produtosAtivos = produtos.filter(
         (produto) => produto.status === "Ativo"
     ).length;
 
+    const totalEstoque = produtos.reduce(
+        (total, produto) => total + Number(produto.estoque || 0),
+        0
+    );
+
+    const valorEstoque = produtos.reduce(
+        (total, produto) =>
+            total +
+            Number(produto.estoque || 0) *
+            Number(produto.custo || 0),
+        0
+    );
+
     const produtosEstoqueBaixo = produtos.filter(
         (produto) =>
             produto.status === "Ativo" &&
-            produto.estoque <= produto.estoqueMinimo
+            Number(produto.estoque || 0) <=
+            Number(produto.estoqueMinimo || 0)
     ).length;
-
-    const valorEstoque = produtos.reduce(
-        (total, produto) => total + produto.estoque * produto.custo,
-        0
-    );
 
     const produtosFiltrados = produtos.filter((produto) => {
         const termo = busca.toLowerCase();
 
         const correspondeBusca =
-            produto.nome.toLowerCase().includes(termo) ||
-            produto.codigo.toLowerCase().includes(termo) ||
-            produto.categoria.toLowerCase().includes(termo);
+            (produto.nome || "").toLowerCase().includes(termo) ||
+            (produto.codigo || "").toLowerCase().includes(termo) ||
+            (produto.categoria || "").toLowerCase().includes(termo);
 
         const correspondeCategoria =
             categoriaFiltro === "Todas" ||
@@ -188,37 +133,40 @@ export const ProdutosPage = () => {
         );
     });
 
-    const abrirCadastro = () => {
+
+    function abrirCadastro() {
         setProdutoEditando(null);
-        setFormulario(produtoVazio);
+        setFormulario({ ...produtoVazio });
+        setErro("");
         setModalAberto(true);
-    };
+    }
 
-    const abrirEdicao = (produto) => {
+
+    function abrirEdicao(produto) {
         setProdutoEditando(produto);
-
         setFormulario({
-            nome: produto.nome,
-            categoria: produto.categoria,
-            preco: String(produto.preco),
-            custo: String(produto.custo),
-            estoque: String(produto.estoque),
-            estoqueMinimo: String(produto.estoqueMinimo),
-            status: produto.status
+            nome: produto.nome || "",
+            categoria: produto.categoria || "Outros",
+            preco: String(produto.preco ?? ""),
+            custo: String(produto.custo ?? ""),
+            estoque: String(produto.estoque ?? 0),
+            estoqueMinimo: String(produto.estoqueMinimo ?? 0),
+            status: produto.status || "Ativo"
         });
-
+        setErro("");
         setModalAberto(true);
-    };
+    }
 
-    const atualizarCampo = (campo, valor) => {
+    function atualizarCampo(campo, valor) {
         setFormulario((anterior) => ({
             ...anterior,
             [campo]: valor
         }));
-    };
+    }
 
-    const salvarProduto = (evento) => {
+    async function salvarProduto(evento) {
         evento.preventDefault();
+        setErro("");
 
         const nome = formulario.nome.trim();
         const preco = Number(formulario.preco);
@@ -243,7 +191,7 @@ export const ProdutosPage = () => {
             !Number.isInteger(estoque) ||
             !Number.isInteger(estoqueMinimo)
         ) {
-            alert(
+            setErro(
                 "Preencha os campos corretamente. Estoque e estoque mínimo devem ser números inteiros não negativos."
             );
             return;
@@ -259,57 +207,54 @@ export const ProdutosPage = () => {
             status: formulario.status
         };
 
-        if (produtoEditando) {
-            setProdutos((anteriores) =>
-                anteriores.map((produto) =>
-                    produto.id === produtoEditando.id
-                        ? { ...produto, ...dadosProduto }
-                        : produto
-                )
-            );
-        } else {
-            const proximoId =
-                produtos.reduce(
-                    (maior, produto) => Math.max(maior, produto.id),
-                    0
-                ) + 1;
+        setSalvando(true);
 
-            const novoProduto = {
-                id: proximoId,
-                codigo: `PRD-${String(proximoId).padStart(3, "0")}`,
-                ...dadosProduto
-            };
+        try {
+            if (produtoEditando) {
+                await atualizarProduto(
+                    produtoEditando.id,
+                    dadosProduto
+                );
+            } else {
+                await cadastrarProduto(dadosProduto);
+            }
 
-            setProdutos((anteriores) => [
-                novoProduto,
-                ...anteriores
-            ]);
+            await carregarProdutos();
+            setModalAberto(false);
+            setProdutoEditando(null);
+            setFormulario({ ...produtoVazio });
+        } catch (error) {
+            console.error("Erro ao salvar produto:", error);
+            setErro(error.message || "Não foi possível salvar o produto.");
+        } finally {
+            setSalvando(false);
         }
+    }
 
-        setModalAberto(false);
-    };
-
-    const excluirProduto = (produto) => {
+    async function removerProduto(produto) {
         const confirmar = window.confirm(
             `Deseja realmente excluir o produto "${produto.nome}"?`
         );
 
         if (!confirmar) return;
 
-        setProdutos((anteriores) =>
-            anteriores.filter((item) => item.id !== produto.id)
-        );
-    };
+        setErro("");
 
-    const indicadorClasse =
-        "rounded-xl border border-[#e6dfcd] bg-[#fffefa] p-5 shadow-sm transition-all hover:border-[#d4bd7c] hover:shadow-md";
+        try {
+            await excluirProduto(produto.id);
+            setProdutos((anteriores) =>
+                anteriores.filter((item) => item.id !== produto.id)
+            );
+        } catch (error) {
+            console.error("Erro ao excluir produto:", error);
+            setErro(error.message || "Não foi possível excluir o produto.");
+        }
+    }
 
     return (
         <div className="min-h-screen bg-[#f3f1eb] text-[#35342f]">
-
             <Sidebar />
 
-            {/* Fundo do menu mobile */}
             {menuAberto && (
                 <button
                     aria-label="Fechar menu"
@@ -318,10 +263,7 @@ export const ProdutosPage = () => {
                 />
             )}
 
-            {/* Conteúdo */}
             <div className="min-h-screen lg:ml-60">
-
-                {/* Cabeçalho */}
                 <header className="sticky top-0 z-30 flex h-24 items-center justify-between border-b border-[#e3dcc9] bg-[#faf9f5]/95 px-4 backdrop-blur-sm sm:px-6 lg:px-8">
                     <div className="flex items-center gap-3">
                         <button
@@ -339,23 +281,29 @@ export const ProdutosPage = () => {
                             >
                                 Gerenciamento de Produtos
                             </h2>
-
                             <p className="hidden text-xs text-[#89867d] sm:block">
                                 Gerencie o catálogo da loja
                             </p>
                         </div>
                     </div>
+
+                    <div className="hidden items-center gap-2 rounded-md border border-[#e3dcc9] bg-[#fffefa] px-3 py-2 sm:flex">
+                        <Search size={17} className="text-[#918d83]" />
+                        <input
+                            value={busca}
+                            onChange={(evento) => setBusca(evento.target.value)}
+                            placeholder="Buscar produto..."
+                            className="w-36 bg-transparent text-sm outline-none placeholder:text-[#918d83] lg:w-48"
+                        />
+                    </div>
                 </header>
 
                 <main className="space-y-6 p-4 sm:p-6 lg:p-8">
-
-                    {/* Título e ação */}
                     <section className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
                         <div>
                             <h2 className="text-xl font-medium text-[#78601e]">
                                 Produtos
                             </h2>
-
                             <p className="mt-1 text-sm text-[#89867d]">
                                 Gerencie o catálogo de produtos da loja.
                             </p>
@@ -370,103 +318,69 @@ export const ProdutosPage = () => {
                         </button>
                     </section>
 
-                    {/* Indicadores */}
+                    {erro && (
+                        <div className="flex items-start gap-2 rounded-lg border border-[#e6c8c3] bg-[#fdf0ed] p-4 text-sm text-[#a94338]">
+                            <AlertTriangle size={18} className="mt-0.5 shrink-0" />
+                            <span>{erro}</span>
+                        </div>
+                    )}
+
                     <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-
-                        <div className={indicadorClasse}>
-                            <div className="flex items-center justify-between gap-3">
-                                <p className="text-sm text-[#77746b]">
-                                    Produtos cadastrados
-                                </p>
-
-                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#f5edda]">
-                                    <Package size={21} className="text-[#98700a]" />
+                        {[
+                            {
+                                titulo: "Produtos cadastrados",
+                                valor: produtos.length,
+                                descricao: "Total de registros",
+                                Icone: Package
+                            },
+                            {
+                                titulo: "Produtos ativos",
+                                valor: produtosAtivos,
+                                descricao: "Disponíveis no catálogo",
+                                Icone: Tags
+                            },
+                            {
+                                titulo: "Unidades em estoque",
+                                valor: totalEstoque,
+                                descricao: "Soma das quantidades",
+                                Icone: Boxes
+                            },
+                            {
+                                titulo: "Valor de custo do estoque",
+                                valor: moeda(valorEstoque),
+                                descricao: "Custo das unidades disponíveis",
+                                Icone: DollarSign
+                            }
+                        ].map(({ titulo, valor, descricao, Icone }) => (
+                            <div key={titulo} className={indicadorClasse}>
+                                <div className="flex items-center justify-between gap-3">
+                                    <p className="text-sm text-[#77746b]">
+                                        {titulo}
+                                    </p>
+                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#f5edda]">
+                                        <Icone size={21} className="text-[#98700a]" />
+                                    </div>
                                 </div>
-                            </div>
-
-                            <p className="mt-5 text-3xl font-semibold text-[#8b690e]">
-                                {produtos.length}
-                            </p>
-
-                            <p className="mt-1 text-xs text-[#969187]">
-                                Total de registros
-                            </p>
-                        </div>
-
-                        <div className={indicadorClasse}>
-                            <div className="flex items-center justify-between gap-3">
-                                <p className="text-sm text-[#77746b]">
-                                    Produtos ativos
+                                <p className="mt-5 break-words text-2xl font-semibold text-[#8b690e]">
+                                    {valor}
                                 </p>
-
-                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#f5edda]">
-                                    <Tags size={21} className="text-[#98700a]" />
-                                </div>
-                            </div>
-
-                            <p className="mt-5 text-3xl font-semibold text-[#8b690e]">
-                                {produtosAtivos}
-                            </p>
-
-                            <p className="mt-1 text-xs text-[#969187]">
-                                Disponíveis no catálogo
-                            </p>
-                        </div>
-
-                        <div className={indicadorClasse}>
-                            <div className="flex items-center justify-between gap-3">
-                                <p className="text-sm text-[#77746b]">
-                                    Unidades em estoque
+                                <p className="mt-1 text-xs text-[#969187]">
+                                    {descricao}
                                 </p>
-
-                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#f5edda]">
-                                    <Boxes size={21} className="text-[#98700a]" />
-                                </div>
                             </div>
-
-                            <p className="mt-5 text-3xl font-semibold text-[#8b690e]">
-                                {totalEstoque}
-                            </p>
-
-                            <p className="mt-1 text-xs text-[#969187]">
-                                Soma das quantidades
-                            </p>
-                        </div>
-
-                        <div className={indicadorClasse}>
-                            <div className="flex items-center justify-between gap-3">
-                                <p className="text-sm text-[#77746b]">
-                                    Valor de custo do estoque
-                                </p>
-
-                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#f5edda]">
-                                    <DollarSign size={21} className="text-[#98700a]" />
-                                </div>
-                            </div>
-
-                            <p className="mt-5 break-words text-2xl font-semibold text-[#8b690e]">
-                                {moeda(valorEstoque)}
-                            </p>
-
-                            <p className="mt-1 text-xs text-[#969187]">
-                                Custo das unidades disponíveis
-                            </p>
-                        </div>
+                        ))}
                     </section>
 
-                    {/* Alerta de estoque */}
                     {produtosEstoqueBaixo > 0 && (
                         <section className="flex items-start gap-3 rounded-xl border border-[#e8d9b4] bg-[#f8f1df] p-4">
                             <AlertTriangle
                                 size={21}
                                 className="mt-0.5 shrink-0 text-[#98700a]"
                             />
-
                             <div>
                                 <p className="text-sm font-medium text-[#78601e]">
                                     Atenção ao estoque
                                 </p>
-
                                 <p className="mt-1 text-sm text-[#81734e]">
                                     {produtosEstoqueBaixo}{" "}
                                     {produtosEstoqueBaixo === 1
@@ -478,323 +392,184 @@ export const ProdutosPage = () => {
                         </section>
                     )}
 
-                    {/* Catálogo de produtos */}
                     <section className="overflow-hidden rounded-xl border border-[#e6dfcd] bg-[#fffefa] shadow-sm">
-
                         <div className="border-b border-[#eee7d7] p-5">
-                            <div className="flex flex-col justify-between gap-4 xl:flex-row xl:items-center">
-                                <div>
-                                    <h2 className="text-lg font-medium text-[#78601e]">
-                                        Catálogo de produtos
-                                    </h2>
-
-                                    <p className="mt-1 text-xs text-[#918d83]">
-                                        Consulte e gerencie os itens cadastrados.
-                                    </p>
-                                </div>
-
-                                <div className="flex flex-col gap-3 sm:flex-row">
-
-                                    {/* Busca */}
-                                    <div className="relative min-w-0 sm:w-64">
-                                        <Search
-                                            size={17}
-                                            className="absolute left-3 top-1/2 -translate-y-1/2 text-[#a49b85]"
-                                        />
-
-                                        <input
-                                            type="text"
-                                            value={busca}
-                                            onChange={(evento) =>
-                                                setBusca(evento.target.value)
-                                            }
-                                            placeholder="Buscar produto ou código..."
-                                            className="w-full rounded-lg border border-[#e3dcc9] bg-[#faf9f5] py-2.5 pl-9 pr-3 text-sm text-[#45433d] outline-none transition placeholder:text-[#aaa59a] focus:border-[#b99a43] focus:ring-2 focus:ring-[#b99a43]/10"
-                                        />
-                                    </div>
-
-                                    {/* Filtro de categoria */}
-                                    <div className="relative">
-                                        <select
-                                            value={categoriaFiltro}
-                                            onChange={(evento) =>
-                                                setCategoriaFiltro(evento.target.value)
-                                            }
-                                            className="w-full appearance-none rounded-lg border border-[#e3dcc9] bg-[#faf9f5] py-2.5 pl-3 pr-9 text-sm text-[#5f5c54] outline-none focus:border-[#b99a43] sm:w-44"
-                                        >
-                                            <option value="Todas">
-                                                Todas as categorias
-                                            </option>
-
-                                            {categorias.map((categoria) => (
-                                                <option
-                                                    key={categoria}
-                                                    value={categoria}
-                                                >
-                                                    {categoria}
-                                                </option>
-                                            ))}
-                                        </select>
-
-                                        <ChevronDown
-                                            size={15}
-                                            className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#98700a]"
-                                        />
-                                    </div>
-
-                                    {/* Filtro de status */}
-                                    <div className="relative">
-                                        <select
-                                            value={statusFiltro}
-                                            onChange={(evento) =>
-                                                setStatusFiltro(evento.target.value)
-                                            }
-                                            className="w-full appearance-none rounded-lg border border-[#e3dcc9] bg-[#faf9f5] py-2.5 pl-3 pr-9 text-sm text-[#5f5c54] outline-none focus:border-[#b99a43] sm:w-36"
-                                        >
-                                            <option value="Todos">
-                                                Todos os status
-                                            </option>
-                                            <option value="Ativo">Ativos</option>
-                                            <option value="Inativo">Inativos</option>
-                                        </select>
-
-                                        <ChevronDown
-                                            size={15}
-                                            className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#98700a]"
-                                        />
-                                    </div>
-                                </div>
-                            </div>
+                            <h2 className="text-lg font-medium text-[#78601e]">
+                                Catálogo de produtos
+                            </h2>
+                            <p className="mt-1 text-xs text-[#918d83]">
+                                Consulte e gerencie os itens cadastrados.
+                            </p>
                         </div>
 
-                        {/* Tabela */}
-                        <div className="overflow-x-auto">
-                            <table className="w-full min-w-[900px] text-left text-sm">
+                        <div className="grid grid-cols-1 gap-3 p-4 md:grid-cols-3">
+                            <div className="flex items-center gap-2 rounded-md border border-[#e3dcc9] bg-[#faf9f5] px-3 py-2">
+                                <Search size={17} className="shrink-0 text-[#918d83]" />
+                                <input
+                                    value={busca}
+                                    onChange={(evento) => setBusca(evento.target.value)}
+                                    placeholder="Buscar por nome ou código..."
+                                    className="w-full bg-transparent text-sm outline-none placeholder:text-[#918d83]"
+                                />
+                            </div>
+
+                            <select
+                                value={categoriaFiltro}
+                                onChange={(evento) => setCategoriaFiltro(evento.target.value)}
+                                className="rounded-md border border-[#e3dcc9] bg-[#faf9f5] px-3 py-2 text-sm outline-none"
+                            >
+                                <option value="Todas">Todas as categorias</option>
+                                {categorias.map((categoria) => (
+                                    <option key={categoria} value={categoria}>
+                                        {categoria}
+                                    </option>
+                                ))}
+                            </select>
+
+                            <select
+                                value={statusFiltro}
+                                onChange={(evento) => setStatusFiltro(evento.target.value)}
+                                className="rounded-md border border-[#e3dcc9] bg-[#faf9f5] px-3 py-2 text-sm outline-none"
+                            >
+                                <option value="Todos">Todos os status</option>
+                                <option value="Ativo">Ativo</option>
+                                <option value="Inativo">Inativo</option>
+                            </select>
+                        </div>
+
+                        <div className="overflow-x-auto px-4 pb-4">
+                            <table className="w-full min-w-[850px] text-left text-sm">
                                 <thead>
-                                    <tr className="bg-[#f5f1e7] text-xs text-[#81734e]">
-                                        <th className="px-5 py-4 font-medium">
-                                            Produto
-                                        </th>
-                                        <th className="px-4 py-4 font-medium">
-                                            Categoria
-                                        </th>
-                                        <th className="px-4 py-4 font-medium">
-                                            Preço de venda
-                                        </th>
-                                        <th className="px-4 py-4 font-medium">
-                                            Estoque
-                                        </th>
-                                        <th className="px-4 py-4 font-medium">
-                                            Status
-                                        </th>
-                                        <th className="px-5 py-4 text-right font-medium">
-                                            Ações
-                                        </th>
+                                    <tr className="bg-[#f5f1e7] text-xs text-[#89670d]">
+                                        <th className="px-3 py-4 font-medium">Produto</th>
+                                        <th className="px-3 py-4 font-medium">Código</th>
+                                        <th className="px-3 py-4 font-medium">Categoria</th>
+                                        <th className="px-3 py-4 font-medium">Preço</th>
+                                        <th className="px-3 py-4 font-medium">Estoque</th>
+                                        <th className="px-3 py-4 font-medium">Status</th>
+                                        <th className="px-3 py-4 text-center font-medium">Ações</th>
                                     </tr>
                                 </thead>
-
                                 <tbody>
-                                    {produtosFiltrados.map((produto, index) => {
-                                        const estoqueBaixo =
-                                            produto.estoque <= produto.estoqueMinimo;
-
-                                        return (
+                                    {carregando ? (
+                                        <tr>
+                                            <td colSpan="7" className="px-3 py-10 text-center text-[#918d83]">
+                                                Carregando produtos...
+                                            </td>
+                                        </tr>
+                                    ) : produtosFiltrados.length === 0 ? (
+                                        <tr>
+                                            <td colSpan="7" className="px-3 py-10 text-center text-[#918d83]">
+                                                Nenhum produto encontrado.
+                                            </td>
+                                        </tr>
+                                    ) : (
+                                        produtosFiltrados.map((produto) => (
                                             <tr
                                                 key={produto.id}
-                                                className={`border-t border-[#eeeae0] text-[#5f5c54] transition-colors hover:bg-[#f8f5ed] ${
-                                                    index % 2 === 1
-                                                        ? "bg-[#fcfbf7]"
-                                                        : ""
-                                                }`}
+                                                className="border-t border-[#eee8dc] text-[#68645b] hover:bg-[#faf8f2]"
                                             >
-                                                <td className="px-5 py-4">
+                                                <td className="whitespace-nowrap px-3 py-4">
                                                     <div className="flex items-center gap-3">
-                                                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-[#e9dfc4] bg-[#f5edda]">
-                                                            <Package
-                                                                size={19}
-                                                                className="text-[#98700a]"
-                                                            />
+                                                        <div className="flex h-9 w-9 items-center justify-center rounded-md border border-[#e6dfcd] bg-[#f5f1e7]">
+                                                            <Package size={18} className="text-[#98700a]" />
                                                         </div>
-
-                                                        <div>
-                                                            <p className="font-medium text-[#45433d]">
-                                                                {produto.nome}
-                                                            </p>
-
-                                                            <p className="mt-1 text-xs text-[#969187]">
-                                                                {produto.codigo}
-                                                            </p>
-                                                        </div>
+                                                        <span className="font-medium text-[#45433d]">
+                                                            {produto.nome}
+                                                        </span>
                                                     </div>
                                                 </td>
-
-                                                <td className="px-4 py-4">
-                                                    {produto.categoria}
-                                                </td>
-
-                                                <td className="whitespace-nowrap px-4 py-4 font-medium text-[#45433d]">
+                                                <td className="px-3 py-4">{produto.codigo || "—"}</td>
+                                                <td className="px-3 py-4">{produto.categoria || "—"}</td>
+                                                <td className="whitespace-nowrap px-3 py-4">
                                                     {moeda(produto.preco)}
                                                 </td>
-
-                                                <td className="px-4 py-4">
-                                                    <div className="flex items-center gap-2">
-                                                        <span
-                                                            className={
-                                                                estoqueBaixo
-                                                                    ? "font-medium text-amber-700"
-                                                                    : "text-[#5f5c54]"
-                                                            }
-                                                        >
-                                                            {produto.estoque} un.
-                                                        </span>
-
-                                                        {estoqueBaixo && (
-                                                            <AlertTriangle
-                                                                size={14}
-                                                                className="text-amber-600"
-                                                                title="Estoque baixo"
-                                                            />
-                                                        )}
-                                                    </div>
-
-                                                    <p className="mt-1 text-[11px] text-[#969187]">
-                                                        Mínimo: {produto.estoqueMinimo}
-                                                    </p>
+                                                <td className="px-3 py-4">
+                                                    {Number(produto.estoque || 0)}
                                                 </td>
-
-                                                <td className="px-4 py-4">
+                                                <td className="px-3 py-4">
                                                     <span
-                                                        className={`rounded-full px-2.5 py-1 text-xs font-medium ${
-                                                            produto.status === "Ativo"
-                                                                ? "bg-emerald-100 text-emerald-700"
-                                                                : "bg-[#eeece6] text-[#77746b]"
-                                                        }`}
+                                                        className={`rounded-full border px-2.5 py-1 text-xs ${produto.status === "Ativo"
+                                                            ? "border-[#b9d9c5] bg-[#edf7f0] text-[#32734a]"
+                                                            : "border-[#e3dcc9] bg-[#f5f1e7] text-[#68645b]"
+                                                            }`}
                                                     >
-                                                        {produto.status}
+                                                        {produto.status || "Inativo"}
                                                     </span>
                                                 </td>
-
-                                                <td className="px-5 py-4">
-                                                    <div className="flex justify-end gap-2">
+                                                <td className="px-3 py-4">
+                                                    <div className="flex items-center justify-center gap-2">
                                                         <button
                                                             onClick={() => abrirEdicao(produto)}
                                                             title="Editar produto"
-                                                            aria-label={`Editar ${produto.nome}`}
-                                                            className="rounded-lg border border-[#e6dfcd] p-2 text-[#8b690e] transition hover:border-[#d4bd7c] hover:bg-[#f5edda]"
+                                                            className="rounded-md p-2 text-[#98700a] transition hover:bg-[#f5edda]"
                                                         >
-                                                            <Pencil size={16} />
+                                                            <Pencil size={17} />
                                                         </button>
-
                                                         <button
-                                                            onClick={() => excluirProduto(produto)}
+                                                            onClick={() => removerProduto(produto)}
                                                             title="Excluir produto"
-                                                            aria-label={`Excluir ${produto.nome}`}
-                                                            className="rounded-lg border border-red-200 p-2 text-red-600 transition hover:bg-red-50"
+                                                            className="rounded-md p-2 text-[#b34b40] transition hover:bg-[#fdf0ed]"
                                                         >
-                                                            <Trash2 size={16} />
+                                                            <Trash2 size={17} />
                                                         </button>
                                                     </div>
                                                 </td>
                                             </tr>
-                                        );
-                                    })}
+                                        ))
+                                    )}
                                 </tbody>
                             </table>
-
-                            {produtosFiltrados.length === 0 && (
-                                <div className="px-5 py-14 text-center">
-                                    <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-xl bg-[#f5f1e7]">
-                                        <Package
-                                            size={28}
-                                            className="text-[#b49a51]"
-                                        />
-                                    </div>
-
-                                    <p className="mt-3 text-sm font-medium text-[#45433d]">
-                                        Nenhum produto encontrado.
-                                    </p>
-
-                                    <p className="mt-1 text-xs text-[#918d83]">
-                                        Tente alterar a pesquisa ou os filtros.
-                                    </p>
-                                </div>
-                            )}
-                        </div>
-
-                        <div className="flex flex-col gap-2 border-t border-[#eee7d7] bg-[#faf9f5] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-                            <p className="text-xs text-[#918d83]">
-                                Exibindo {produtosFiltrados.length} de {produtos.length} produtos
-                            </p>
-
-                            <p className="text-xs text-[#918d83]">
-                                Dados demonstrativos
-                            </p>
                         </div>
                     </section>
                 </main>
             </div>
 
-            {/* Modal de cadastro e edição */}
             {modalAberto && (
-                <div
-                    className="fixed inset-0 z-[60] flex items-center justify-center overflow-y-auto bg-[#35342f]/45 p-4 backdrop-blur-sm"
-                    onMouseDown={(evento) => {
-                        if (evento.target === evento.currentTarget) {
-                            setModalAberto(false);
-                        }
-                    }}
-                >
-                    <div className="my-auto w-full max-w-2xl overflow-hidden rounded-2xl border border-[#e3dcc9] bg-[#fffefa] shadow-2xl">
-
-                        <div className="flex items-center justify-between border-b border-[#eee7d7] bg-[#faf9f5] p-5">
+                <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-[#35342f]/50 p-4">
+                    <section className="my-8 w-full max-w-2xl rounded-xl border border-[#e6dfcd] bg-[#fffefa] shadow-xl">
+                        <div className="flex items-center justify-between border-b border-[#eee7d7] p-5">
                             <div>
                                 <h2 className="text-lg font-medium text-[#78601e]">
-                                    {produtoEditando
-                                        ? "Editar produto"
-                                        : "Cadastrar produto"}
+                                    {produtoEditando ? "Editar produto" : "Cadastrar produto"}
                                 </h2>
-
                                 <p className="mt-1 text-xs text-[#918d83]">
-                                    Preencha as informações do catálogo.
+                                    Preencha os dados do produto.
                                 </p>
                             </div>
-
                             <button
                                 onClick={() => setModalAberto(false)}
-                                aria-label="Fechar modal"
-                                className="rounded-lg p-2 text-[#89867d] transition hover:bg-[#f0ece2] hover:text-[#78601e]"
+                                className="rounded-md p-2 text-[#77746b] hover:bg-[#f5f1e7]"
+                                aria-label="Fechar"
                             >
-                                <X size={21} />
+                                <X size={20} />
                             </button>
                         </div>
 
-                        <form onSubmit={salvarProduto}>
-                            <div className="grid grid-cols-1 gap-5 p-5 sm:grid-cols-2">
+                        <form onSubmit={salvarProduto} className="space-y-4 p-5">
+                            {erro && (
+                                <p className="rounded-md bg-[#fdf0ed] p-3 text-sm text-[#a94338]">
+                                    {erro}
+                                </p>
+                            )}
 
-                                <label className="text-sm font-medium text-[#5f5c54] sm:col-span-2">
-                                    Nome do produto *
-                                    <input
-                                        required
-                                        autoFocus
-                                        type="text"
-                                        maxLength={100}
-                                        value={formulario.nome}
-                                        onChange={(evento) =>
-                                            atualizarCampo("nome", evento.target.value)
-                                        }
-                                        placeholder="Ex.: Incenso Natural"
-                                        className={campoClasse}
-                                    />
-                                </label>
+                            <div>
+                                <label className="text-sm text-[#68645b]">Nome do produto</label>
+                                <input
+                                    required
+                                    value={formulario.nome}
+                                    onChange={(evento) => atualizarCampo("nome", evento.target.value)}
+                                    className={campoClasse}
+                                    placeholder="Ex.: Incenso natural"
+                                />
+                            </div>
 
-                                <label className="text-sm font-medium text-[#5f5c54]">
-                                    Categoria *
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                <div>
+                                    <label className="text-sm text-[#68645b]">Categoria</label>
                                     <select
-                                        required
                                         value={formulario.categoria}
-                                        onChange={(evento) =>
-                                            atualizarCampo("categoria", evento.target.value)
-                                        }
+                                        onChange={(evento) => atualizarCampo("categoria", evento.target.value)}
                                         className={campoClasse}
                                     >
                                         {categorias.map((categoria) => (
@@ -803,123 +578,91 @@ export const ProdutosPage = () => {
                                             </option>
                                         ))}
                                     </select>
-                                </label>
+                                </div>
 
-                                <label className="text-sm font-medium text-[#5f5c54]">
-                                    Status *
+                                <div>
+                                    <label className="text-sm text-[#68645b]">Status</label>
                                     <select
-                                        required
                                         value={formulario.status}
-                                        onChange={(evento) =>
-                                            atualizarCampo("status", evento.target.value)
-                                        }
+                                        onChange={(evento) => atualizarCampo("status", evento.target.value)}
                                         className={campoClasse}
                                     >
                                         <option value="Ativo">Ativo</option>
                                         <option value="Inativo">Inativo</option>
                                     </select>
-                                </label>
+                                </div>
 
-                                <label className="text-sm font-medium text-[#5f5c54]">
-                                    Preço de venda (R$) *
+                                <div>
+                                    <label className="text-sm text-[#68645b]">Preço de venda (R$)</label>
                                     <input
                                         required
                                         type="number"
                                         min="0"
                                         step="0.01"
                                         value={formulario.preco}
-                                        onChange={(evento) =>
-                                            atualizarCampo("preco", evento.target.value)
-                                        }
-                                        placeholder="0,00"
+                                        onChange={(evento) => atualizarCampo("preco", evento.target.value)}
                                         className={campoClasse}
                                     />
-                                </label>
+                                </div>
 
-                                <label className="text-sm font-medium text-[#5f5c54]">
-                                    Preço de custo (R$) *
+                                <div>
+                                    <label className="text-sm text-[#68645b]">Custo unitário (R$)</label>
                                     <input
                                         required
                                         type="number"
                                         min="0"
                                         step="0.01"
                                         value={formulario.custo}
-                                        onChange={(evento) =>
-                                            atualizarCampo("custo", evento.target.value)
-                                        }
-                                        placeholder="0,00"
+                                        onChange={(evento) => atualizarCampo("custo", evento.target.value)}
                                         className={campoClasse}
                                     />
-                                </label>
+                                </div>
 
-                                <label className="text-sm font-medium text-[#5f5c54]">
-                                    Quantidade em estoque *
+                                <div>
+                                    <label className="text-sm text-[#68645b]">Quantidade em estoque</label>
                                     <input
                                         required
                                         type="number"
                                         min="0"
                                         step="1"
                                         value={formulario.estoque}
-                                        onChange={(evento) =>
-                                            atualizarCampo("estoque", evento.target.value)
-                                        }
-                                        placeholder="0"
+                                        onChange={(evento) => atualizarCampo("estoque", evento.target.value)}
                                         className={campoClasse}
                                     />
-                                </label>
+                                </div>
 
-                                <label className="text-sm font-medium text-[#5f5c54]">
-                                    Estoque mínimo *
+                                <div>
+                                    <label className="text-sm text-[#68645b]">Estoque mínimo</label>
                                     <input
                                         required
                                         type="number"
                                         min="0"
                                         step="1"
                                         value={formulario.estoqueMinimo}
-                                        onChange={(evento) =>
-                                            atualizarCampo("estoqueMinimo", evento.target.value)
-                                        }
-                                        placeholder="5"
+                                        onChange={(evento) => atualizarCampo("estoqueMinimo", evento.target.value)}
                                         className={campoClasse}
                                     />
-                                </label>
-
-                                <div className="rounded-lg border border-[#e9dfc4] bg-[#f8f3e6] p-3 sm:col-span-2">
-                                    <div className="flex items-start gap-2">
-                                        <AlertTriangle
-                                            size={17}
-                                            className="mt-0.5 shrink-0 text-[#98700a]"
-                                        />
-
-                                        <p className="text-xs leading-5 text-[#81734e]">
-                                            O sistema sinalizará o produto quando a quantidade em estoque for igual ou inferior ao estoque mínimo.
-                                        </p>
-                                    </div>
                                 </div>
                             </div>
 
-                            <div className="flex flex-col-reverse gap-3 border-t border-[#eee7d7] bg-[#faf9f5] p-5 sm:flex-row sm:justify-end">
+                            <div className="flex flex-col-reverse justify-end gap-3 border-t border-[#eee7d7] pt-4 sm:flex-row">
                                 <button
                                     type="button"
                                     onClick={() => setModalAberto(false)}
-                                    className="rounded-lg border border-[#e3dcc9] px-5 py-3 text-sm font-medium text-[#68645b] transition hover:bg-[#f0ece2]"
+                                    className="rounded-lg border border-[#e3dcc9] px-4 py-3 text-sm text-[#68645b] hover:bg-[#f5f1e7]"
                                 >
                                     Cancelar
                                 </button>
-
                                 <button
                                     type="submit"
-                                    className="flex items-center justify-center gap-2 rounded-lg bg-[#b18a20] px-5 py-3 text-sm font-medium text-white transition hover:bg-[#98700a]"
+                                    disabled={salvando}
+                                    className="rounded-lg bg-[#b18a20] px-5 py-3 text-sm font-medium text-white hover:bg-[#98700a] disabled:cursor-not-allowed disabled:opacity-60"
                                 >
-                                    <Plus size={17} />
-
-                                    {produtoEditando
-                                        ? "Salvar alterações"
-                                        : "Cadastrar produto"}
+                                    {salvando ? "Salvando..." : "Salvar produto"}
                                 </button>
                             </div>
                         </form>
-                    </div>
+                    </section>
                 </div>
             )}
         </div>
