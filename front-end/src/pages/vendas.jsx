@@ -505,19 +505,6 @@ export const Vendas = () => {
                     </div>
 
                     <div className="flex items-center gap-3 sm:gap-4">
-                        <div className="hidden items-center gap-2 rounded-lg border border-[#e6dfcd] bg-[#fffefa] px-3 py-2 sm:flex">
-                            <Search size={17} className="text-[#918d83]" />
-                            <input
-                                value={busca}
-                                onChange={(e) => {
-                                    setBusca(e.target.value);
-                                    setPagina(1);
-                                }}
-                                placeholder="Buscar venda..."
-                                className="w-36 bg-transparent text-sm text-[#45433d] outline-none placeholder:text-[#918d83] lg:w-48"
-                            />
-                        </div>
-
                         <div className="hidden border-l border-[#e3dcc9] pl-4 sm:block">
                             <p className="text-sm text-[#89670d]">
                                 Estrela do Oriente
@@ -556,9 +543,6 @@ export const Vendas = () => {
                             <h2 className="text-lg font-medium text-[#78601e]">
                                 Indicadores
                             </h2>
-                            <span className="text-xs text-[#918d83]">
-                                Dados demonstrativos
-                            </span>
                         </div>
 
                         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -1033,15 +1017,6 @@ export const Vendas = () => {
                                     <p className="text-2xl font-semibold text-[#8b690e]">
                                         Total: {moeda(totalVenda(vendaSelecionada))}
                                     </p>
-                                </div>
-
-                                <div className="flex justify-end">
-                                    <button
-                                        onClick={fecharModal}
-                                        className="rounded-lg border border-[#e6dfcd] px-4 py-2.5 text-sm text-[#68645b] transition hover:bg-[#f5f1e7]"
-                                    >
-                                        Fechar
-                                    </button>
                                 </div>
                             </div>
                         ) : (

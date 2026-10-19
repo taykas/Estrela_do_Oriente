@@ -1,5 +1,6 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
+import JsBarcode from "jsbarcode";
 import {
     Package,
     Menu,
@@ -123,8 +124,13 @@ const moeda = (valor) =>
         currency: "BRL"
     });
 
+// Gera um código numérico interno baseado no ID do produto.
+const gerarCodigoBarras = (id) =>
+    `200${String(id).padStart(9, "0")}`;
+
 const produtoVazio = {
     nome: "",
+    codigoBarras: "",
     categoria: "Incensos",
     preco: "",
     custo: "",
@@ -149,6 +155,15 @@ export const ProdutosPage = () => {
     const [formulario, setFormulario] = useState(produtoVazio);
     const [menuAberto, setMenuAberto] = useState(false);
 
+    const codigoBarrasRef = useRef(null);
+
+    // Retorna o próximo ID disponível.
+    const proximoId = () =>
+        produtos.reduce(
+            (maior, produto) => Math.max(maior, produto.id),
+            0
+        ) + 1;
+
     // Volta o scroll para o início ao entrar na página.
     useEffect(() => {
         window.scrollTo(0, 0);
@@ -158,17 +173,48 @@ export const ProdutosPage = () => {
     useEffect(() => {
         if (location.state?.abrirCadastro) {
             setProdutoEditando(null);
-            setFormulario(produtoVazio);
+            setFormulario({
+                ...produtoVazio,
+                codigoBarras: gerarCodigoBarras(proximoId())
+            });
             setModalAberto(true);
 
-            // Limpa o estado para não abrir o modal novamente
-            // quando o usuário voltar para esta página.
             navegar(location.pathname, {
                 replace: true,
                 state: null
             });
         }
     }, [location.state, location.pathname, navegar]);
+
+    // Gera a pré-visualização do código de barras.
+    useEffect(() => {
+        const svg = codigoBarrasRef.current;
+
+        if (!modalAberto || !svg) return;
+
+        svg.innerHTML = "";
+
+        const codigo = formulario.codigoBarras.trim();
+
+        if (!codigo) return;
+
+        try {
+            JsBarcode(svg, codigo, {
+                format: "CODE128",
+                lineColor: "#35342f",
+                background: "#ffffff",
+                width: 2,
+                height: 65,
+                margin: 10,
+                displayValue: true,
+                font: "monospace",
+                fontSize: 14,
+                textMargin: 6
+            });
+        } catch {
+            svg.innerHTML = "";
+        }
+    }, [formulario.codigoBarras, modalAberto]);
 
     const totalEstoque = produtos.reduce(
         (total, produto) => total + produto.estoque,
@@ -196,6 +242,7 @@ export const ProdutosPage = () => {
         const correspondeBusca =
             produto.nome.toLowerCase().includes(termo) ||
             produto.codigo.toLowerCase().includes(termo) ||
+            (produto.codigoBarras || "").toLowerCase().includes(termo) ||
             produto.categoria.toLowerCase().includes(termo);
 
         const correspondeCategoria =
@@ -215,7 +262,12 @@ export const ProdutosPage = () => {
 
     const abrirCadastro = () => {
         setProdutoEditando(null);
-        setFormulario(produtoVazio);
+
+        setFormulario({
+            ...produtoVazio,
+            codigoBarras: gerarCodigoBarras(proximoId())
+        });
+
         setModalAberto(true);
     };
 
@@ -224,6 +276,8 @@ export const ProdutosPage = () => {
 
         setFormulario({
             nome: produto.nome,
+            codigoBarras:
+                produto.codigoBarras || gerarCodigoBarras(produto.id),
             categoria: produto.categoria,
             preco: String(produto.preco),
             custo: String(produto.custo),
@@ -274,8 +328,28 @@ export const ProdutosPage = () => {
             return;
         }
 
+        const idProduto = produtoEditando?.id ?? proximoId();
+
+        const codigoBarras =
+            formulario.codigoBarras.trim() ||
+            gerarCodigoBarras(idProduto);
+
+        const codigoDuplicado = produtos.some(
+            (produto) =>
+                produto.codigoBarras === codigoBarras &&
+                produto.id !== produtoEditando?.id
+        );
+
+        if (codigoDuplicado) {
+            alert(
+                "Já existe um produto cadastrado com esse código de barras."
+            );
+            return;
+        }
+
         const dadosProduto = {
             nome,
+            codigoBarras,
             categoria: formulario.categoria,
             preco,
             custo,
@@ -293,15 +367,9 @@ export const ProdutosPage = () => {
                 )
             );
         } else {
-            const proximoId =
-                produtos.reduce(
-                    (maior, produto) => Math.max(maior, produto.id),
-                    0
-                ) + 1;
-
             const novoProduto = {
-                id: proximoId,
-                codigo: `PRD-${String(proximoId).padStart(3, "0")}`,
+                id: idProduto,
+                codigo: `PRD-${String(idProduto).padStart(3, "0")}`,
                 ...dadosProduto
             };
 
@@ -333,7 +401,6 @@ export const ProdutosPage = () => {
         <div className="min-h-screen bg-[#f3f1eb] text-[#35342f]">
             <Sidebar />
 
-            {/* Fundo do menu mobile */}
             {menuAberto && (
                 <button
                     aria-label="Fechar menu"
@@ -342,9 +409,7 @@ export const ProdutosPage = () => {
                 />
             )}
 
-            {/* Conteúdo */}
             <div className="min-h-screen lg:ml-60">
-                {/* Cabeçalho */}
                 <header className="sticky top-0 z-30 flex h-24 items-center justify-between border-b border-[#e3dcc9] bg-[#faf9f5]/95 px-4 backdrop-blur-sm sm:px-6 lg:px-8">
                     <div className="flex items-center gap-3">
                         <button
@@ -380,7 +445,6 @@ export const ProdutosPage = () => {
                 </header>
 
                 <main className="space-y-6 p-4 sm:p-6 lg:p-8">
-                    {/* Título e ação */}
                     <section className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
                         <div>
                             <h2 className="text-xl font-medium text-[#78601e]">
@@ -400,7 +464,7 @@ export const ProdutosPage = () => {
                             Cadastrar produto
                         </button>
                     </section>
-                                        {/* Indicadores */}
+
                     <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
                         <div className={indicadorClasse}>
                             <div className="flex items-center justify-between gap-3">
@@ -471,7 +535,6 @@ export const ProdutosPage = () => {
                         </div>
                     </section>
 
-                    {/* Alerta de estoque */}
                     {produtosEstoqueBaixo > 0 && (
                         <section className="flex items-start gap-3 rounded-xl border border-[#e8d9b4] bg-[#f8f1df] p-4">
                             <AlertTriangle
@@ -492,9 +555,7 @@ export const ProdutosPage = () => {
                             </div>
                         </section>
                     )}
-
-                    {/* Catálogo de produtos */}
-                    <section className="overflow-hidden rounded-xl border border-[#e6dfcd] bg-[#fffefa] shadow-sm">
+                                        <section className="overflow-hidden rounded-xl border border-[#e6dfcd] bg-[#fffefa] shadow-sm">
                         <div className="border-b border-[#eee7d7] p-5">
                             <div className="flex flex-col justify-between gap-4 xl:flex-row xl:items-center">
                                 <div>
@@ -507,7 +568,6 @@ export const ProdutosPage = () => {
                                 </div>
 
                                 <div className="flex flex-col gap-3 sm:flex-row">
-                                    {/* Busca */}
                                     <div className="relative min-w-0 sm:w-64">
                                         <Search
                                             size={17}
@@ -524,7 +584,6 @@ export const ProdutosPage = () => {
                                         />
                                     </div>
 
-                                    {/* Filtro de categoria */}
                                     <div className="relative">
                                         <select
                                             value={categoriaFiltro}
@@ -548,7 +607,6 @@ export const ProdutosPage = () => {
                                         />
                                     </div>
 
-                                    {/* Filtro de status */}
                                     <div className="relative">
                                         <select
                                             value={statusFiltro}
@@ -572,16 +630,12 @@ export const ProdutosPage = () => {
                             </div>
                         </div>
 
-                        {/* Tabela */}
                         <div className="overflow-x-auto">
                             <table className="w-full min-w-[900px] text-left text-sm">
                                 <thead>
                                     <tr className="bg-[#f5f1e7] text-xs text-[#81734e]">
                                         <th className="px-5 py-4 font-medium">
                                             Produto
-                                        </th>
-                                        <th className="px-4 py-4 font-medium">
-                                            Categoria
                                         </th>
                                         <th className="px-4 py-4 font-medium">
                                             Preço de venda
@@ -627,12 +681,13 @@ export const ProdutosPage = () => {
                                                             <p className="mt-1 text-xs text-[#969187]">
                                                                 {produto.codigo}
                                                             </p>
+                                                            {produto.codigoBarras && (
+                                                                <p className="mt-1 text-[11px] text-[#98700a]">
+                                                                    EAN interno: {produto.codigoBarras}
+                                                                </p>
+                                                            )}
                                                         </div>
                                                     </div>
-                                                </td>
-
-                                                <td className="px-4 py-4">
-                                                    {produto.categoria}
                                                 </td>
 
                                                 <td className="whitespace-nowrap px-4 py-4 font-medium text-[#45433d]">
@@ -727,7 +782,8 @@ export const ProdutosPage = () => {
                     </section>
                 </main>
             </div>
-                        {/* Modal de cadastro e edição */}
+
+            {/* Modal de cadastro e edição */}
             {modalAberto && (
                 <div
                     className="fixed inset-0 z-[60] flex items-center justify-center overflow-y-auto bg-[#35342f]/45 p-4 backdrop-blur-sm"
@@ -751,6 +807,7 @@ export const ProdutosPage = () => {
                             </div>
 
                             <button
+                                type="button"
                                 onClick={() => setModalAberto(false)}
                                 aria-label="Fechar modal"
                                 className="rounded-lg p-2 text-[#89867d] transition hover:bg-[#f0ece2] hover:text-[#78601e]"
@@ -776,6 +833,66 @@ export const ProdutosPage = () => {
                                         className={campoClasse}
                                     />
                                 </label>
+
+                                {/* Código de barras */}
+                                <div className="sm:col-span-2">
+                                    <label
+                                        htmlFor="codigoBarras"
+                                        className="text-sm font-medium text-[#5f5c54]"
+                                    >
+                                        Código de barras
+                                    </label>
+
+                                    <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+                                        <input
+                                            id="codigoBarras"
+                                            type="text"
+                                            value={formulario.codigoBarras}
+                                            onChange={(evento) =>
+                                                atualizarCampo(
+                                                    "codigoBarras",
+                                                    evento.target.value.replace(/\s/g, "")
+                                                )
+                                            }
+                                            placeholder="Código de barras"
+                                            className={`${campoClasse} mt-0 min-w-0 flex-1`}
+                                        />
+
+                                        <button
+                                            type="button"
+                                            onClick={() =>
+                                                atualizarCampo(
+                                                    "codigoBarras",
+                                                    gerarCodigoBarras(
+                                                        produtoEditando?.id ?? proximoId()
+                                                    )
+                                                )
+                                            }
+                                            className="rounded-lg border border-[#d9c99e] px-4 py-3 text-sm font-medium text-[#98700a] transition hover:bg-[#f5edda]"
+                                        >
+                                            Gerar código
+                                        </button>
+                                    </div>
+
+                                    <p className="mt-2 text-xs leading-5 text-[#918d83]">
+                                        O código é gerado automaticamente. Você pode alterá-lo
+                                        ou utilizar um leitor USB para preencher o campo.
+                                    </p>
+
+                                    <div className="mt-4 flex min-h-[140px] items-center justify-center overflow-x-auto rounded-xl border border-[#e3dcc9] bg-white p-4">
+                                        {formulario.codigoBarras.trim() ? (
+                                            <svg
+                                                ref={codigoBarrasRef}
+                                                className="h-auto max-w-full"
+                                                aria-label="Pré-visualização do código de barras"
+                                            />
+                                        ) : (
+                                            <p className="text-sm text-[#918d83]">
+                                                O código de barras aparecerá aqui.
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
 
                                 <label className="text-sm font-medium text-[#5f5c54]">
                                     Status *
@@ -851,7 +968,7 @@ export const ProdutosPage = () => {
                                         onChange={(evento) =>
                                             atualizarCampo("estoqueMinimo", evento.target.value)
                                         }
-                                        placeholder="5"
+                                        placeholder="0"
                                         className={campoClasse}
                                     />
                                 </label>
@@ -863,7 +980,8 @@ export const ProdutosPage = () => {
                                             className="mt-0.5 shrink-0 text-[#98700a]"
                                         />
                                         <p className="text-xs leading-5 text-[#81734e]">
-                                            O sistema sinalizará o produto quando a quantidade em estoque for igual ou inferior ao estoque mínimo.
+                                            O sistema sinalizará o produto quando a quantidade
+                                            em estoque for igual ou inferior ao estoque mínimo.
                                         </p>
                                     </div>
                                 </div>

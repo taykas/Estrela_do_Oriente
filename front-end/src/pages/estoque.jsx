@@ -456,21 +456,6 @@ export const Estoque = () => {
                     </div>
 
                     <div className="flex items-center gap-3 sm:gap-4">
-                        <div className="hidden items-center gap-2 rounded-md border border-[#e3dcc9] bg-[#fffefa] px-3 py-2 sm:flex">
-                            <Search
-                                size={17}
-                                className="text-[#918d83]"
-                            />
-                            <input
-                                value={busca}
-                                onChange={(e) => {
-                                    setBusca(e.target.value);
-                                    setPagina(1);
-                                }}
-                                placeholder="Buscar produto..."
-                                className="w-36 bg-transparent text-sm text-[#45433d] outline-none placeholder:text-[#918d83] lg:w-48"
-                            />
-                        </div>
 
                         <div className="hidden border-l border-[#e3dcc9] pl-4 sm:block">
                             <p className="text-sm text-[#89670d]">
@@ -902,42 +887,6 @@ export const Estoque = () => {
                                     )}
                                 </div>
                             </div>
-
-                            <div className="rounded-lg border border-[#e6dfcd] bg-[#fffefa] p-4">
-                                <div className="mb-4 flex items-center gap-2">
-                                    <Plus
-                                        size={20}
-                                        className="text-[#98700a]"
-                                    />
-                                    <h2 className="text-base text-[#89670d]">
-                                        Ações Rápidas
-                                    </h2>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-3">
-                                    <button
-                                        onClick={() => navegar("/produtos")}
-                                        className="flex min-h-24 flex-col items-center justify-center gap-2 rounded-md border border-[#e3dcc9] p-3 text-center text-xs text-[#68645b] transition hover:bg-[#f5f1e7] hover:text-[#89670d]"
-                                    >
-                                        <Package
-                                            size={23}
-                                            className="text-[#98700a]"
-                                        />
-                                        Cadastrar Produto
-                                    </button>
-
-                                    <button
-                                        onClick={() => navegar("/relatorios")}
-                                        className="flex min-h-24 flex-col items-center justify-center gap-2 rounded-md border border-[#e3dcc9] p-3 text-center text-xs text-[#68645b] transition hover:bg-[#f5f1e7] hover:text-[#89670d]"
-                                    >
-                                        <ChartNoAxesCombined
-                                            size={23}
-                                            className="text-[#98700a]"
-                                        />
-                                        Ver Relatórios
-                                    </button>
-                                </div>
-                            </div>
                         </div>
                     </section>
                 </main>
@@ -1029,25 +978,6 @@ export const Estoque = () => {
                                             <X size={17} />
                                         </button>
                                     )}
-                                </div>
-
-                                {/* Filtros de categoria */}
-                                <div className="mb-5 flex gap-2 overflow-x-auto pb-2">
-                                    {["Todas", ...categorias].map((categoria) => (
-                                        <button
-                                            key={categoria}
-                                            onClick={() =>
-                                                setCategoriaCatalogo(categoria)
-                                            }
-                                            className={`shrink-0 rounded-full border px-4 py-2 text-xs font-medium transition ${
-                                                categoriaCatalogo === categoria
-                                                    ? "border-[#98700a] bg-[#98700a] text-white"
-                                                    : "border-[#e3dcc9] bg-[#fffefa] text-[#68645b] hover:border-[#c8b77e] hover:bg-[#f5f1e7]"
-                                            }`}
-                                        >
-                                            {categoria}
-                                        </button>
-                                    ))}
                                 </div>
 
                                 <div className="mb-3 flex items-center justify-between">
