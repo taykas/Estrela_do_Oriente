@@ -1,5 +1,6 @@
+import { useMemo, useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 
-import { useState } from "react";
 import Sidebar from "../components/Sidebar";
 import {
     Package,
@@ -143,6 +144,12 @@ const cardClasse =
     "rounded-xl border border-[#e6dfcd] bg-[#fffefa] shadow-sm";
 
 export const Vendas = () => {
+    const { pathname } = useLocation();
+
+    useEffect(() => {
+        window.scrollTo(0, 0);
+    }, [pathname]);
+
     const [produtos, setProdutos] = useState(produtosIniciais);
     const [vendas, setVendas] = useState(vendasIniciais);
 

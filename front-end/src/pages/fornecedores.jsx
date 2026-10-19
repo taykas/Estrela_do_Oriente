@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import {
     Menu,
@@ -203,6 +204,12 @@ const Campo = ({
 );
 
 export const Fornecedores = () => {
+    const { pathname } = useLocation();
+
+    useEffect(() => {
+        window.scrollTo(0, 0);
+    }, [pathname]);
+
     const [fornecedores, setFornecedores] = useState(fornecedoresIniciais);
 
     const [busca, setBusca] = useState("");

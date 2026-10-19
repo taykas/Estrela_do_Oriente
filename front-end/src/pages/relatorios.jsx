@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import {
     Menu,
@@ -137,6 +138,12 @@ const BarraHorizontal = ({ titulo, valor, total, legenda }) => {
 };
 
 export const Relatorios = () => {
+    const { pathname } = useLocation();
+
+    useEffect(() => {
+        window.scrollTo(0, 0);
+    }, [pathname]);
+    
     const hoje = obterHoje();
 
     const [periodo, setPeriodo] = useState("mes");

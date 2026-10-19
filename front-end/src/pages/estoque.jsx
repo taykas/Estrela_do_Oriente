@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { useEffect, useState } from "react";
 import Sidebar from "../components/Sidebar";
 import {
     Home,
@@ -24,7 +25,6 @@ import {
     ChevronLeft,
     ChevronRight
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 
 const produtosIniciais = [
     { id: 1, nome: "Incenso Natural", categoria: "Incensos", quantidade: 3, minimo: 10, preco: 12.90 },
@@ -83,6 +83,11 @@ const botaoSecundario =
 
 export const Estoque = () => {
     const navegar = useNavigate();
+    const { pathname } = useLocation();
+
+    useEffect(() => {
+        window.scrollTo(0, 0);
+    }, [pathname]);
 
     const [produtos, setProdutos] = useState(produtosIniciais);
     const [busca, setBusca] = useState("");
@@ -343,7 +348,6 @@ export const Estoque = () => {
             0
         );
 
-    // Valida todos os itens antes de alterar qualquer estoque.
     const registrarMovimentacao = () => {
         if (itensMovimentacao.length === 0) {
             setMensagem(

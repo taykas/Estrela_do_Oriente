@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { useEffect, useState } from "react";
 import {
     Package,
     Menu,
@@ -136,6 +137,9 @@ const campoClasse =
     "mt-2 w-full rounded-lg border border-[#e3dcc9] bg-[#faf9f5] px-3 py-3 text-sm text-[#45433d] outline-none transition placeholder:text-[#aaa59a] focus:border-[#b99a43] focus:ring-2 focus:ring-[#b99a43]/10";
 
 export const ProdutosPage = () => {
+    const location = useLocation();
+    const navegar = useNavigate();
+
     const [produtos, setProdutos] = useState(produtosIniciais);
     const [busca, setBusca] = useState("");
     const [categoriaFiltro, setCategoriaFiltro] = useState("Todas");
@@ -144,6 +148,27 @@ export const ProdutosPage = () => {
     const [produtoEditando, setProdutoEditando] = useState(null);
     const [formulario, setFormulario] = useState(produtoVazio);
     const [menuAberto, setMenuAberto] = useState(false);
+
+    // Volta o scroll para o início ao entrar na página.
+    useEffect(() => {
+        window.scrollTo(0, 0);
+    }, [location.pathname]);
+
+    // Abre o modal quando a navegação vem do atalho da página inicial.
+    useEffect(() => {
+        if (location.state?.abrirCadastro) {
+            setProdutoEditando(null);
+            setFormulario(produtoVazio);
+            setModalAberto(true);
+
+            // Limpa o estado para não abrir o modal novamente
+            // quando o usuário voltar para esta página.
+            navegar(location.pathname, {
+                replace: true,
+                state: null
+            });
+        }
+    }, [location.state, location.pathname, navegar]);
 
     const totalEstoque = produtos.reduce(
         (total, produto) => total + produto.estoque,
@@ -306,7 +331,6 @@ export const ProdutosPage = () => {
 
     return (
         <div className="min-h-screen bg-[#f3f1eb] text-[#35342f]">
-
             <Sidebar />
 
             {/* Fundo do menu mobile */}
@@ -320,7 +344,6 @@ export const ProdutosPage = () => {
 
             {/* Conteúdo */}
             <div className="min-h-screen lg:ml-60">
-
                 {/* Cabeçalho */}
                 <header className="sticky top-0 z-30 flex h-24 items-center justify-between border-b border-[#e3dcc9] bg-[#faf9f5]/95 px-4 backdrop-blur-sm sm:px-6 lg:px-8">
                     <div className="flex items-center gap-3">
@@ -345,6 +368,7 @@ export const ProdutosPage = () => {
                             </p>
                         </div>
                     </div>
+
                     <div className="hidden border-l border-[#e3dcc9] pl-4 sm:block">
                         <p className="text-sm text-[#89670d]">
                             Estrela do Oriente
@@ -356,7 +380,6 @@ export const ProdutosPage = () => {
                 </header>
 
                 <main className="space-y-6 p-4 sm:p-6 lg:p-8">
-
                     {/* Título e ação */}
                     <section className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
                         <div>
@@ -377,25 +400,20 @@ export const ProdutosPage = () => {
                             Cadastrar produto
                         </button>
                     </section>
-
-                    {/* Indicadores */}
+                                        {/* Indicadores */}
                     <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-
                         <div className={indicadorClasse}>
                             <div className="flex items-center justify-between gap-3">
                                 <p className="text-sm text-[#77746b]">
                                     Produtos cadastrados
                                 </p>
-
                                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#f5edda]">
                                     <Package size={21} className="text-[#98700a]" />
                                 </div>
                             </div>
-
                             <p className="mt-5 text-3xl font-semibold text-[#8b690e]">
                                 {produtos.length}
                             </p>
-
                             <p className="mt-1 text-xs text-[#969187]">
                                 Total de registros
                             </p>
@@ -406,16 +424,13 @@ export const ProdutosPage = () => {
                                 <p className="text-sm text-[#77746b]">
                                     Produtos ativos
                                 </p>
-
                                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#f5edda]">
                                     <Tags size={21} className="text-[#98700a]" />
                                 </div>
                             </div>
-
                             <p className="mt-5 text-3xl font-semibold text-[#8b690e]">
                                 {produtosAtivos}
                             </p>
-
                             <p className="mt-1 text-xs text-[#969187]">
                                 Disponíveis no catálogo
                             </p>
@@ -426,16 +441,13 @@ export const ProdutosPage = () => {
                                 <p className="text-sm text-[#77746b]">
                                     Unidades em estoque
                                 </p>
-
                                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#f5edda]">
                                     <Boxes size={21} className="text-[#98700a]" />
                                 </div>
                             </div>
-
                             <p className="mt-5 text-3xl font-semibold text-[#8b690e]">
                                 {totalEstoque}
                             </p>
-
                             <p className="mt-1 text-xs text-[#969187]">
                                 Soma das quantidades
                             </p>
@@ -446,16 +458,13 @@ export const ProdutosPage = () => {
                                 <p className="text-sm text-[#77746b]">
                                     Valor de custo do estoque
                                 </p>
-
                                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#f5edda]">
                                     <DollarSign size={21} className="text-[#98700a]" />
                                 </div>
                             </div>
-
                             <p className="mt-5 break-words text-2xl font-semibold text-[#8b690e]">
                                 {moeda(valorEstoque)}
                             </p>
-
                             <p className="mt-1 text-xs text-[#969187]">
                                 Custo das unidades disponíveis
                             </p>
@@ -469,12 +478,10 @@ export const ProdutosPage = () => {
                                 size={21}
                                 className="mt-0.5 shrink-0 text-[#98700a]"
                             />
-
                             <div>
                                 <p className="text-sm font-medium text-[#78601e]">
                                     Atenção ao estoque
                                 </p>
-
                                 <p className="mt-1 text-sm text-[#81734e]">
                                     {produtosEstoqueBaixo}{" "}
                                     {produtosEstoqueBaixo === 1
@@ -488,28 +495,24 @@ export const ProdutosPage = () => {
 
                     {/* Catálogo de produtos */}
                     <section className="overflow-hidden rounded-xl border border-[#e6dfcd] bg-[#fffefa] shadow-sm">
-
                         <div className="border-b border-[#eee7d7] p-5">
                             <div className="flex flex-col justify-between gap-4 xl:flex-row xl:items-center">
                                 <div>
                                     <h2 className="text-lg font-medium text-[#78601e]">
                                         Catálogo de produtos
                                     </h2>
-
                                     <p className="mt-1 text-xs text-[#918d83]">
                                         Consulte e gerencie os itens cadastrados.
                                     </p>
                                 </div>
 
                                 <div className="flex flex-col gap-3 sm:flex-row">
-
                                     {/* Busca */}
                                     <div className="relative min-w-0 sm:w-64">
                                         <Search
                                             size={17}
                                             className="absolute left-3 top-1/2 -translate-y-1/2 text-[#a49b85]"
                                         />
-
                                         <input
                                             type="text"
                                             value={busca}
@@ -533,17 +536,12 @@ export const ProdutosPage = () => {
                                             <option value="Todas">
                                                 Todas as categorias
                                             </option>
-
                                             {categorias.map((categoria) => (
-                                                <option
-                                                    key={categoria}
-                                                    value={categoria}
-                                                >
+                                                <option key={categoria} value={categoria}>
                                                     {categoria}
                                                 </option>
                                             ))}
                                         </select>
-
                                         <ChevronDown
                                             size={15}
                                             className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#98700a]"
@@ -565,7 +563,6 @@ export const ProdutosPage = () => {
                                             <option value="Ativo">Ativos</option>
                                             <option value="Inativo">Inativos</option>
                                         </select>
-
                                         <ChevronDown
                                             size={15}
                                             className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#98700a]"
@@ -623,12 +620,10 @@ export const ProdutosPage = () => {
                                                                 className="text-[#98700a]"
                                                             />
                                                         </div>
-
                                                         <div>
                                                             <p className="font-medium text-[#45433d]">
                                                                 {produto.nome}
                                                             </p>
-
                                                             <p className="mt-1 text-xs text-[#969187]">
                                                                 {produto.codigo}
                                                             </p>
@@ -655,7 +650,6 @@ export const ProdutosPage = () => {
                                                         >
                                                             {produto.estoque} un.
                                                         </span>
-
                                                         {estoqueBaixo && (
                                                             <AlertTriangle
                                                                 size={14}
@@ -664,7 +658,6 @@ export const ProdutosPage = () => {
                                                             />
                                                         )}
                                                     </div>
-
                                                     <p className="mt-1 text-[11px] text-[#969187]">
                                                         Mínimo: {produto.estoqueMinimo}
                                                     </p>
@@ -692,7 +685,6 @@ export const ProdutosPage = () => {
                                                         >
                                                             <Pencil size={16} />
                                                         </button>
-
                                                         <button
                                                             onClick={() => excluirProduto(produto)}
                                                             title="Excluir produto"
@@ -717,11 +709,9 @@ export const ProdutosPage = () => {
                                             className="text-[#b49a51]"
                                         />
                                     </div>
-
                                     <p className="mt-3 text-sm font-medium text-[#45433d]">
                                         Nenhum produto encontrado.
                                     </p>
-
                                     <p className="mt-1 text-xs text-[#918d83]">
                                         Tente alterar a pesquisa ou os filtros.
                                     </p>
@@ -737,8 +727,7 @@ export const ProdutosPage = () => {
                     </section>
                 </main>
             </div>
-
-            {/* Modal de cadastro e edição */}
+                        {/* Modal de cadastro e edição */}
             {modalAberto && (
                 <div
                     className="fixed inset-0 z-[60] flex items-center justify-center overflow-y-auto bg-[#35342f]/45 p-4 backdrop-blur-sm"
@@ -749,7 +738,6 @@ export const ProdutosPage = () => {
                     }}
                 >
                     <div className="my-auto w-full max-w-2xl overflow-hidden rounded-2xl border border-[#e3dcc9] bg-[#fffefa] shadow-2xl">
-
                         <div className="flex items-center justify-between border-b border-[#eee7d7] bg-[#faf9f5] p-5">
                             <div>
                                 <h2 className="text-lg font-medium text-[#78601e]">
@@ -757,7 +745,6 @@ export const ProdutosPage = () => {
                                         ? "Editar produto"
                                         : "Cadastrar produto"}
                                 </h2>
-
                                 <p className="mt-1 text-xs text-[#918d83]">
                                     Preencha as informações do catálogo.
                                 </p>
@@ -774,7 +761,6 @@ export const ProdutosPage = () => {
 
                         <form onSubmit={salvarProduto}>
                             <div className="grid grid-cols-1 gap-5 p-5 sm:grid-cols-2">
-
                                 <label className="text-sm font-medium text-[#5f5c54] sm:col-span-2">
                                     Nome do produto *
                                     <input
@@ -789,24 +775,6 @@ export const ProdutosPage = () => {
                                         placeholder="Ex.: Incenso Natural"
                                         className={campoClasse}
                                     />
-                                </label>
-
-                                <label className="text-sm font-medium text-[#5f5c54]">
-                                    Categoria *
-                                    <select
-                                        required
-                                        value={formulario.categoria}
-                                        onChange={(evento) =>
-                                            atualizarCampo("categoria", evento.target.value)
-                                        }
-                                        className={campoClasse}
-                                    >
-                                        {categorias.map((categoria) => (
-                                            <option key={categoria} value={categoria}>
-                                                {categoria}
-                                            </option>
-                                        ))}
-                                    </select>
                                 </label>
 
                                 <label className="text-sm font-medium text-[#5f5c54]">
@@ -894,7 +862,6 @@ export const ProdutosPage = () => {
                                             size={17}
                                             className="mt-0.5 shrink-0 text-[#98700a]"
                                         />
-
                                         <p className="text-xs leading-5 text-[#81734e]">
                                             O sistema sinalizará o produto quando a quantidade em estoque for igual ou inferior ao estoque mínimo.
                                         </p>
@@ -916,7 +883,6 @@ export const ProdutosPage = () => {
                                     className="flex items-center justify-center gap-2 rounded-lg bg-[#b18a20] px-5 py-3 text-sm font-medium text-white transition hover:bg-[#98700a]"
                                 >
                                     <Plus size={17} />
-
                                     {produtoEditando
                                         ? "Salvar alterações"
                                         : "Cadastrar produto"}
