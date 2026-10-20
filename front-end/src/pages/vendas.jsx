@@ -1,5 +1,4 @@
-import { useState } from "react";
-import Sidebar from "../components/Sidebar";
+import { useEffect, useState } from "react";
 import {
     Package,
     ShoppingCart,
@@ -20,89 +19,20 @@ import {
     ChevronRight,
     CheckCircle2,
     CircleAlert,
-    ChartNoAxesCombined
+    ChartNoAxesCombined,
 } from "lucide-react";
 
-const produtosIniciais = [
-    { id: 1, nome: "Incenso Natural", categoria: "Incensos", quantidade: 3, minimo: 10, preco: 12.90 },
-    { id: 2, nome: "Vela de 7 Dias", categoria: "Velas", quantidade: 5, minimo: 10, preco: 18.90 },
-    { id: 3, nome: "Patuá", categoria: "Acessórios", quantidade: 2, minimo: 5, preco: 24.90 },
-    { id: 4, nome: "Erva de Proteção", categoria: "Ervas", quantidade: 4, minimo: 10, preco: 9.90 },
-    { id: 5, nome: "Óleo de Unção", categoria: "Óleos", quantidade: 2, minimo: 5, preco: 15.90 },
-    { id: 6, nome: "Sal Grosso", categoria: "Insumos", quantidade: 15, minimo: 10, preco: 5.90 },
-    { id: 7, nome: "Defumador", categoria: "Incensos", quantidade: 20, minimo: 10, preco: 22.90 },
-    { id: 8, nome: "Pau Santo", categoria: "Ervas", quantidade: 12, minimo: 10, preco: 14.90 },
-    { id: 9, nome: "Quartzo Rosa", categoria: "Cristais", quantidade: 8, minimo: 10, preco: 29.90 },
-    { id: 10, nome: "Xarope de Guiné", categoria: "Ervas", quantidade: 0, minimo: 5, preco: 19.90 },
-    { id: 11, nome: "Vela Aromática", categoria: "Velas", quantidade: 32, minimo: 10, preco: 16.90 },
-    { id: 12, nome: "Incenso de Mirra", categoria: "Incensos", quantidade: 28, minimo: 10, preco: 11.90 }
-];
-
-const vendasIniciais = [
-    {
-        id: 1001,
-        cliente: "Maria Oliveira",
-        data: "2026-10-15",
-        itens: [
-            { id: 7, nome: "Defumador", quantidade: 2, preco: 22.90 },
-            { id: 11, nome: "Vela Aromática", quantidade: 1, preco: 16.90 }
-        ],
-        pagamento: "Pix",
-        desconto: 0,
-        status: "Concluída"
-    },
-    {
-        id: 1002,
-        cliente: "João Santos",
-        data: "2026-10-15",
-        itens: [
-            { id: 9, nome: "Quartzo Rosa", quantidade: 1, preco: 29.90 },
-            { id: 3, nome: "Patuá", quantidade: 1, preco: 24.90 }
-        ],
-        pagamento: "Dinheiro",
-        desconto: 0,
-        status: "Concluída"
-    },
-    {
-        id: 1003,
-        cliente: "Ana Costa",
-        data: "2026-10-14",
-        itens: [
-            { id: 2, nome: "Vela de 7 Dias", quantidade: 2, preco: 18.90 }
-        ],
-        pagamento: "Cartão de débito",
-        desconto: 0,
-        status: "Concluída"
-    },
-    {
-        id: 1004,
-        cliente: "Carlos Mendes",
-        data: "2026-10-14",
-        itens: [
-            { id: 12, nome: "Incenso de Mirra", quantidade: 3, preco: 11.90 }
-        ],
-        pagamento: "Pix",
-        desconto: 0,
-        status: "Cancelada"
-    },
-    {
-        id: 1005,
-        cliente: "Fernanda Lima",
-        data: "2026-10-13",
-        itens: [
-            { id: 4, nome: "Erva de Proteção", quantidade: 2, preco: 9.90 },
-            { id: 5, nome: "Óleo de Unção", quantidade: 1, preco: 15.90 }
-        ],
-        pagamento: "Cartão de crédito",
-        desconto: 0,
-        status: "Concluída"
-    }
-];
+import Sidebar from "../components/Sidebar";
+import { listarProdutos } from "../services/products.js";
+import {
+    listarVendas,
+    registrarVenda as salvarVenda,
+} from "../services/vendas.js";
 
 const moeda = (valor) =>
-    valor.toLocaleString("pt-BR", {
+    Number(valor || 0).toLocaleString("pt-BR", {
         style: "currency",
-        currency: "BRL"
+        currency: "BRL",
     });
 
 const dataAtual = () => {
@@ -114,18 +44,32 @@ const dataAtual = () => {
 const formatarData = (data) => {
     if (!data) return "—";
 
-    const [ano, mes, dia] = data.split("-");
-    return `${dia}/${mes}/${ano}`;
+    if (typeof data === "string" && data.includes("-")) {
+        const [ano, mes, dia] = data.split("-");
+        return `${dia}/${mes}/${ano}`;
+    }
+
+    return "—";
 };
 
 const subtotalVenda = (venda) =>
-    venda.itens.reduce(
-        (total, item) => total + item.quantidade * item.preco,
+    Number(
+        venda.subtotal ??
+        venda.itens?.reduce(
+            (total, item) =>
+                total + Number(item.quantidade || 0) * Number(item.preco || 0),
+            0
+        ) ??
         0
     );
 
-const totalVenda = (venda) =>
-    subtotalVenda(venda) * (1 - (venda.desconto || 0) / 100);
+const totalVenda = (venda) => {
+    if (venda.total != null) {
+        return Number(venda.total);
+    }
+
+    return subtotalVenda(venda) * (1 - Number(venda.desconto || 0) / 100);
+};
 
 const campoClasse =
     "w-full rounded-lg border border-[#e6dfcd] bg-[#faf9f5] px-3 py-2.5 text-sm text-[#45433d] outline-none transition placeholder:text-[#918d83] focus:border-[#b18a20]";
@@ -134,8 +78,11 @@ const cardClasse =
     "rounded-xl border border-[#e6dfcd] bg-[#fffefa] shadow-sm";
 
 export const Vendas = () => {
-    const [produtos, setProdutos] = useState(produtosIniciais);
-    const [vendas, setVendas] = useState(vendasIniciais);
+    const [produtos, setProdutos] = useState([]);
+    const [vendas, setVendas] = useState([]);
+
+    const [carregando, setCarregando] = useState(true);
+    const [salvando, setSalvando] = useState(false);
 
     const [busca, setBusca] = useState("");
     const [filtroStatus, setFiltroStatus] = useState("Todas");
@@ -156,14 +103,56 @@ export const Vendas = () => {
 
     const porPagina = 8;
 
+    const mostrarMensagem = (texto, tipo = "erro") => {
+        setMensagem(texto);
+        setTipoMensagem(tipo);
+    };
+
+    const carregarDados = async (mostrarCarregamento = false) => {
+        try {
+            if (mostrarCarregamento) {
+                setCarregando(true);
+            }
+
+            const [produtosBanco, vendasBanco] = await Promise.all([
+                listarProdutos(),
+                listarVendas(),
+            ]);
+
+            setProdutos(
+                produtosBanco.map((produto) => ({
+                    ...produto,
+                    quantidade: Number(produto.estoque ?? 0),
+                    minimo: Number(produto.estoqueMinimo ?? 0),
+                    preco: Number(produto.preco ?? 0),
+                    categoria: produto.categoria || "Outros",
+                }))
+            );
+
+            setVendas(vendasBanco);
+        } catch (erro) {
+            console.error("Erro ao carregar dados:", erro);
+
+            mostrarMensagem(
+                "Não foi possível carregar os dados. Verifique sua conexão com o Firestore."
+            );
+        } finally {
+            setCarregando(false);
+        }
+    };
+
+    useEffect(() => {
+        carregarDados(true);
+    }, []);
+
     const vendasFiltradas = vendas.filter((venda) => {
         const termo = busca.toLowerCase();
 
         const correspondeBusca =
-            String(venda.id).includes(termo) ||
-            venda.cliente.toLowerCase().includes(termo) ||
-            venda.itens.some((item) =>
-                item.nome.toLowerCase().includes(termo)
+            String(venda.id || "").toLowerCase().includes(termo) ||
+            (venda.cliente || "").toLowerCase().includes(termo) ||
+            (venda.itens || []).some((item) =>
+                (item.nome || "").toLowerCase().includes(termo)
             );
 
         const correspondeStatus =
@@ -173,7 +162,11 @@ export const Vendas = () => {
             filtroPagamento === "Todos" ||
             venda.pagamento === filtroPagamento;
 
-        return correspondeBusca && correspondeStatus && correspondePagamento;
+        return (
+            correspondeBusca &&
+            correspondeStatus &&
+            correspondePagamento
+        );
     });
 
     const totalPaginas = Math.max(
@@ -194,7 +187,21 @@ export const Vendas = () => {
         (venda) => venda.data === dataAtual()
     );
 
+    const mesAtual = dataAtual().slice(0, 7);
+
+    const vendasMes = vendasConcluidas.filter(
+        (venda) =>
+            typeof venda.data === "string" &&
+            venda.data.startsWith(mesAtual)
+    );
+
+
     const faturamentoHoje = vendasHoje.reduce(
+        (total, venda) => total + totalVenda(venda),
+        0
+    );
+
+    const faturamentoMensal = vendasMes.reduce(
         (total, venda) => total + totalVenda(venda),
         0
     );
@@ -207,20 +214,55 @@ export const Vendas = () => {
     const quantidadeVendida = vendasConcluidas.reduce(
         (total, venda) =>
             total +
-            venda.itens.reduce(
-                (subtotal, item) => subtotal + item.quantidade,
+            (venda.itens || []).reduce(
+                (subtotal, item) =>
+                    subtotal + Number(item.quantidade || 0),
                 0
             ),
         0
     );
+
+    const quantidadeVendidaHoje = vendasHoje.reduce(
+        (total, venda) =>
+            total +
+            (venda.itens || []).reduce(
+                (subtotal, item) =>
+                    subtotal + Number(item.quantidade || 0),
+                0
+            ),
+        0
+    );
+
+    const quantidadeVendidaMes = vendasMes.reduce(
+        (total, venda) =>
+            total +
+            (venda.itens || []).reduce(
+                (subtotal, item) =>
+                    subtotal + Number(item.quantidade || 0),
+                0
+            ),
+        0
+    );
+
 
     const ticketMedio =
         vendasConcluidas.length > 0
             ? faturamentoTotal / vendasConcluidas.length
             : 0;
 
+    const ticketMedioHoje =
+        vendasHoje.length > 0
+            ? faturamentoHoje / vendasHoje.length
+            : 0;
+
+    const ticketMedioMensal =
+        vendasMes.length > 0
+            ? faturamentoMensal / vendasMes.length
+            : 0;
+
     const subtotal = carrinho.reduce(
-        (total, item) => total + item.quantidade * item.preco,
+        (total, item) =>
+            total + Number(item.quantidade) * Number(item.preco),
         0
     );
 
@@ -232,15 +274,15 @@ export const Vendas = () => {
     const valorDesconto = subtotal * (descontoNumerico / 100);
     const totalCarrinho = Math.max(0, subtotal - valorDesconto);
 
-    const produtosDisponiveis = produtos.filter((produto) =>
-        produto.nome.toLowerCase().includes(buscaProduto.toLowerCase()) ||
-        produto.categoria.toLowerCase().includes(buscaProduto.toLowerCase())
-    );
+    const produtosDisponiveis = produtos.filter((produto) => {
+        const termo = buscaProduto.toLowerCase();
 
-    const mostrarMensagem = (texto, tipo = "erro") => {
-        setMensagem(texto);
-        setTipoMensagem(tipo);
-    };
+        return (
+            (produto.nome || "").toLowerCase().includes(termo) ||
+            (produto.categoria || "").toLowerCase().includes(termo) ||
+            String(produto.codigo || "").toLowerCase().includes(termo)
+        );
+    });
 
     const abrirNovaVenda = () => {
         setCarrinho([]);
@@ -260,6 +302,8 @@ export const Vendas = () => {
     };
 
     const fecharModal = () => {
+        if (salvando) return;
+
         setModalAberto(false);
         setVendaSelecionada(null);
         setMensagem("");
@@ -288,7 +332,10 @@ export const Vendas = () => {
             setCarrinho((atuais) =>
                 atuais.map((item) =>
                     item.id === produto.id
-                        ? { ...item, quantidade: item.quantidade + 1 }
+                        ? {
+                            ...item,
+                            quantidade: item.quantidade + 1,
+                        }
                         : item
                 )
             );
@@ -300,8 +347,8 @@ export const Vendas = () => {
                     nome: produto.nome,
                     preco: produto.preco,
                     quantidade: 1,
-                    estoqueDisponivel: produto.quantidade
-                }
+                    estoqueDisponivel: produto.quantidade,
+                },
             ]);
         }
 
@@ -343,11 +390,13 @@ export const Vendas = () => {
         setMensagem("");
     };
 
-    const registrarVenda = () => {
+    const registrarVenda = async () => {
         if (carrinho.length === 0) {
             mostrarMensagem("Adicione pelo menos um produto à venda.");
             return;
         }
+
+        if (salvando) return;
 
         const estoqueInsuficiente = carrinho.find((item) => {
             const produtoAtual = produtos.find(
@@ -367,52 +416,47 @@ export const Vendas = () => {
             return;
         }
 
-        const novaVenda = {
-            id: vendas.length
-                ? Math.max(...vendas.map((venda) => venda.id)) + 1
-                : 1001,
-            cliente: cliente.trim() || "Cliente não identificado",
-            data: dataAtual(),
-            itens: carrinho.map(({ id, nome, preco, quantidade }) => ({
-                id,
-                nome,
-                preco,
-                quantidade
-            })),
-            pagamento,
-            desconto: descontoNumerico,
-            status: "Concluída"
-        };
-
-        setProdutos((atuais) =>
-            atuais.map((produto) => {
-                const itemVendido = carrinho.find(
-                    (item) => item.id === produto.id
-                );
-
-                return itemVendido
-                    ? {
-                        ...produto,
-                        quantidade:
-                            produto.quantidade - itemVendido.quantidade
-                    }
-                    : produto;
-            })
-        );
-
-        setVendas((atuais) => [novaVenda, ...atuais]);
-        setPagina(1);
-
-        setCarrinho([]);
-        setCliente("");
-        setDesconto("0");
-
-        mostrarMensagem("Venda registrada com sucesso!", "sucesso");
-
-        setTimeout(() => {
-            setModalAberto(false);
+        try {
+            setSalvando(true);
             setMensagem("");
-        }, 900);
+
+            await salvarVenda({
+                cliente,
+                itens: carrinho.map((item) => ({
+                    id: item.id,
+                    quantidade: item.quantidade,
+                })),
+                pagamento,
+                desconto: descontoNumerico,
+            });
+
+            await carregarDados();
+
+            setPagina(1);
+            setCarrinho([]);
+            setCliente("");
+            setPagamento("Pix");
+            setDesconto("0");
+
+            mostrarMensagem(
+                "Venda registrada com sucesso!",
+                "sucesso"
+            );
+
+            setTimeout(() => {
+                setModalAberto(false);
+                setVendaSelecionada(null);
+                setMensagem("");
+            }, 900);
+        } catch (erro) {
+            console.error("Erro ao registrar venda:", erro);
+
+            mostrarMensagem(
+                erro.message || "Não foi possível registrar a venda."
+            );
+        } finally {
+            setSalvando(false);
+        }
     };
 
     const indicadores = [
@@ -420,26 +464,26 @@ export const Vendas = () => {
             titulo: "Faturamento de Hoje",
             valor: moeda(faturamentoHoje),
             descricao: `${vendasHoje.length} venda(s) concluída(s) hoje`,
-            icone: DollarSign
+            icone: DollarSign,
         },
         {
             titulo: "Vendas Concluídas",
-            valor: vendasConcluidas.length,
-            descricao: "Vendas registradas no sistema",
-            icone: ShoppingBag
+            valor: vendasHoje.length,
+            descricao: "Vendas concluídas hoje",
+            icone: ShoppingBag,
         },
         {
             titulo: "Produtos Vendidos",
-            valor: quantidadeVendida,
-            descricao: "Unidades em vendas concluídas",
-            icone: TrendingUp
+            valor: quantidadeVendidaHoje,
+            descricao: "Unidades vendidas hoje",
+            icone: TrendingUp,
         },
         {
             titulo: "Ticket Médio",
-            valor: moeda(ticketMedio),
-            descricao: "Valor médio por venda",
-            icone: ReceiptText
-        }
+            valor: moeda(ticketMedioHoje),
+            descricao: "Valor médio por venda hoje",
+            icone: ReceiptText,
+        },
     ];
 
     return (
@@ -447,7 +491,6 @@ export const Vendas = () => {
             <Sidebar />
 
             <div className="min-h-screen lg:ml-60">
-                {/* Cabeçalho */}
                 <header className="sticky top-0 z-30 flex h-24 items-center justify-between border-b border-[#e3dcc9] bg-[#faf9f5]/95 px-4 backdrop-blur-sm sm:px-6 lg:px-8">
                     <div className="flex items-center gap-3">
                         <button
@@ -504,7 +547,6 @@ export const Vendas = () => {
                 </header>
 
                 <main className="space-y-6 p-4 sm:p-6 lg:p-8">
-                    {/* Título e ação */}
                     <section className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
                         <div>
                             <h1 className="text-lg font-medium text-[#78601e]">
@@ -524,15 +566,19 @@ export const Vendas = () => {
                         </button>
                     </section>
 
-                    {/* Indicadores */}
+                    {carregando && (
+                        <p className="text-sm text-[#918d83]">
+                            Carregando dados do Firestore...
+                        </p>
+                    )}
+
                     <section>
                         <div className="mb-4 flex items-center justify-between gap-3">
                             <h2 className="text-lg font-medium text-[#78601e]">
                                 Indicadores
                             </h2>
-
                             <span className="text-xs text-[#918d83]">
-                                Dados demonstrativos
+                                Dados do sistema
                             </span>
                         </div>
 
@@ -574,7 +620,6 @@ export const Vendas = () => {
                         </div>
                     </section>
 
-                    {/* Resumo financeiro e vendas recentes */}
                     <section className="grid grid-cols-1 gap-5 xl:grid-cols-5">
                         <div className={`${cardClasse} overflow-hidden xl:col-span-3`}>
                             <div className="flex items-center justify-between border-b border-[#eee7d7] p-5">
@@ -591,38 +636,38 @@ export const Vendas = () => {
 
                             <div className="p-5">
                                 <p className="text-sm text-[#77746b]">
-                                    Faturamento acumulado
+                                    Faturamento do mês
                                 </p>
 
                                 <p className="mt-2 text-3xl font-semibold text-[#8b690e]">
-                                    {moeda(faturamentoTotal)}
+                                    {moeda(faturamentoMensal)}
                                 </p>
 
                                 <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
                                     <div className="rounded-lg border border-[#e6dfcd] bg-[#faf9f5] p-4">
                                         <p className="text-xs text-[#918d83]">
-                                            Faturamento de hoje
+                                            Vendas no mês
+                                        </p>
+                                        <p className="mt-2 font-semibold text-[#45433d]">
+                                            {vendasMes.length}
+                                        </p>
+                                    </div>
+
+                                    <div className="rounded-lg border border-[#e6dfcd] bg-[#faf9f5] p-4">
+                                        <p className="text-xs text-[#918d83]">
+                                            Unidades vendidas no mês
+                                        </p>
+                                        <p className="mt-2 font-semibold text-[#45433d]">
+                                            {quantidadeVendidaMes}
+                                        </p>
+                                    </div>
+
+                                    <div className="rounded-lg border border-[#e6dfcd] bg-[#faf9f5] p-4">
+                                        <p className="text-xs text-[#918d83]">
+                                            Ticket médio do mês
                                         </p>
                                         <p className="mt-2 font-semibold text-[#8b690e]">
-                                            {moeda(faturamentoHoje)}
-                                        </p>
-                                    </div>
-
-                                    <div className="rounded-lg border border-[#e6dfcd] bg-[#faf9f5] p-4">
-                                        <p className="text-xs text-[#918d83]">
-                                            Vendas hoje
-                                        </p>
-                                        <p className="mt-2 font-semibold text-[#45433d]">
-                                            {vendasHoje.length}
-                                        </p>
-                                    </div>
-
-                                    <div className="rounded-lg border border-[#e6dfcd] bg-[#faf9f5] p-4">
-                                        <p className="text-xs text-[#918d83]">
-                                            Unidades vendidas
-                                        </p>
-                                        <p className="mt-2 font-semibold text-[#45433d]">
-                                            {quantidadeVendida}
+                                            {moeda(ticketMedioMensal)}
                                         </p>
                                     </div>
                                 </div>
@@ -643,7 +688,7 @@ export const Vendas = () => {
                             </div>
 
                             <div className="divide-y divide-[#eeeae0] px-4">
-                                {vendas.slice(0, 4).map((venda) => (
+                                {vendas.slice(0, 3).map((venda) => (
                                     <div
                                         key={venda.id}
                                         className="flex items-center justify-between gap-3 py-4"
@@ -671,11 +716,10 @@ export const Vendas = () => {
                                                 {moeda(totalVenda(venda))}
                                             </p>
                                             <p
-                                                className={`mt-1 text-[10px] ${
-                                                    venda.status === "Concluída"
-                                                        ? "text-emerald-700"
-                                                        : "text-amber-700"
-                                                }`}
+                                                className={`mt-1 text-[10px] ${venda.status === "Concluída"
+                                                    ? "text-emerald-700"
+                                                    : "text-amber-700"
+                                                    }`}
                                             >
                                                 {venda.status}
                                             </p>
@@ -683,7 +727,7 @@ export const Vendas = () => {
                                     </div>
                                 ))}
 
-                                {vendas.length === 0 && (
+                                {!carregando && vendas.length === 0 && (
                                     <p className="py-8 text-center text-sm text-[#918d83]">
                                         Nenhuma venda registrada.
                                     </p>
@@ -692,7 +736,6 @@ export const Vendas = () => {
                         </div>
                     </section>
 
-                    {/* Histórico */}
                     <section className={`${cardClasse} overflow-hidden`}>
                         <div className="flex items-center justify-between border-b border-[#eee7d7] p-5">
                             <div className="flex items-center gap-2">
@@ -700,7 +743,6 @@ export const Vendas = () => {
                                     size={20}
                                     className="text-[#a77b08]"
                                 />
-
                                 <div>
                                     <h2 className="text-lg font-medium text-[#78601e]">
                                         Histórico de vendas
@@ -712,13 +754,9 @@ export const Vendas = () => {
                             </div>
                         </div>
 
-                        {/* Filtros */}
                         <div className="grid grid-cols-1 gap-3 p-4 md:grid-cols-3">
                             <div className="flex items-center gap-2 rounded-lg border border-[#e6dfcd] bg-[#faf9f5] px-3 py-2.5">
-                                <Search
-                                    size={17}
-                                    className="shrink-0 text-[#918d83]"
-                                />
+                                <Search size={17} className="shrink-0 text-[#918d83]" />
                                 <input
                                     value={busca}
                                     onChange={(e) => {
@@ -759,7 +797,6 @@ export const Vendas = () => {
                             </select>
                         </div>
 
-                        {/* Tabela */}
                         <div className="overflow-x-auto px-4">
                             <table className="w-full min-w-[850px] text-left text-sm">
                                 <thead>
@@ -779,49 +816,41 @@ export const Vendas = () => {
                                     {vendasPagina.map((venda, index) => (
                                         <tr
                                             key={venda.id}
-                                            className={`border-t border-[#eeeae0] text-[#5f5c54] transition-colors hover:bg-[#f8f5ed] ${
-                                                index % 2 === 1 ? "bg-[#fcfbf7]" : ""
-                                            }`}
+                                            className={`border-t border-[#eeeae0] text-[#5f5c54] transition-colors hover:bg-[#f8f5ed] ${index % 2 === 1 ? "bg-[#fcfbf7]" : ""
+                                                }`}
                                         >
                                             <td className="whitespace-nowrap px-4 py-4 font-medium text-[#98700a]">
                                                 #{venda.id}
                                             </td>
-
                                             <td className="whitespace-nowrap px-4 py-4 text-[#45433d]">
                                                 {venda.cliente}
                                             </td>
-
                                             <td className="whitespace-nowrap px-4 py-4">
                                                 {formatarData(venda.data)}
                                             </td>
-
                                             <td className="px-4 py-4">
-                                                {venda.itens.reduce(
-                                                    (total, item) => total + item.quantidade,
+                                                {(venda.itens || []).reduce(
+                                                    (total, item) =>
+                                                        total + Number(item.quantidade || 0),
                                                     0
                                                 )}
                                             </td>
-
                                             <td className="whitespace-nowrap px-4 py-4">
                                                 {venda.pagamento}
                                             </td>
-
                                             <td className="whitespace-nowrap px-4 py-4 font-medium text-[#45433d]">
                                                 {moeda(totalVenda(venda))}
                                             </td>
-
                                             <td className="px-4 py-4">
                                                 <span
-                                                    className={`whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium ${
-                                                        venda.status === "Concluída"
-                                                            ? "bg-emerald-100 text-emerald-700"
-                                                            : "bg-amber-100 text-amber-800"
-                                                    }`}
+                                                    className={`whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium ${venda.status === "Concluída"
+                                                        ? "bg-emerald-100 text-emerald-700"
+                                                        : "bg-amber-100 text-amber-800"
+                                                        }`}
                                                 >
                                                     {venda.status}
                                                 </span>
                                             </td>
-
                                             <td className="px-4 py-4">
                                                 <div className="flex items-center justify-center">
                                                     <button
@@ -836,7 +865,7 @@ export const Vendas = () => {
                                         </tr>
                                     ))}
 
-                                    {vendasPagina.length === 0 && (
+                                    {!carregando && vendasPagina.length === 0 && (
                                         <tr>
                                             <td
                                                 colSpan={8}
@@ -850,7 +879,6 @@ export const Vendas = () => {
                             </table>
                         </div>
 
-                        {/* Paginação */}
                         <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#eee7d7] p-4">
                             <p className="text-xs text-[#918d83]">
                                 Mostrando{" "}
@@ -872,7 +900,7 @@ export const Vendas = () => {
                                 </button>
 
                                 <span className="rounded-lg bg-[#98700a] px-3 py-2 text-sm font-medium text-white">
-                                    {pagina}
+                                    {pagina} / {totalPaginas}
                                 </span>
 
                                 <button
@@ -889,7 +917,6 @@ export const Vendas = () => {
                 </main>
             </div>
 
-            {/* Modal */}
             {modalAberto && (
                 <div
                     className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-[#35342f]/40 p-4 backdrop-blur-sm"
@@ -898,7 +925,6 @@ export const Vendas = () => {
                     }}
                 >
                     <div className="my-auto max-h-[92vh] w-full max-w-5xl overflow-y-auto rounded-xl border border-[#e6dfcd] bg-[#fffefa] shadow-2xl">
-                        {/* Cabeçalho do modal */}
                         <div className="sticky top-0 z-10 flex items-center justify-between border-b border-[#eee7d7] bg-[#fffefa] p-5">
                             <div>
                                 <h2 className="text-xl font-medium text-[#78601e]">
@@ -906,7 +932,6 @@ export const Vendas = () => {
                                         ? `Detalhes da venda #${vendaSelecionada.id}`
                                         : "Registrar nova venda"}
                                 </h2>
-
                                 <p className="mt-1 text-sm text-[#918d83]">
                                     {vendaSelecionada
                                         ? "Confira os produtos e os valores desta venda."
@@ -917,13 +942,13 @@ export const Vendas = () => {
                             <button
                                 onClick={fecharModal}
                                 aria-label="Fechar modal"
-                                className="rounded-lg p-2 text-[#918d83] transition hover:bg-[#f5f1e7] hover:text-[#45433d]"
+                                disabled={salvando}
+                                className="rounded-lg p-2 text-[#918d83] transition hover:bg-[#f5f1e7] hover:text-[#45433d] disabled:opacity-40"
                             >
                                 <X size={21} />
                             </button>
                         </div>
 
-                        {/* Detalhes de uma venda existente */}
                         {vendaSelecionada ? (
                             <div className="space-y-5 p-5">
                                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
@@ -961,7 +986,7 @@ export const Vendas = () => {
                                         </thead>
 
                                         <tbody>
-                                            {vendaSelecionada.itens.map((item, index) => (
+                                            {(vendaSelecionada.itens || []).map((item, index) => (
                                                 <tr
                                                     key={`${item.id}-${index}`}
                                                     className="border-t border-[#eeeae0] text-[#5f5c54]"
@@ -976,7 +1001,9 @@ export const Vendas = () => {
                                                         {moeda(item.preco)}
                                                     </td>
                                                     <td className="px-4 py-3 text-right font-medium text-[#45433d]">
-                                                        {moeda(item.quantidade * item.preco)}
+                                                        {moeda(
+                                                            item.quantidade * item.preco
+                                                        )}
                                                     </td>
                                                 </tr>
                                             ))}
@@ -989,12 +1016,13 @@ export const Vendas = () => {
                                         Subtotal: {moeda(subtotalVenda(vendaSelecionada))}
                                     </p>
 
-                                    {(vendaSelecionada.desconto || 0) > 0 && (
+                                    {Number(vendaSelecionada.desconto || 0) > 0 && (
                                         <p className="text-sm text-[#77746b]">
-                                            Desconto ({vendaSelecionada.desconto}%):{" "}
-                                            -{moeda(
+                                            Desconto ({vendaSelecionada.desconto}%): -
+                                            {moeda(
                                                 subtotalVenda(vendaSelecionada) *
-                                                vendaSelecionada.desconto / 100
+                                                Number(vendaSelecionada.desconto) /
+                                                100
                                             )}
                                         </p>
                                     )}
@@ -1018,14 +1046,12 @@ export const Vendas = () => {
                                 </div>
                             </div>
                         ) : (
-                            /* Formulário de nova venda */
                             <div className="grid grid-cols-1 gap-6 p-5 lg:grid-cols-5">
                                 <div className="space-y-4 lg:col-span-3">
                                     <div>
                                         <label className="mb-2 block text-sm font-medium text-[#68645b]">
                                             Nome do cliente
                                         </label>
-
                                         <input
                                             value={cliente}
                                             onChange={(e) => setCliente(e.target.value)}
@@ -1039,7 +1065,6 @@ export const Vendas = () => {
                                             <label className="block text-sm font-medium text-[#68645b]">
                                                 Produtos disponíveis
                                             </label>
-
                                             <span className="text-xs text-[#918d83]">
                                                 {produtosDisponiveis.length} produto(s)
                                             </span>
@@ -1047,7 +1072,6 @@ export const Vendas = () => {
 
                                         <div className="flex items-center gap-2 rounded-lg border border-[#e6dfcd] bg-[#faf9f5] px-3 py-2.5">
                                             <Search size={17} className="text-[#918d83]" />
-
                                             <input
                                                 value={buscaProduto}
                                                 onChange={(e) => setBuscaProduto(e.target.value)}
@@ -1063,7 +1087,8 @@ export const Vendas = () => {
                                                 (item) => item.id === produto.id
                                             );
 
-                                            const semEstoque = produto.quantidade === 0;
+                                            const semEstoque = produto.quantidade <= 0;
+
                                             const limiteAtingido =
                                                 noCarrinho &&
                                                 noCarrinho.quantidade >= produto.quantidade;
@@ -1085,11 +1110,9 @@ export const Vendas = () => {
                                                             <p className="truncate text-sm font-medium text-[#45433d]">
                                                                 {produto.nome}
                                                             </p>
-
                                                             <p className="mt-1 text-xs text-[#918d83]">
                                                                 {produto.categoria} · Estoque: {produto.quantidade}
                                                             </p>
-
                                                             <p className="mt-1 text-sm font-semibold text-[#8b690e]">
                                                                 {moeda(produto.preco)}
                                                             </p>
@@ -1122,7 +1145,6 @@ export const Vendas = () => {
                                     </div>
                                 </div>
 
-                                {/* Carrinho */}
                                 <div className="lg:col-span-2">
                                     <div className="rounded-xl border border-[#e6dfcd] bg-[#faf9f5] p-4">
                                         <div className="mb-4 flex items-center justify-between">
@@ -1133,7 +1155,6 @@ export const Vendas = () => {
                                                         className="text-[#98700a]"
                                                     />
                                                 </div>
-
                                                 <h3 className="font-medium text-[#78601e]">
                                                     Carrinho
                                                 </h3>
@@ -1141,7 +1162,8 @@ export const Vendas = () => {
 
                                             <span className="rounded-full bg-[#f1e8d1] px-2.5 py-1 text-xs font-medium text-[#89670d]">
                                                 {carrinho.reduce(
-                                                    (total, item) => total + item.quantidade,
+                                                    (total, item) =>
+                                                        total + item.quantidade,
                                                     0
                                                 )}{" "}
                                                 item(ns)
@@ -1158,7 +1180,6 @@ export const Vendas = () => {
                                                         <p className="text-sm font-medium text-[#45433d]">
                                                             {item.nome}
                                                         </p>
-
                                                         <button
                                                             onClick={() => removerProduto(item.id)}
                                                             aria-label={`Remover ${item.nome}`}
@@ -1184,7 +1205,10 @@ export const Vendas = () => {
 
                                                             <button
                                                                 onClick={() => alterarQuantidade(item.id, 1)}
-                                                                disabled={item.quantidade >= item.estoqueDisponivel}
+                                                                disabled={
+                                                                    item.quantidade >=
+                                                                    item.estoqueDisponivel
+                                                                }
                                                                 aria-label="Aumentar quantidade"
                                                                 className="flex h-7 w-7 items-center justify-center rounded-md border border-[#e6dfcd] text-[#68645b] transition hover:bg-[#f5f1e7] disabled:cursor-not-allowed disabled:opacity-30"
                                                             >
@@ -1205,11 +1229,9 @@ export const Vendas = () => {
                                                         size={28}
                                                         className="mx-auto text-[#c4b99e]"
                                                     />
-
                                                     <p className="mt-3 text-sm text-[#77746b]">
                                                         Seu carrinho está vazio.
                                                     </p>
-
                                                     <p className="mt-1 text-xs text-[#918d83]">
                                                         Adicione produtos para continuar.
                                                     </p>
@@ -1262,7 +1284,6 @@ export const Vendas = () => {
                                                     <span className="font-medium text-[#45433d]">
                                                         Total
                                                     </span>
-
                                                     <span className="text-xl font-semibold text-[#8b690e]">
                                                         {moeda(totalCarrinho)}
                                                     </span>
@@ -1271,14 +1292,12 @@ export const Vendas = () => {
                                         </div>
                                     </div>
 
-                                    {/* Mensagens */}
                                     {mensagem && (
                                         <div
-                                            className={`mt-4 flex items-start gap-2 rounded-lg border p-3 text-sm ${
-                                                tipoMensagem === "sucesso"
-                                                    ? "border-[#b9d9c5] bg-[#edf7f0] text-[#32734a]"
-                                                    : "border-[#e6c8c3] bg-[#fdf0ed] text-[#b34b40]"
-                                            }`}
+                                            className={`mt-4 flex items-start gap-2 rounded-lg border p-3 text-sm ${tipoMensagem === "sucesso"
+                                                ? "border-[#b9d9c5] bg-[#edf7f0] text-[#32734a]"
+                                                : "border-[#e6c8c3] bg-[#fdf0ed] text-[#b34b40]"
+                                                }`}
                                         >
                                             {tipoMensagem === "sucesso" ? (
                                                 <CheckCircle2
@@ -1291,27 +1310,26 @@ export const Vendas = () => {
                                                     className="mt-0.5 shrink-0"
                                                 />
                                             )}
-
                                             <p>{mensagem}</p>
                                         </div>
                                     )}
 
-                                    {/* Ações */}
                                     <div className="mt-4 flex flex-col-reverse justify-end gap-2 sm:flex-row">
                                         <button
                                             onClick={fecharModal}
-                                            className="rounded-lg border border-[#e6dfcd] px-4 py-2.5 text-sm text-[#68645b] transition hover:bg-[#f5f1e7]"
+                                            disabled={salvando}
+                                            className="rounded-lg border border-[#e6dfcd] px-4 py-2.5 text-sm text-[#68645b] transition hover:bg-[#f5f1e7] disabled:opacity-40"
                                         >
                                             Cancelar
                                         </button>
 
                                         <button
                                             onClick={registrarVenda}
-                                            disabled={carrinho.length === 0}
+                                            disabled={carrinho.length === 0 || salvando}
                                             className="flex items-center justify-center gap-2 rounded-lg bg-[#98700a] px-4 py-2.5 text-sm font-medium text-white transition hover:bg-[#806009] disabled:cursor-not-allowed disabled:opacity-40"
                                         >
                                             <CheckCircle2 size={17} />
-                                            Finalizar venda
+                                            {salvando ? "Registrando..." : "Finalizar venda"}
                                         </button>
                                     </div>
                                 </div>

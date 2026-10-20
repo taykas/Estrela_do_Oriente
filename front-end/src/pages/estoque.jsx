@@ -256,7 +256,7 @@ export const Estoque = () => {
                             <Menu size={25} />
                         </button>
 
-                        <div>
+                        {/* <div>
                             <h2
                                 className="text-xl text-[#89670d] sm:text-2xl"
                                 style={{ fontFamily: "Corvel" }}
@@ -266,10 +266,22 @@ export const Estoque = () => {
                             <p className="text-xs text-[#77746b]">
                                 Controle de produtos e inventário
                             </p>
+                        </div> */}
+
+                        <div>
+                            <h2
+                                className="text-lg text-[#98700a] sm:text-xl"
+                                style={{ fontFamily: "Corvel" }}
+                            >
+                                Esto<span style={{ marginRight: "0.1px" }}></span>que
+                            </h2>
+                            <p className="hidden text-xs text-[#89867d] sm:block">
+                                Controle de produtos e inventário
+                            </p>
                         </div>
                     </div>
 
-                    <div className="hidden items-center gap-2 rounded-md border border-[#e3dcc9] bg-[#fffefa] px-3 py-2 sm:flex">
+                    {/* <div className="hidden items-center gap-2 rounded-md border border-[#e3dcc9] bg-[#fffefa] px-3 py-2 sm:flex">
                         <Search size={17} className="text-[#918d83]" />
                         <input
                             value={busca}
@@ -277,7 +289,7 @@ export const Estoque = () => {
                             placeholder="Buscar produto..."
                             className="w-36 bg-transparent text-sm outline-none placeholder:text-[#918d83] lg:w-48"
                         />
-                    </div>
+                    </div> */}
                 </header>
 
                 <main className="space-y-6 p-4 sm:p-6 lg:p-8">

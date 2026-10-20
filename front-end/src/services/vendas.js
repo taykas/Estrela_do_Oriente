@@ -12,7 +12,6 @@ import {
 const vendasRef = collection(db, "vendas");
 const produtosRef = collection(db, "produtos");
 
-// Converte a data do Firestore para YYYY-MM-DD
 const formatarData = (timestamp) => {
     if (!timestamp) return "";
 
@@ -25,7 +24,6 @@ const formatarData = (timestamp) => {
     return `${ano}-${mes}-${dia}`;
 };
 
-// Lista as vendas mais recentes
 export async function listarVendas() {
     const consulta = query(vendasRef, orderBy("data", "desc"));
     const snapshot = await getDocs(consulta);
@@ -40,12 +38,13 @@ export async function listarVendas() {
             itens: dados.itens || [],
             pagamento: dados.pagamento,
             desconto: dados.desconto || 0,
+            subtotal: dados.subtotal ?? 0,
+            total: dados.total ?? 0,
             status: dados.status || "Concluída"
         };
     });
 }
 
-// Registra uma venda e atualiza o estoque atomicamente
 export async function registrarVenda({
     cliente,
     itens,
@@ -70,8 +69,6 @@ export async function registrarVenda({
         throw new Error("Informe a forma de pagamento.");
     }
 
-    // Agrupa itens repetidos para evitar baixar o estoque
-    // de maneira incorreta.
     const quantidades = new Map();
 
     for (const item of itens) {
@@ -100,7 +97,6 @@ export async function registrarVenda({
     const vendaRef = doc(vendasRef);
 
     await runTransaction(db, async (transacao) => {
-        
         const documentos = await Promise.all(
             itensAgrupados.map(({ referencia }) =>
                 transacao.get(referencia)
@@ -118,13 +114,14 @@ export async function registrarVenda({
             }
 
             const produto = documento.data();
+            const estoqueAtual = produto.estoque;
 
             if (
-                !Number.isInteger(produto.quantidade) ||
-                produto.quantidade < item.quantidade
+                !Number.isInteger(estoqueAtual) ||
+                estoqueAtual < item.quantidade
             ) {
                 throw new Error(
-                    `Estoque insuficiente para ${produto.nome}.`
+                    `Estoque insuficiente para ${produto.nome}. Disponível: ${estoqueAtual ?? 0}.`
                 );
             }
 
@@ -150,16 +147,14 @@ export async function registrarVenda({
             (subtotal * (1 - descontoNumerico / 100)).toFixed(2)
         );
 
-        // Baixa o estoque de cada produto.
         itensAgrupados.forEach((item, index) => {
             const produto = documentos[index].data();
 
             transacao.update(item.referencia, {
-                quantidade: produto.quantidade - item.quantidade
+                estoque: produto.estoque - item.quantidade
             });
         });
 
-        // Salva a venda com os preços praticados no momento.
         transacao.set(vendaRef, {
             cliente: cliente?.trim() || "Cliente não identificado",
             data: serverTimestamp(),

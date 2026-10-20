@@ -287,7 +287,7 @@ export const ProdutosPage = () => {
                         </div>
                     </div>
 
-                    <div className="hidden items-center gap-2 rounded-md border border-[#e3dcc9] bg-[#fffefa] px-3 py-2 sm:flex">
+                    {/* <div className="hidden items-center gap-2 rounded-md border border-[#e3dcc9] bg-[#fffefa] px-3 py-2 sm:flex">
                         <Search size={17} className="text-[#918d83]" />
                         <input
                             value={busca}
@@ -295,7 +295,7 @@ export const ProdutosPage = () => {
                             placeholder="Buscar produto..."
                             className="w-36 bg-transparent text-sm outline-none placeholder:text-[#918d83] lg:w-48"
                         />
-                    </div>
+                    </div> */}
                 </header>
 
                 <main className="space-y-6 p-4 sm:p-6 lg:p-8">
