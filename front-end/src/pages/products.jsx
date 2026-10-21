@@ -1,4 +1,3 @@
-
 import { useNavigate, useLocation } from "react-router-dom";
 import { useEffect, useState, useRef, useCallback } from "react";
 import JsBarcode from "jsbarcode";
@@ -87,6 +86,7 @@ export const ProdutosPage = () => {
             setProdutos(dados);
         } catch (error) {
             console.error("Erro ao carregar produtos:", error);
+
             setErro(
                 "Não foi possível carregar os produtos. Verifique sua conexão e as permissões do Firebase."
             );
@@ -95,14 +95,17 @@ export const ProdutosPage = () => {
         }
     }, []);
 
+    // Volta o scroll para o início ao entrar na página.
     useEffect(() => {
         window.scrollTo(0, 0);
     }, [location.pathname]);
 
+    // Carrega os produtos do Firebase.
     useEffect(() => {
         carregarProdutos();
     }, [carregarProdutos]);
 
+    // Abre o cadastro quando a navegação vem de um atalho.
     useEffect(() => {
         if (!location.state?.abrirCadastro) return;
 
@@ -118,66 +121,6 @@ export const ProdutosPage = () => {
             replace: true,
             state: null
         });
-    }, [location.state, location.pathname, navegar]);
-
-    useEffect(() => {
-        const svg = codigoBarrasRef.current;
-
-        if (!modalAberto || !svg) return;
-
-        svg.innerHTML = "";
-
-        const codigo = formulario.codigoBarras.trim();
-
-        if (!codigo) return;
-
-        try {
-            JsBarcode(svg, codigo, {
-                format: "CODE128",
-                lineColor: "#35342f",
-                background: "#ffffff",
-                width: 2,
-                height: 65,
-                margin: 10,
-                displayValue: true,
-                font: "monospace",
-                fontSize: 14,
-                textMargin: 6
-            });
-        } catch {
-            svg.innerHTML = "";
-        }
-    }, [formulario.codigoBarras, modalAberto]);
-
-    const codigoBarrasRef = useRef(null);
-
-    // Retorna o próximo ID disponível.
-    const proximoId = () =>
-        produtos.reduce(
-            (maior, produto) => Math.max(maior, produto.id),
-            0
-        ) + 1;
-
-    // Volta o scroll para o início ao entrar na página.
-    useEffect(() => {
-        window.scrollTo(0, 0);
-    }, [location.pathname]);
-
-    // Abre o modal quando a navegação vem do atalho da página inicial.
-    useEffect(() => {
-        if (location.state?.abrirCadastro) {
-            setProdutoEditando(null);
-            setFormulario({
-                ...produtoVazio,
-                codigoBarras: gerarCodigoBarras(proximoId())
-            });
-            setModalAberto(true);
-
-            navegar(location.pathname, {
-                replace: true,
-                state: null
-            });
-        }
     }, [location.state, location.pathname, navegar]);
 
     // Gera a pré-visualização do código de barras.
@@ -392,6 +335,7 @@ export const ProdutosPage = () => {
             setFormulario(produtoVazio);
         } catch (error) {
             console.error("Erro ao salvar produto:", error);
+
             setErro(
                 "Não foi possível salvar o produto no Firebase. Verifique sua conexão e as permissões do Firestore."
             );
@@ -420,6 +364,7 @@ export const ProdutosPage = () => {
             );
         } catch (error) {
             console.error("Erro ao excluir produto:", error);
+
             setErro(
                 `Não foi possível excluir "${produto.nome}". Verifique sua conexão e as permissões do Firestore.`
             );
@@ -437,6 +382,7 @@ export const ProdutosPage = () => {
 
             {menuAberto && (
                 <button
+                    type="button"
                     aria-label="Fechar menu"
                     onClick={() => setMenuAberto(false)}
                     className="fixed inset-0 z-40 bg-[#35342f]/40 backdrop-blur-sm lg:hidden"
@@ -447,6 +393,7 @@ export const ProdutosPage = () => {
                 <header className="sticky top-0 z-30 flex h-24 items-center justify-between border-b border-[#e3dcc9] bg-[#faf9f5]/95 px-4 backdrop-blur-sm sm:px-6 lg:px-8">
                     <div className="flex items-center gap-3">
                         <button
+                            type="button"
                             onClick={() => setMenuAberto(true)}
                             className="text-[#98700a] lg:hidden"
                             aria-label="Abrir menu"
@@ -491,6 +438,7 @@ export const ProdutosPage = () => {
                         </div>
 
                         <button
+                            type="button"
                             onClick={abrirCadastro}
                             className="flex items-center justify-center gap-2 rounded-lg bg-[#b18a20] px-5 py-3 text-sm font-medium text-white transition hover:bg-[#98700a]"
                         >
@@ -509,6 +457,7 @@ export const ProdutosPage = () => {
                                 className="mt-0.5 shrink-0"
                             />
                             <div className="flex-1">{erro}</div>
+
                             <button
                                 type="button"
                                 onClick={() => setErro("")}
@@ -530,9 +479,11 @@ export const ProdutosPage = () => {
                                     <Package size={21} className="text-[#98700a]" />
                                 </div>
                             </div>
+
                             <p className="mt-5 text-3xl font-semibold text-[#8b690e]">
                                 {carregando ? "—" : produtos.length}
                             </p>
+
                             <p className="mt-1 text-xs text-[#969187]">
                                 Total de registros
                             </p>
@@ -547,9 +498,11 @@ export const ProdutosPage = () => {
                                     <Tags size={21} className="text-[#98700a]" />
                                 </div>
                             </div>
+
                             <p className="mt-5 text-3xl font-semibold text-[#8b690e]">
                                 {carregando ? "—" : produtosAtivos}
                             </p>
+
                             <p className="mt-1 text-xs text-[#969187]">
                                 Disponíveis no catálogo
                             </p>
@@ -564,9 +517,11 @@ export const ProdutosPage = () => {
                                     <Boxes size={21} className="text-[#98700a]" />
                                 </div>
                             </div>
+
                             <p className="mt-5 text-3xl font-semibold text-[#8b690e]">
                                 {carregando ? "—" : totalEstoque}
                             </p>
+
                             <p className="mt-1 text-xs text-[#969187]">
                                 Soma das quantidades
                             </p>
@@ -581,9 +536,11 @@ export const ProdutosPage = () => {
                                     <DollarSign size={21} className="text-[#98700a]" />
                                 </div>
                             </div>
+
                             <p className="mt-5 break-words text-2xl font-semibold text-[#8b690e]">
                                 {carregando ? "—" : moeda(valorEstoque)}
                             </p>
+
                             <p className="mt-1 text-xs text-[#969187]">
                                 Custo das unidades disponíveis
                             </p>
@@ -596,10 +553,12 @@ export const ProdutosPage = () => {
                                 size={21}
                                 className="mt-0.5 shrink-0 text-[#98700a]"
                             />
+
                             <div>
                                 <p className="text-sm font-medium text-[#78601e]">
                                     Atenção ao estoque
                                 </p>
+
                                 <p className="mt-1 text-sm text-[#81734e]">
                                     {produtosEstoqueBaixo}{" "}
                                     {produtosEstoqueBaixo === 1
@@ -618,6 +577,7 @@ export const ProdutosPage = () => {
                                     <h2 className="text-lg font-medium text-[#78601e]">
                                         Catálogo de produtos
                                     </h2>
+
                                     <p className="mt-1 text-xs text-[#918d83]">
                                         Consulte e gerencie os itens cadastrados.
                                     </p>
@@ -629,6 +589,7 @@ export const ProdutosPage = () => {
                                             size={17}
                                             className="absolute left-3 top-1/2 -translate-y-1/2 text-[#a49b85]"
                                         />
+
                                         <input
                                             type="text"
                                             value={busca}
@@ -651,12 +612,14 @@ export const ProdutosPage = () => {
                                             <option value="Todas">
                                                 Todas as categorias
                                             </option>
+
                                             {categorias.map((categoria) => (
                                                 <option key={categoria} value={categoria}>
                                                     {categoria}
                                                 </option>
                                             ))}
                                         </select>
+
                                         <ChevronDown
                                             size={15}
                                             className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#98700a]"
@@ -677,6 +640,7 @@ export const ProdutosPage = () => {
                                             <option value="Ativo">Ativos</option>
                                             <option value="Inativo">Inativos</option>
                                         </select>
+
                                         <ChevronDown
                                             size={15}
                                             className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#98700a]"
@@ -687,7 +651,15 @@ export const ProdutosPage = () => {
                         </div>
 
                         <div className="overflow-x-auto">
-                            <table className="w-full min-w-[900px] text-left text-sm">
+                            <table className="w-full min-w-[1000px] table-fixed border-collapse text-left text-sm">
+                            <colgroup>
+                                <col style={{ width: "34%" }} />
+                                <col style={{ width: "15%" }} />
+                                <col style={{ width: "15%" }} />
+                                <col style={{ width: "13%" }} />
+                                <col style={{ width: "10%" }} />
+                                <col style={{ width: "13%" }} />
+                            </colgroup>
                                 <thead>
                                     <tr className="bg-[#f5f1e7] text-xs text-[#81734e]">
                                         <th className="px-5 py-4 font-medium">
@@ -695,6 +667,9 @@ export const ProdutosPage = () => {
                                         </th>
                                         <th className="px-4 py-4 font-medium">
                                             Preço de venda
+                                        </th>
+                                        <th className="px-4 py-4 font-medium">
+                                            Preço de custo
                                         </th>
                                         <th className="px-4 py-4 font-medium">
                                             Estoque
@@ -712,7 +687,7 @@ export const ProdutosPage = () => {
                                     {carregando ? (
                                         <tr>
                                             <td
-                                                colSpan={5}
+                                                colSpan={6}
                                                 className="px-5 py-14 text-center text-sm text-[#918d83]"
                                             >
                                                 Carregando produtos do Firebase...
@@ -741,16 +716,19 @@ export const ProdutosPage = () => {
                                                                     className="text-[#98700a]"
                                                                 />
                                                             </div>
+
                                                             <div>
                                                                 <p className="font-medium text-[#45433d]">
                                                                     {produto.nome}
                                                                 </p>
+
                                                                 <p className="mt-1 text-xs text-[#969187]">
                                                                     {produto.codigo}
                                                                 </p>
+
                                                                 {produto.codigoBarras && (
                                                                     <p className="mt-1 text-[11px] text-[#98700a]">
-                                                                        EAN interno:{" "}
+                                                                        Código de barras:{" "}
                                                                         {produto.codigoBarras}
                                                                     </p>
                                                                 )}
@@ -760,6 +738,10 @@ export const ProdutosPage = () => {
 
                                                     <td className="whitespace-nowrap px-4 py-4 font-medium text-[#45433d]">
                                                         {moeda(produto.preco)}
+                                                    </td>
+
+                                                    <td className="whitespace-nowrap px-4 py-4 font-medium text-[#45433d]">
+                                                        {moeda(produto.custo)}
                                                     </td>
 
                                                     <td className="px-4 py-4">
@@ -773,6 +755,7 @@ export const ProdutosPage = () => {
                                                             >
                                                                 {produto.estoque} un.
                                                             </span>
+
                                                             {estoqueBaixo && (
                                                                 <AlertTriangle
                                                                     size={14}
@@ -781,6 +764,7 @@ export const ProdutosPage = () => {
                                                                 />
                                                             )}
                                                         </div>
+
                                                         <p className="mt-1 text-[11px] text-[#969187]">
                                                             Mínimo: {produto.estoqueMinimo}
                                                         </p>
@@ -801,14 +785,19 @@ export const ProdutosPage = () => {
                                                     <td className="px-5 py-4">
                                                         <div className="flex justify-end gap-2">
                                                             <button
-                                                                onClick={() => abrirEdicao(produto)}
+                                                                type="button"
+                                                                onClick={() =>
+                                                                    abrirEdicao(produto)
+                                                                }
                                                                 title="Editar produto"
                                                                 aria-label={`Editar ${produto.nome}`}
                                                                 className="rounded-lg border border-[#e6dfcd] p-2 text-[#8b690e] transition hover:border-[#d4bd7c] hover:bg-[#f5edda]"
                                                             >
                                                                 <Pencil size={16} />
                                                             </button>
+
                                                             <button
+                                                                type="button"
                                                                 onClick={() =>
                                                                     excluirProdutoHandler(produto)
                                                                 }
@@ -840,11 +829,13 @@ export const ProdutosPage = () => {
                                             className="text-[#b49a51]"
                                         />
                                     </div>
+
                                     <p className="mt-3 text-sm font-medium text-[#45433d]">
                                         {produtos.length === 0
                                             ? "Nenhum produto cadastrado."
                                             : "Nenhum produto encontrado."}
                                     </p>
+
                                     <p className="mt-1 text-xs text-[#918d83]">
                                         {produtos.length === 0
                                             ? "Cadastre um produto para começar."
@@ -881,6 +872,7 @@ export const ProdutosPage = () => {
                                         ? "Editar produto"
                                         : "Cadastrar produto"}
                                 </h2>
+
                                 <p className="mt-1 text-xs text-[#918d83]">
                                     Preencha as informações do catálogo.
                                 </p>
@@ -913,6 +905,42 @@ export const ProdutosPage = () => {
                                         placeholder="Ex.: Incenso Natural"
                                         className={campoClasse}
                                     />
+                                </label>
+
+                                <label className="text-sm font-medium text-[#5f5c54]">
+                                    Categoria *
+                                    <select
+                                        required
+                                        value={formulario.categoria}
+                                        onChange={(evento) =>
+                                            atualizarCampo(
+                                                "categoria",
+                                                evento.target.value
+                                            )
+                                        }
+                                        className={campoClasse}
+                                    >
+                                        {categorias.map((categoria) => (
+                                            <option key={categoria} value={categoria}>
+                                                {categoria}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </label>
+
+                                <label className="text-sm font-medium text-[#5f5c54]">
+                                    Status *
+                                    <select
+                                        required
+                                        value={formulario.status}
+                                        onChange={(evento) =>
+                                            atualizarCampo("status", evento.target.value)
+                                        }
+                                        className={campoClasse}
+                                    >
+                                        <option value="Ativo">Ativo</option>
+                                        <option value="Inativo">Inativo</option>
+                                    </select>
                                 </label>
 
                                 <div className="sm:col-span-2">
@@ -973,85 +1001,6 @@ export const ProdutosPage = () => {
                                 </div>
 
                                 <label className="text-sm font-medium text-[#5f5c54]">
-                                    Categoria *
-                                    <select
-                                        required
-                                        value={formulario.categoria}
-                                        onChange={(evento) =>
-                                            atualizarCampo("categoria", evento.target.value)
-                                        }
-                                        className={campoClasse}
-                                    >
-                                        Código de barras
-                                    </label>
-
-                                    <div className="mt-2 flex flex-col gap-2 sm:flex-row">
-                                        <input
-                                            id="codigoBarras"
-                                            type="text"
-                                            value={formulario.codigoBarras}
-                                            onChange={(evento) =>
-                                                atualizarCampo(
-                                                    "codigoBarras",
-                                                    evento.target.value.replace(/\s/g, "")
-                                                )
-                                            }
-                                            placeholder="Código de barras"
-                                            className={`${campoClasse} mt-0 min-w-0 flex-1`}
-                                        />
-
-                                        <button
-                                            type="button"
-                                            onClick={() =>
-                                                atualizarCampo(
-                                                    "codigoBarras",
-                                                    gerarCodigoBarras(
-                                                        produtoEditando?.id ?? proximoId()
-                                                    )
-                                                )
-                                            }
-                                            className="rounded-lg border border-[#d9c99e] px-4 py-3 text-sm font-medium text-[#98700a] transition hover:bg-[#f5edda]"
-                                        >
-                                            Gerar código
-                                        </button>
-                                    </div>
-
-                                    <p className="mt-2 text-xs leading-5 text-[#918d83]">
-                                        O código é gerado automaticamente. Você pode alterá-lo
-                                        ou utilizar um leitor USB para preencher o campo.
-                                    </p>
-
-                                    <div className="mt-4 flex min-h-[140px] items-center justify-center overflow-x-auto rounded-xl border border-[#e3dcc9] bg-white p-4">
-                                        {formulario.codigoBarras.trim() ? (
-                                            <svg
-                                                ref={codigoBarrasRef}
-                                                className="h-auto max-w-full"
-                                                aria-label="Pré-visualização do código de barras"
-                                            />
-                                        ) : (
-                                            <p className="text-sm text-[#918d83]">
-                                                O código de barras aparecerá aqui.
-                                            </p>
-                                        )}
-                                    </div>
-                                </div>
-
-                                <label className="text-sm font-medium text-[#5f5c54]">
-                                    Status *
-                                    <select
-                                        required
-                                        value={formulario.status}
-                                        onChange={(evento) =>
-                                            atualizarCampo("status", evento.target.value)
-                                        }
-                                        className={campoClasse}
-                                    >
-                                        <option value="Ativo">Ativo</option>
-                                        <option value="Inativo">Inativo</option>
-                                    </select>
-                                </label>
-
-                                <label className="text-sm font-medium text-[#5f5c54]">
                                     Preço de venda (R$) *
                                     <input
                                         required
@@ -1108,7 +1057,10 @@ export const ProdutosPage = () => {
                                         step="1"
                                         value={formulario.estoqueMinimo}
                                         onChange={(evento) =>
-                                            atualizarCampo("estoqueMinimo", evento.target.value)
+                                            atualizarCampo(
+                                                "estoqueMinimo",
+                                                evento.target.value
+                                            )
                                         }
                                         placeholder="0"
                                         className={campoClasse}
@@ -1121,6 +1073,7 @@ export const ProdutosPage = () => {
                                             size={17}
                                             className="mt-0.5 shrink-0 text-[#98700a]"
                                         />
+
                                         <p className="text-xs leading-5 text-[#81734e]">
                                             O sistema sinalizará o produto quando a quantidade
                                             em estoque for igual ou inferior ao estoque mínimo.
@@ -1162,6 +1115,7 @@ export const ProdutosPage = () => {
                                     ) : (
                                         <Plus size={17} />
                                     )}
+
                                     {salvando
                                         ? "Salvando..."
                                         : produtoEditando
