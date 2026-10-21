@@ -1,22 +1,41 @@
+import { useNavigate, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
+import Sidebar from "../components/Sidebar";
+import { listarProdutosEstoque, registrarMovimentacaoEstoque } from "../services/estoque";
 import {
+    Home,
     Package,
+    Warehouse,
+    ShoppingCart,
+    ClipboardList,
+    Truck,
+    ChartNoAxesCombined,
+    Settings,
     Menu,
     Search,
+    Bell,
+    AlertTriangle,
     Plus,
-    X,
+    Eye,
     Boxes,
     DollarSign,
-    AlertTriangle,
     CircleAlert,
+    X,
     ArrowDownToLine,
-    ArrowUpFromLine
+    ArrowUpFromLine,
+    ChevronLeft,
+    ChevronRight
 } from "lucide-react";
 
-import { useNavigate } from "react-router-dom";
-import Sidebar from "../components/Sidebar";
-import { listarProdutos } from "../services/products.js";
-import { registrarMovimentacao } from "../services/estoque.js";
+const categorias = [
+    "Incensos",
+    "Velas",
+    "Acessórios",
+    "Ervas",
+    "Óleos",
+    "Cristais",
+    "Insumos"
+];
 
 const moeda = (valor) =>
     Number(valor || 0).toLocaleString("pt-BR", {
@@ -25,106 +44,89 @@ const moeda = (valor) =>
     });
 
 const obterStatus = (produto) => {
-    const quantidade = Number(produto.estoque || 0);
-    const minimo = Number(produto.estoqueMinimo || 0);
-
-    if (quantidade === 0) return "Sem estoque";
-    if (quantidade <= minimo) return "Estoque baixo";
-
+    if (produto.quantidade === 0) return "Sem estoque";
+    if (produto.quantidade <= produto.minimo) return "Estoque baixo";
     return "Normal";
 };
 
+const classeStatus = (status) => {
+    if (status === "Normal") {
+        return "border-[#b9d9c5] bg-[#edf7f0] text-[#32734a]";
+    }
+
+    if (status === "Sem estoque") {
+        return "border-[#e6c8c3] bg-[#fdf0ed] text-[#b34b40]";
+    }
+
+    return "border-[#e6d5a5] bg-[#fbf4df] text-[#89670d]";
+};
+
 const campoClasse =
-    "mt-2 w-full rounded-md border border-[#e3dcc9] bg-[#faf9f5] px-3 py-3 text-sm text-[#45433d] outline-none transition focus:border-[#b18a20]";
+    "w-full rounded-md border border-[#e3dcc9] bg-[#faf9f5] px-3 py-3 text-sm text-[#45433d] outline-none transition placeholder:text-[#918d83] focus:border-[#b18a20]";
+
+const botaoSecundario =
+    "rounded-md border border-[#e3dcc9] px-4 py-2 text-sm text-[#68645b] transition hover:bg-[#f5f1e7]";
 
 export const Estoque = () => {
     const navegar = useNavigate();
+    const { pathname } = useLocation();
+
+    useEffect(() => {
+        window.scrollTo(0, 0);
+    }, [pathname]);
 
     const [produtos, setProdutos] = useState([]);
+    const [carregando, setCarregando] = useState(true);
+    const [salvandoMovimentacao, setSalvandoMovimentacao] = useState(false);
+    const [erroCarregamento, setErroCarregamento] = useState("");
     const [busca, setBusca] = useState("");
     const [categoriaSelecionada, setCategoriaSelecionada] = useState("Todas");
     const [statusSelecionado, setStatusSelecionado] = useState("Todos");
+    const [pagina, setPagina] = useState(1);
 
-    const [produtoSelecionado, setProdutoSelecionado] = useState(null);
-    const [tipoMovimentacao, setTipoMovimentacao] = useState("entrada");
-    const [quantidade, setQuantidade] = useState("");
-
-    const [carregando, setCarregando] = useState(true);
-    const [salvando, setSalvando] = useState(false);
-    const [menuAberto, setMenuAberto] = useState(false);
+    const [movimentacao, setMovimentacao] = useState(null);
+    const [buscaCatalogo, setBuscaCatalogo] = useState("");
+    const [categoriaCatalogo, setCategoriaCatalogo] = useState("Todas");
+    const [itensMovimentacao, setItensMovimentacao] = useState([]);
     const [mensagem, setMensagem] = useState("");
-    const [erro, setErro] = useState("");
+
+    const [produtoDetalhes, setProdutoDetalhes] = useState(null);
+
+    const carregarProdutos = async () => {
+        setCarregando(true);
+        setErroCarregamento("");
+        try {
+            const dados = await listarProdutosEstoque();
+            setProdutos(dados);
+        } catch (erro) {
+            console.error("Erro ao carregar produtos do estoque:", erro);
+            setErroCarregamento("Não foi possível carregar os produtos do Firestore. Verifique sua conexão e as configurações do Firebase e tente novamente.");
+        } finally {
+            setCarregando(false);
+        }
+    };
 
     useEffect(() => {
         carregarProdutos();
     }, []);
 
-    async function carregarProdutos() {
-        setCarregando(true);
-        setErro("");
-
-        try {
-            const dados = await listarProdutos();
-            setProdutos(dados);
-        } catch (error) {
-            console.error("Erro ao carregar estoque:", error);
-            setErro("Não foi possível carregar os produtos do estoque.");
-        } finally {
-            setCarregando(false);
-        }
-    }
-
-    const totalProdutos = produtos.length;
-
-    const totalEstoque = produtos.reduce(
-        (total, produto) => total + Number(produto.estoque || 0),
-        0
-    );
-
-    const valorEstoque = produtos.reduce(
-        (total, produto) =>
-            total +
-            Number(produto.estoque || 0) *
-                Number(produto.custo || 0),
-        0
-    );
-
-    const produtosBaixos = produtos.filter(
-        (produto) =>
-            Number(produto.estoque || 0) > 0 &&
-            Number(produto.estoque || 0) <=
-                Number(produto.estoqueMinimo || 0)
-    ).length;
-
-    const produtosSemEstoque = produtos.filter(
-        (produto) => Number(produto.estoque || 0) === 0
-    ).length;
-
-    const categorias = [
-        ...new Set(
-            produtos
-                .map((produto) => produto.categoria)
-                .filter(Boolean)
-        )
-    ].sort((a, b) => a.localeCompare(b, "pt-BR"));
+    const porPagina = 10;
 
     const produtosFiltrados = produtos.filter((produto) => {
-        const termo = busca.toLowerCase();
+        const termo = busca.toLowerCase().trim();
 
         const correspondeBusca =
-            (produto.nome || "").toLowerCase().includes(termo) ||
-            (produto.categoria || "").toLowerCase().includes(termo) ||
-            (produto.codigo || "").toLowerCase().includes(termo);
+            produto.nome.toLowerCase().includes(termo) ||
+            produto.categoria.toLowerCase().includes(termo) ||
+            String(produto.id).includes(termo);
 
         const correspondeCategoria =
             categoriaSelecionada === "Todas" ||
             produto.categoria === categoriaSelecionada;
 
-        const status = obterStatus(produto);
-
         const correspondeStatus =
             statusSelecionado === "Todos" ||
-            status === statusSelecionado;
+            obterStatus(produto) === statusSelecionado;
 
         return (
             correspondeBusca &&
@@ -133,207 +135,369 @@ export const Estoque = () => {
         );
     });
 
-    function abrirMovimentacao(tipo, produto = null) {
-        setTipoMovimentacao(tipo);
-        setProdutoSelecionado(produto);
-        setQuantidade("");
-        setMensagem("");
-        setErro("");
-    }
+    const totalPaginas = Math.max(
+        1,
+        Math.ceil(produtosFiltrados.length / porPagina)
+    );
 
-    function fecharModal() {
-        if (salvando) return;
+    const paginaAtual = Math.min(pagina, totalPaginas);
 
-        setProdutoSelecionado(null);
-        setQuantidade("");
-        setMensagem("");
-        setErro("");
-    }
+    const produtosPagina = produtosFiltrados.slice(
+        (paginaAtual - 1) * porPagina,
+        paginaAtual * porPagina
+    );
 
-    async function salvarMovimentacao(evento) {
-        evento.preventDefault();
-        setMensagem("");
-        setErro("");
+    const totalProdutos = produtos.length;
 
-        const quantidadeNumerica = Number(quantidade);
+    const valorEstoque = produtos.reduce(
+        (total, produto) =>
+            total + produto.quantidade * produto.preco,
+        0
+    );
 
-        if (!produtoSelecionado) {
-            setErro("Selecione um produto.");
-            return;
-        }
+    const produtosBaixos = produtos.filter(
+        (produto) =>
+            produto.quantidade > 0 &&
+            produto.quantidade <= produto.minimo
+    ).length;
 
-        if (
-            quantidade === "" ||
-            !Number.isInteger(quantidadeNumerica) ||
-            quantidadeNumerica <= 0
-        ) {
-            setErro("Informe uma quantidade inteira maior que zero.");
-            return;
-        }
+    const produtosSemEstoque = produtos.filter(
+        (produto) => produto.quantidade === 0
+    ).length;
 
-        if (
-            tipoMovimentacao === "saida" &&
-            quantidadeNumerica > Number(produtoSelecionado.estoque || 0)
-        ) {
-            setErro("A quantidade de saída excede o estoque disponível.");
-            return;
-        }
-
-        setSalvando(true);
-
-        try {
-            await registrarMovimentacao({
-                produtoId: produtoSelecionado.id,
-                tipo: tipoMovimentacao,
-                quantidade: quantidadeNumerica
-            });
-
-            setMensagem(
-                `${tipoMovimentacao === "entrada" ? "Entrada" : "Saída"} de ${quantidadeNumerica} unidade(s) registrada com sucesso.`
+    const quantidadePorCategoria = (categoria) =>
+        produtos
+            .filter((produto) => produto.categoria === categoria)
+            .reduce(
+                (total, produto) => total + produto.quantidade,
+                0
             );
-
-            await carregarProdutos();
-
-            setProdutoSelecionado(null);
-            setQuantidade("");
-        } catch (error) {
-            console.error("Erro ao registrar movimentação:", error);
-            setErro(
-                error.message || "Não foi possível registrar a movimentação."
-            );
-        } finally {
-            setSalvando(false);
-        }
-    }
 
     const indicadores = [
         {
             titulo: "Total de Produtos",
             valor: totalProdutos,
             descricao: "Produtos cadastrados",
-            Icone: Boxes
+            icone: Boxes
         },
         {
-            titulo: "Unidades em Estoque",
-            valor: totalEstoque,
-            descricao: "Soma das quantidades",
-            Icone: Package
-        },
-        {
-            titulo: "Valor de Custo do Estoque",
+            titulo: "Valor em Estoque",
             valor: moeda(valorEstoque),
-            descricao: "Custo das unidades disponíveis",
-            Icone: DollarSign
+            descricao: "Valor total dos produtos",
+            icone: DollarSign
+        },
+        {
+            titulo: "Produtos em Estoque Baixo",
+            valor: produtosBaixos,
+            descricao: "Precisam de reposição",
+            icone: AlertTriangle
         },
         {
             titulo: "Produtos em Falta",
             valor: produtosSemEstoque,
-            descricao: `${produtosBaixos} com estoque baixo`,
-            Icone: CircleAlert
+            descricao: "Sem estoque disponível",
+            icone: CircleAlert
         }
     ];
 
-    return (
+    // Abre o catálogo para entrada ou saída.
+    const abrirMovimentacao = (tipo, produto = null) => {
+        setMensagem("");
+        setBuscaCatalogo("");
+        setCategoriaCatalogo("Todas");
+
+        setItensMovimentacao(
+            produto
+                ? [{
+                    ...produto,
+                    quantidadeMovimentacao: 1
+                }]
+                : []
+        );
+
+        setMovimentacao({ tipo });
+    };
+
+    const fecharMovimentacao = () => {
+        setMovimentacao(null);
+        setItensMovimentacao([]);
+        setMensagem("");
+        setBuscaCatalogo("");
+        setCategoriaCatalogo("Todas");
+    };
+
+    // Adiciona vários produtos à mesma movimentação.
+    const adicionarItem = (produto) => {
+        if (
+            movimentacao?.tipo === "saida" &&
+            produto.quantidade === 0
+        ) {
+            setMensagem(
+                `${produto.nome} não possui estoque disponível.`
+            );
+            return;
+        }
+
+        setMensagem("");
+
+        setItensMovimentacao((atuais) => {
+            const existente = atuais.find(
+                (item) => item.id === produto.id
+            );
+
+            if (existente) {
+                return atuais.map((item) => {
+                    if (item.id !== produto.id) return item;
+
+                    const novaQuantidade =
+                        Number(item.quantidadeMovimentacao) + 1;
+
+                    return {
+                        ...item,
+                        quantidadeMovimentacao:
+                            movimentacao?.tipo === "saida"
+                                ? Math.min(
+                                    novaQuantidade,
+                                    produto.quantidade
+                                )
+                                : novaQuantidade
+                    };
+                });
+            }
+
+            return [
+                ...atuais,
+                {
+                    ...produto,
+                    quantidadeMovimentacao: 1
+                }
+            ];
+        });
+    };
+
+    const alterarQuantidadeItem = (id, valor) => {
+        setMensagem("");
+
+        setItensMovimentacao((atuais) =>
+            atuais.map((item) => {
+                if (item.id !== id) return item;
+
+                if (valor === "") {
+                    return {
+                        ...item,
+                        quantidadeMovimentacao: ""
+                    };
+                }
+
+                const numero = Number(valor);
+
+                return {
+                    ...item,
+                    quantidadeMovimentacao:
+                        movimentacao?.tipo === "saida"
+                            ? Math.min(numero, item.quantidade)
+                            : numero
+                };
+            })
+        );
+    };
+
+    const removerItem = (id) => {
+        setItensMovimentacao((atuais) =>
+            atuais.filter((item) => item.id !== id)
+        );
+
+        setMensagem("");
+    };
+
+    const produtosCatalogo = produtos.filter((produto) => {
+        const termo = buscaCatalogo.toLowerCase().trim();
+
+        const correspondeBusca =
+            produto.nome.toLowerCase().includes(termo) ||
+            produto.categoria.toLowerCase().includes(termo) ||
+            String(produto.id).includes(termo);
+
+        const correspondeCategoria =
+            categoriaCatalogo === "Todas" ||
+            produto.categoria === categoriaCatalogo;
+
+        const jaAdicionado = itensMovimentacao.some(
+            (item) => item.id === produto.id
+        );
+
+        const disponivelParaSaida =
+            movimentacao?.tipo !== "saida" ||
+            produto.quantidade > 0;
+
+        return (
+            correspondeBusca &&
+            correspondeCategoria &&
+            !jaAdicionado &&
+            disponivelParaSaida
+        );
+    });
+
+    const quantidadeTotalMovimentacao =
+        itensMovimentacao.reduce(
+            (total, item) =>
+                total +
+                (Number(item.quantidadeMovimentacao) || 0),
+            0
+        );
+
+    const valorTotalMovimentacao =
+        itensMovimentacao.reduce(
+            (total, item) =>
+                total +
+                item.preco *
+                    (Number(item.quantidadeMovimentacao) || 0),
+            0
+        );
+
+    const registrarMovimentacao = async () => {
+        if (!movimentacao || salvandoMovimentacao) return;
+
+        if (itensMovimentacao.length === 0) {
+            setMensagem("Adicione pelo menos um produto à movimentação.");
+            return;
+        }
+
+        for (const item of itensMovimentacao) {
+            const quantidade = Number(item.quantidadeMovimentacao);
+            if (!Number.isInteger(quantidade) || quantidade <= 0) {
+                setMensagem(`Informe uma quantidade inteira válida para ${item.nome}.`);
+                return;
+            }
+
+            if (movimentacao.tipo === "saida" && quantidade > item.quantidade) {
+                setMensagem(`Estoque insuficiente para ${item.nome}. Disponível: ${item.quantidade} unidade(s).`);
+                return;
+            }
+        }
+
+        setSalvandoMovimentacao(true);
+        setMensagem("");
+        try {
+            await registrarMovimentacaoEstoque({
+                tipo: movimentacao.tipo,
+                itens: itensMovimentacao.map((item) => ({
+                    id: item.id,
+                    nome: item.nome,
+                    quantidadeMovimentacao: Number(item.quantidadeMovimentacao)
+                }))
+            });
+
+            await carregarProdutos();
+            fecharMovimentacao();
+        } catch (erro) {
+            console.error("Erro ao registrar movimentação de estoque:", erro);
+            setMensagem(erro?.message || "Não foi possível registrar a movimentação. Tente novamente.");
+        } finally {
+            setSalvandoMovimentacao(false);
+        }
+    };
+
+        return (
         <div className="min-h-screen bg-[#f3f1eb] text-[#35342f]">
             <Sidebar />
-
-            {menuAberto && (
-                <button
-                    aria-label="Fechar menu"
-                    onClick={() => setMenuAberto(false)}
-                    className="fixed inset-0 z-40 bg-[#35342f]/40 backdrop-blur-sm lg:hidden"
-                />
-            )}
 
             <div className="min-h-screen lg:ml-60">
                 <header className="sticky top-0 z-30 flex h-24 items-center justify-between border-b border-[#e6dfcd] bg-[#faf9f5]/95 px-4 backdrop-blur-sm sm:px-6 lg:px-8">
                     <div className="flex items-center gap-3">
                         <button
-                            onClick={() => setMenuAberto(true)}
                             className="text-[#98700a] lg:hidden"
-                            aria-label="Abrir menu"
+                            aria-label="Menu"
                         >
                             <Menu size={25} />
                         </button>
-
-                        {/* <div>
+                        <div className="flex flex-col justify-center gap-1">
                             <h2
-                                className="text-xl text-[#89670d] sm:text-2xl"
-                                style={{ fontFamily: "Corvel" }}
+                                className="m-0 text-xl text-[#89670d] sm:text-2xl"
+                                style={{
+                                    fontFamily: "Corvel",
+                                    fontWeight: "normal",
+                                    fontSize: "26px",
+                                    lineHeight: "1.6",
+                                    letterSpacing: "1px",
+                                    wordSpacing: "2px",
+                                    padding: "4px 2px 6px",
+                                    display: "block"
+                                }}
                             >
                                 Estoque
                             </h2>
-                            <p className="text-xs text-[#77746b]">
-                                Controle de produtos e inventário
-                            </p>
-                        </div> */}
 
-                        <div>
-                            <h2
-                                className="text-lg text-[#98700a] sm:text-xl"
-                                style={{ fontFamily: "Corvel" }}
-                            >
-                                Esto<span style={{ marginRight: "0.1px" }}></span>que
-                            </h2>
-                            <p className="hidden text-xs text-[#89867d] sm:block">
+                            <p className="m-0 text-xs leading-5 text-[#77746b]">
                                 Controle de produtos e inventário
                             </p>
                         </div>
                     </div>
 
-                    {/* <div className="hidden items-center gap-2 rounded-md border border-[#e3dcc9] bg-[#fffefa] px-3 py-2 sm:flex">
-                        <Search size={17} className="text-[#918d83]" />
-                        <input
-                            value={busca}
-                            onChange={(evento) => setBusca(evento.target.value)}
-                            placeholder="Buscar produto..."
-                            className="w-36 bg-transparent text-sm outline-none placeholder:text-[#918d83] lg:w-48"
-                        />
-                    </div> */}
+                    <div className="flex items-center gap-3 sm:gap-4">
+
+                        <div className="hidden border-l border-[#e3dcc9] pl-4 sm:block">
+                            <p className="text-sm text-[#89670d]">
+                                Estrela do Oriente
+                            </p>
+                            <p className="text-xs text-[#918d83]">
+                                {new Date().toLocaleDateString("pt-BR")}
+                            </p>
+                        </div>
+                    </div>
                 </header>
 
                 <main className="space-y-6 p-4 sm:p-6 lg:p-8">
-                    {mensagem && (
-                        <div className="rounded-lg border border-[#b9d9c5] bg-[#edf7f0] p-4 text-sm text-[#32734a]">
-                            {mensagem}
+                    {erroCarregamento && (
+                        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[#e6c8c3] bg-[#fdf0ed] p-4 text-sm text-[#b34b40]" role="alert">
+                            <span>{erroCarregamento}</span>
+                            <button onClick={carregarProdutos} className="rounded-md border border-[#e6c8c3] px-3 py-2 font-medium transition hover:bg-white/60">
+                                Tentar novamente
+                            </button>
                         </div>
                     )}
-
-                    {erro && !produtoSelecionado && (
-                        <div className="flex items-start gap-2 rounded-lg border border-[#e6c8c3] bg-[#fdf0ed] p-4 text-sm text-[#a94338]">
-                            <AlertTriangle size={18} className="mt-0.5 shrink-0" />
-                            {erro}
+                    {carregando && (
+                        <div className="rounded-lg border border-[#e6dfcd] bg-[#fffefa] p-4 text-sm text-[#68645b]" role="status">
+                            Carregando produtos do estoque...
                         </div>
                     )}
-
+                    {/* Ações de entrada e saída */}
                     <section className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <button
-                            onClick={() => abrirMovimentacao("entrada")}
-                            disabled={produtos.length === 0}
-                            className="flex items-center gap-4 rounded-lg bg-[#98700a] p-5 text-left text-white transition hover:bg-[#806009] disabled:cursor-not-allowed disabled:opacity-50"
+                            onClick={() =>
+                                abrirMovimentacao("entrada")
+                            }
+                            className="flex items-center gap-4 rounded-lg bg-[#98700a] p-5 text-left text-white transition hover:bg-[#806009]"
                         >
                             <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-white/15">
                                 <ArrowDownToLine size={26} />
                             </div>
+
                             <div>
                                 <p className="text-base font-semibold">
                                     Entrada de estoque
                                 </p>
                                 <p className="mt-1 text-sm text-white/80">
-                                    Adicionar unidades aos produtos
+                                    Adicionar vários produtos
                                 </p>
                             </div>
-                            <Plus size={20} className="ml-auto shrink-0" />
+
+                            <Plus
+                                size={20}
+                                className="ml-auto shrink-0"
+                            />
                         </button>
 
                         <button
-                            onClick={() => abrirMovimentacao("saida")}
-                            disabled={produtos.length === 0}
-                            className="flex items-center gap-4 rounded-lg border border-[#e6c8c3] bg-[#fff9f7] p-5 text-left transition hover:bg-[#fdf0ed] disabled:cursor-not-allowed disabled:opacity-50"
+                            onClick={() =>
+                                abrirMovimentacao("saida")
+                            }
+                            className="flex items-center gap-4 rounded-lg border border-[#e6c8c3] bg-[#fff9f7] p-5 text-left transition hover:bg-[#fdf0ed]"
                         >
                             <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-[#f8e7e3] text-[#b34b40]">
                                 <ArrowUpFromLine size={26} />
                             </div>
+
                             <div>
                                 <p className="text-base font-semibold text-[#a94338]">
                                     Saída de estoque
@@ -342,147 +506,170 @@ export const Estoque = () => {
                                     Registrar retirada de produtos
                                 </p>
                             </div>
-                            <Plus size={20} className="ml-auto shrink-0 text-[#b34b40]" />
+
+                            <Plus
+                                size={20}
+                                className="ml-auto shrink-0 text-[#b34b40]"
+                            />
                         </button>
                     </section>
 
+                    {/* Indicadores */}
                     <section>
                         <h2 className="mb-4 text-lg text-[#89670d]">
                             Resumo do Estoque
                         </h2>
 
                         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                            {indicadores.map(({ titulo, valor, descricao, Icone }) => (
-                                <div
-                                    key={titulo}
-                                    className="rounded-lg border border-[#e6dfcd] bg-[#fffefa] p-5 transition-colors hover:border-[#c8b77e]"
-                                >
-                                    <div className="flex items-center justify-between gap-2">
-                                        <p className="text-sm text-[#68645b]">
-                                            {titulo}
+                            {indicadores.map((item) => {
+                                const Icone = item.icone;
+
+                                return (
+                                    <div
+                                        key={item.titulo}
+                                        className="rounded-lg border border-[#e6dfcd] bg-[#fffefa] p-5 transition-colors hover:border-[#c8b77e]"
+                                    >
+                                        <div className="flex items-center justify-between gap-2">
+                                            <p className="text-sm text-[#68645b]">
+                                                {item.titulo}
+                                            </p>
+                                            <Icone
+                                                size={23}
+                                                className="shrink-0 text-[#98700a]"
+                                                strokeWidth={1.7}
+                                            />
+                                        </div>
+
+                                        <p className="mt-5 break-words text-2xl font-semibold text-[#89670d]">
+                                            {item.valor}
                                         </p>
-                                        <Icone
-                                            size={23}
-                                            className="shrink-0 text-[#98700a]"
-                                            strokeWidth={1.7}
-                                        />
+
+                                        <p className="mt-1 text-xs text-[#918d83]">
+                                            {item.descricao}
+                                        </p>
                                     </div>
-                                    <p className="mt-5 break-words text-2xl font-semibold text-[#89670d]">
-                                        {valor}
-                                    </p>
-                                    <p className="mt-1 text-xs text-[#918d83]">
-                                        {descricao}
-                                    </p>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     </section>
 
-                    {produtosBaixos > 0 && (
-                        <section className="flex items-start gap-3 rounded-xl border border-[#e8d9b4] bg-[#f8f1df] p-4">
-                            <AlertTriangle
-                                size={21}
-                                className="mt-0.5 shrink-0 text-[#98700a]"
-                            />
-                            <div>
-                                <p className="text-sm font-medium text-[#78601e]">
-                                    Atenção ao estoque
-                                </p>
-                                <p className="mt-1 text-sm text-[#81734e]">
-                                    {produtosBaixos}{" "}
-                                    {produtosBaixos === 1
-                                        ? "produto está"
-                                        : "produtos estão"}{" "}
-                                    com estoque baixo.
-                                </p>
-                            </div>
-                        </section>
-                    )}
+                    {/* Tabela e painéis laterais */}
+                    <section className="grid grid-cols-1 items-start gap-5 2xl:grid-cols-4">
+                        <div className="overflow-hidden rounded-lg border border-[#e6dfcd] bg-[#fffefa] 2xl:col-span-3">
+                            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#e6dfcd] p-5">
+                                <div className="flex items-center gap-2">
+                                    <Package
+                                        size={21}
+                                        className="text-[#98700a]"
+                                    />
+                                    <h2 className="text-lg text-[#89670d]">
+                                        Produtos em Estoque
+                                    </h2>
+                                </div>
 
-                    <section className="overflow-hidden rounded-lg border border-[#e6dfcd] bg-[#fffefa]">
-                        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#e6dfcd] p-5">
-                            <div className="flex items-center gap-2">
-                                <Package size={21} className="text-[#98700a]" />
-                                <h2 className="text-lg text-[#89670d]">
-                                    Produtos em Estoque
-                                </h2>
+                                <button
+                                    onClick={() => navegar("/produtos")}
+                                    className="flex items-center gap-2 rounded-md border border-[#c8b77e] px-3 py-2 text-sm text-[#89670d] transition hover:bg-[#f1e8d1]"
+                                >
+                                    <Plus size={17} />
+                                    Cadastrar Produto
+                                </button>
                             </div>
 
-                            <button
-                                onClick={() => navegar("/produtos")}
-                                className="flex items-center gap-2 rounded-md border border-[#c8b77e] px-3 py-2 text-sm text-[#89670d] transition hover:bg-[#f1e8d1]"
-                            >
-                                <Plus size={17} />
-                                Cadastrar Produto
-                            </button>
-                        </div>
+                            {/* Pesquisa e filtros da tabela */}
+                            <div className="grid grid-cols-1 gap-3 p-4 md:grid-cols-3">
+                                <div className="flex items-center gap-2 rounded-md border border-[#e3dcc9] bg-[#faf9f5] px-3 py-2">
+                                    <Search
+                                        size={17}
+                                        className="shrink-0 text-[#918d83]"
+                                    />
+                                    <input
+                                        value={busca}
+                                        onChange={(e) => {
+                                            setBusca(e.target.value);
+                                            setPagina(1);
+                                        }}
+                                        placeholder="Buscar produto..."
+                                        className="w-full bg-transparent text-sm text-[#45433d] outline-none placeholder:text-[#918d83]"
+                                    />
+                                </div>
 
-                        <div className="grid grid-cols-1 gap-3 p-4 md:grid-cols-3">
-                            <div className="flex items-center gap-2 rounded-md border border-[#e3dcc9] bg-[#faf9f5] px-3 py-2">
-                                <Search size={17} className="shrink-0 text-[#918d83]" />
-                                <input
-                                    value={busca}
-                                    onChange={(evento) => setBusca(evento.target.value)}
-                                    placeholder="Buscar por nome ou código..."
-                                    className="w-full bg-transparent text-sm outline-none placeholder:text-[#918d83]"
-                                />
-                            </div>
-
-                            <select
-                                value={categoriaSelecionada}
-                                onChange={(evento) => setCategoriaSelecionada(evento.target.value)}
-                                className="rounded-md border border-[#e3dcc9] bg-[#faf9f5] px-3 py-2 text-sm text-[#68645b] outline-none focus:border-[#b18a20]"
-                            >
-                                <option value="Todas">Todas as categorias</option>
-                                {categorias.map((categoria) => (
-                                    <option key={categoria} value={categoria}>
-                                        {categoria}
+                                <select
+                                    value={categoriaSelecionada}
+                                    onChange={(e) => {
+                                        setCategoriaSelecionada(
+                                            e.target.value
+                                        );
+                                        setPagina(1);
+                                    }}
+                                    className="rounded-md border border-[#e3dcc9] bg-[#faf9f5] px-3 py-2 text-sm text-[#68645b] outline-none focus:border-[#b18a20]"
+                                >
+                                    <option value="Todas">
+                                        Todas as categorias
                                     </option>
-                                ))}
-                            </select>
+                                    {categorias.map((categoria) => (
+                                        <option
+                                            key={categoria}
+                                            value={categoria}
+                                        >
+                                            {categoria}
+                                        </option>
+                                    ))}
+                                </select>
 
-                            <select
-                                value={statusSelecionado}
-                                onChange={(evento) => setStatusSelecionado(evento.target.value)}
-                                className="rounded-md border border-[#e3dcc9] bg-[#faf9f5] px-3 py-2 text-sm text-[#68645b] outline-none focus:border-[#b18a20]"
-                            >
-                                <option value="Todos">Todos os status</option>
-                                <option value="Normal">Normal</option>
-                                <option value="Estoque baixo">Estoque baixo</option>
-                                <option value="Sem estoque">Sem estoque</option>
-                            </select>
-                        </div>
+                                <select
+                                    value={statusSelecionado}
+                                    onChange={(e) => {
+                                        setStatusSelecionado(
+                                            e.target.value
+                                        );
+                                        setPagina(1);
+                                    }}
+                                    className="rounded-md border border-[#e3dcc9] bg-[#faf9f5] px-3 py-2 text-sm text-[#68645b] outline-none focus:border-[#b18a20]"
+                                >
+                                    <option value="Todos">
+                                        Todos os status
+                                    </option>
+                                    <option value="Normal">
+                                        Normal
+                                    </option>
+                                    <option value="Estoque baixo">
+                                        Estoque baixo
+                                    </option>
+                                    <option value="Sem estoque">
+                                        Sem estoque
+                                    </option>
+                                </select>
+                            </div>
 
-                        <div className="overflow-x-auto px-4 pb-4">
-                            <table className="w-full min-w-[760px] text-left text-sm">
-                                <thead>
-                                    <tr className="bg-[#f5f1e7] text-xs text-[#89670d]">
-                                        <th className="px-3 py-4 font-medium">Produto</th>
-                                        <th className="px-3 py-4 font-medium">Categoria</th>
-                                        <th className="px-3 py-4 font-medium">Estoque Atual</th>
-                                        <th className="px-3 py-4 font-medium">Estoque Mínimo</th>
-                                        <th className="px-3 py-4 font-medium">Status</th>
-                                        <th className="px-3 py-4 text-center font-medium">Ações</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {carregando ? (
-                                        <tr>
-                                            <td colSpan="6" className="px-3 py-10 text-center text-[#918d83]">
-                                                Carregando estoque...
-                                            </td>
+                            <div className="overflow-x-auto px-4">
+                                <table className="w-full min-w-[760px] text-left text-sm">
+                                    <thead>
+                                        <tr className="bg-[#f5f1e7] text-xs text-[#89670d]">
+                                            <th className="px-3 py-4 font-medium">
+                                                Produto
+                                            </th>
+                                            <th className="px-3 py-4 font-medium">
+                                                Categoria
+                                            </th>
+                                            <th className="px-3 py-4 font-medium">
+                                                Estoque Atual
+                                            </th>
+                                            <th className="px-3 py-4 font-medium">
+                                                Estoque Mínimo
+                                            </th>
+                                            <th className="px-3 py-4 font-medium">
+                                                Status
+                                            </th>
+                                            <th className="px-3 py-4 text-center font-medium">
+                                                Ações
+                                            </th>
                                         </tr>
-                                    ) : produtosFiltrados.length === 0 ? (
-                                        <tr>
-                                            <td colSpan="6" className="px-3 py-10 text-center text-[#918d83]">
-                                                Nenhum produto encontrado.
-                                            </td>
-                                        </tr>
-                                    ) : (
-                                        produtosFiltrados.map((produto) => {
+                                    </thead>
+
+                                    <tbody>
+                                        {produtosPagina.map((produto) => {
                                             const status = obterStatus(produto);
-                                            const estoqueAtual = Number(produto.estoque || 0);
-                                            const estoqueMinimo = Number(produto.estoqueMinimo || 0);
 
                                             return (
                                                 <tr
@@ -492,57 +679,84 @@ export const Estoque = () => {
                                                     <td className="whitespace-nowrap px-3 py-4">
                                                         <div className="flex items-center gap-3">
                                                             <div className="flex h-9 w-9 items-center justify-center rounded-md border border-[#e6dfcd] bg-[#f5f1e7]">
-                                                                <Package size={18} className="text-[#98700a]" />
+                                                                <Package
+                                                                    size={18}
+                                                                    className="text-[#98700a]"
+                                                                />
                                                             </div>
                                                             <span className="font-medium text-[#45433d]">
                                                                 {produto.nome}
                                                             </span>
                                                         </div>
                                                     </td>
+
                                                     <td className="px-3 py-4">
-                                                        {produto.categoria || "—"}
+                                                        {produto.categoria}
                                                     </td>
+
                                                     <td
                                                         className={`px-3 py-4 font-medium ${
-                                                            estoqueAtual === 0
+                                                            produto.quantidade === 0
                                                                 ? "text-[#b34b40]"
-                                                                : estoqueAtual <= estoqueMinimo
+                                                                : produto.quantidade <= produto.minimo
                                                                     ? "text-[#98700a]"
                                                                     : "text-[#45433d]"
                                                         }`}
                                                     >
-                                                        {estoqueAtual}
+                                                        {produto.quantidade}
                                                     </td>
+
                                                     <td className="px-3 py-4">
-                                                        {estoqueMinimo}
+                                                        {produto.minimo}
                                                     </td>
+
                                                     <td className="px-3 py-4">
                                                         <span
-                                                            className={`whitespace-nowrap rounded-full border px-2.5 py-1 text-xs ${
-                                                                status === "Normal"
-                                                                    ? "border-[#b9d9c5] bg-[#edf7f0] text-[#32734a]"
-                                                                    : status === "Sem estoque"
-                                                                        ? "border-[#e6c8c3] bg-[#fdf0ed] text-[#b34b40]"
-                                                                        : "border-[#e8d9b4] bg-[#f8f1df] text-[#98700a]"
-                                                            }`}
+                                                            className={`whitespace-nowrap rounded-full border px-2.5 py-1 text-xs ${classeStatus(status)}`}
                                                         >
                                                             {status}
                                                         </span>
                                                     </td>
+
                                                     <td className="px-3 py-4">
-                                                        <div className="flex justify-center gap-2">
+                                                        <div className="flex items-center justify-center gap-3">
                                                             <button
-                                                                onClick={() => abrirMovimentacao("entrada", produto)}
+                                                                title="Ver detalhes"
+                                                                onClick={() =>
+                                                                    setProdutoDetalhes(
+                                                                        produto
+                                                                    )
+                                                                }
+                                                                className="text-[#918d83] transition hover:text-[#98700a]"
+                                                            >
+                                                                <Eye size={17} />
+                                                            </button>
+
+                                                            <button
                                                                 title="Registrar entrada"
-                                                                className="rounded-md p-2 text-[#32734a] hover:bg-[#edf7f0]"
+                                                                onClick={() =>
+                                                                    abrirMovimentacao(
+                                                                        "entrada",
+                                                                        produto
+                                                                    )
+                                                                }
+                                                                className="text-[#918d83] transition hover:text-[#32734a]"
                                                             >
                                                                 <ArrowDownToLine size={17} />
                                                             </button>
+
                                                             <button
-                                                                onClick={() => abrirMovimentacao("saida", produto)}
                                                                 title="Registrar saída"
-                                                                disabled={estoqueAtual === 0}
-                                                                className="rounded-md p-2 text-[#b34b40] hover:bg-[#fdf0ed] disabled:cursor-not-allowed disabled:opacity-40"
+                                                                onClick={() =>
+                                                                    abrirMovimentacao(
+                                                                        "saida",
+                                                                        produto
+                                                                    )
+                                                                }
+                                                                disabled={
+                                                                    produto.quantidade === 0
+                                                                }
+                                                                className="text-[#918d83] transition hover:text-[#b34b40] disabled:cursor-not-allowed disabled:opacity-30"
                                                             >
                                                                 <ArrowUpFromLine size={17} />
                                                             </button>
@@ -550,122 +764,630 @@ export const Estoque = () => {
                                                     </td>
                                                 </tr>
                                             );
-                                        })
+                                        })}
+
+                                        {produtosPagina.length === 0 && (
+                                            <tr>
+                                                <td
+                                                    colSpan={6}
+                                                    className="px-4 py-12 text-center text-[#918d83]"
+                                                >
+                                                    {carregando ? "Carregando produtos..." : erroCarregamento ? "Não foi possível carregar os produtos." : "Nenhum produto encontrado."}
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            {/* Paginação */}
+                            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#e6dfcd] p-4">
+                                <p className="text-xs text-[#918d83]">
+                                    Mostrando{" "}
+                                    {produtosFiltrados.length === 0
+                                        ? 0
+                                        : (paginaAtual - 1) * porPagina + 1}{" "}
+                                    a{" "}
+                                    {Math.min(
+                                        paginaAtual * porPagina,
+                                        produtosFiltrados.length
+                                    )}{" "}
+                                    de {produtosFiltrados.length} produtos
+                                </p>
+
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        disabled={paginaAtual === 1}
+                                        onClick={() =>
+                                            setPagina((p) => Math.max(1, p - 1))
+                                        }
+                                        className="rounded-md border border-[#e3dcc9] p-2 text-[#68645b] transition hover:border-[#b18a20] disabled:opacity-30"
+                                    >
+                                        <ChevronLeft size={17} />
+                                    </button>
+
+                                    <span className="rounded-md bg-[#98700a] px-3 py-2 text-sm font-semibold text-white">
+                                        {paginaAtual}
+                                    </span>
+
+                                    <button
+                                        disabled={paginaAtual >= totalPaginas}
+                                        onClick={() =>
+                                            setPagina((p) =>
+                                                Math.min(totalPaginas, p + 1)
+                                            )
+                                        }
+                                        className="rounded-md border border-[#e3dcc9] p-2 text-[#68645b] transition hover:border-[#b18a20] disabled:opacity-30"
+                                    >
+                                        <ChevronRight size={17} />
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Painéis laterais */}
+                        <div className="space-y-5">
+                            <div className="rounded-lg border border-[#e6dfcd] bg-[#fffefa]">
+                                <div className="flex items-center gap-2 border-b border-[#e6dfcd] p-4">
+                                    <AlertTriangle
+                                        size={20}
+                                        className="text-[#98700a]"
+                                    />
+                                    <h2 className="text-base text-[#89670d]">
+                                        Alerta de Estoque
+                                    </h2>
+                                </div>
+
+                                <div className="divide-y divide-[#eee8dc] px-4">
+                                    {produtos
+                                        .filter(
+                                            (produto) =>
+                                                obterStatus(produto) !== "Normal"
+                                        )
+                                        .slice(0, 5)
+                                        .map((produto) => (
+                                            <div
+                                                key={produto.id}
+                                                className="flex items-center justify-between gap-3 py-3"
+                                            >
+                                                <div className="min-w-0">
+                                                    <p className="truncate text-sm text-[#45433d]">
+                                                        {produto.nome}
+                                                    </p>
+                                                    <p className="mt-1 text-xs text-[#918d83]">
+                                                        {produto.quantidade === 0
+                                                            ? "Sem estoque"
+                                                            : `${produto.quantidade} unidades`}
+                                                    </p>
+                                                </div>
+
+                                                <AlertTriangle
+                                                    size={17}
+                                                    className={
+                                                        produto.quantidade === 0
+                                                            ? "shrink-0 text-[#b34b40]"
+                                                            : "shrink-0 text-[#98700a]"
+                                                    }
+                                                />
+                                            </div>
+                                        ))}
+
+                                    {produtosBaixos + produtosSemEstoque === 0 && (
+                                        <p className="py-5 text-sm text-[#918d83]">
+                                            Nenhum alerta no momento.
+                                        </p>
                                     )}
-                                </tbody>
-                            </table>
+                                </div>
+                            </div>
                         </div>
                     </section>
                 </main>
             </div>
+                        {/* Modal do catálogo de entrada e saída */}
+            {movimentacao && (
+                <div
+                    className="fixed inset-0 z-[60] flex items-center justify-center bg-[#35342f]/50 p-3 backdrop-blur-sm sm:p-6"
+                    onMouseDown={(e) => {
+                        if (e.target === e.currentTarget) {
+                            fecharMovimentacao();
+                        }
+                    }}
+                >
+                    <div className="flex max-h-[94vh] w-full max-w-6xl flex-col overflow-hidden rounded-xl border border-[#e6dfcd] bg-[#faf9f5] shadow-2xl">
+                        {/* Cabeçalho */}
+                        <div className="flex items-center justify-between border-b border-[#e6dfcd] bg-[#fffefa] px-5 py-4 sm:px-7">
+                            <div className="flex items-center gap-3">
+                                <div
+                                    className={`flex h-11 w-11 items-center justify-center rounded-lg ${
+                                        movimentacao.tipo === "entrada"
+                                            ? "bg-[#f1e8d1] text-[#98700a]"
+                                            : "bg-[#f8e7e3] text-[#b34b40]"
+                                    }`}
+                                >
+                                    {movimentacao.tipo === "entrada" ? (
+                                        <ArrowDownToLine size={23} />
+                                    ) : (
+                                        <ArrowUpFromLine size={23} />
+                                    )}
+                                </div>
 
-            {produtoSelecionado !== null && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-[#35342f]/50 p-4">
-                    <section className="my-8 w-full max-w-lg rounded-xl border border-[#e6dfcd] bg-[#fffefa] shadow-xl">
-                        <div className="flex items-center justify-between border-b border-[#eee7d7] p-5">
-                            <div>
-                                <h2 className="text-lg font-medium text-[#78601e]">
-                                    {tipoMovimentacao === "entrada"
-                                        ? "Entrada de estoque"
-                                        : "Saída de estoque"}
-                                </h2>
-                                <p className="mt-1 text-xs text-[#918d83]">
-                                    Registre a movimentação do produto.
-                                </p>
+                                <div>
+                                    <h2 className="text-lg font-semibold text-[#89670d] sm:text-xl">
+                                        {movimentacao.tipo === "entrada"
+                                            ? "Entrada de Estoque"
+                                            : "Saída de Estoque"}
+                                    </h2>
+                                    <p className="mt-1 text-xs text-[#918d83]">
+                                        Selecione os produtos e defina as quantidades.
+                                    </p>
+                                </div>
                             </div>
+
                             <button
-                                onClick={fecharModal}
-                                disabled={salvando}
-                                className="rounded-md p-2 text-[#77746b] hover:bg-[#f5f1e7]"
-                                aria-label="Fechar"
+                                onClick={fecharMovimentacao}
+                                aria-label="Fechar catálogo"
+                                className="rounded-md p-2 text-[#918d83] transition hover:bg-[#f5f1e7] hover:text-[#45433d]"
+                            >
+                                <X size={22} />
+                            </button>
+                        </div>
+
+                        <div className="grid min-h-0 flex-1 grid-cols-1 overflow-y-auto lg:grid-cols-[1fr_340px] lg:overflow-hidden">
+                            {/* Catálogo */}
+                            <div className="min-w-0 p-4 sm:p-6 lg:overflow-y-auto">
+                                <div className="mb-5">
+                                    <h3 className="text-base font-semibold text-[#45433d]">
+                                        Catálogo de produtos
+                                    </h3>
+                                    <p className="mt-1 text-sm text-[#918d83]">
+                                        Escolha um ou vários produtos para movimentar.
+                                    </p>
+                                </div>
+
+                                {/* Barra de pesquisa */}
+                                <div className="mb-4 flex items-center gap-3 rounded-lg border border-[#e3dcc9] bg-[#fffefa] px-4 py-3 transition focus-within:border-[#b18a20] focus-within:ring-2 focus-within:ring-[#b18a20]/10">
+                                    <Search
+                                        size={20}
+                                        className="shrink-0 text-[#98700a]"
+                                    />
+
+                                    <input
+                                        autoFocus
+                                        value={buscaCatalogo}
+                                        onChange={(e) =>
+                                            setBuscaCatalogo(e.target.value)
+                                        }
+                                        placeholder="Buscar por nome, categoria ou código..."
+                                        className="w-full bg-transparent text-sm text-[#45433d] outline-none placeholder:text-[#aaa496]"
+                                    />
+
+                                    {buscaCatalogo && (
+                                        <button
+                                            onClick={() => setBuscaCatalogo("")}
+                                            aria-label="Limpar pesquisa"
+                                            className="text-[#918d83] hover:text-[#45433d]"
+                                        >
+                                            <X size={17} />
+                                        </button>
+                                    )}
+                                </div>
+
+                                <div className="mb-3 flex items-center justify-between">
+                                    <p className="text-xs text-[#918d83]">
+                                        {produtosCatalogo.length} produto(s) disponível(is)
+                                    </p>
+                                    <p className="text-xs text-[#918d83]">
+                                        {itensMovimentacao.length} selecionado(s)
+                                    </p>
+                                </div>
+
+                                {/* Cards do catálogo */}
+                                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                                    {produtosCatalogo.map((produto) => {
+                                        const status = obterStatus(produto);
+
+                                        return (
+                                            <div
+                                                key={produto.id}
+                                                className="group flex flex-col rounded-lg border border-[#e6dfcd] bg-[#fffefa] p-4 transition hover:border-[#c8b77e] hover:shadow-md"
+                                            >
+                                                <div className="mb-3 flex items-start justify-between gap-2">
+                                                    <div className="flex h-11 w-11 items-center justify-center rounded-lg border border-[#e6dfcd] bg-[#f5f1e7]">
+                                                        <Package
+                                                            size={22}
+                                                            className="text-[#98700a]"
+                                                        />
+                                                    </div>
+
+                                                    <span
+                                                        className={`rounded-full border px-2 py-1 text-[10px] ${classeStatus(status)}`}
+                                                    >
+                                                        {status}
+                                                    </span>
+                                                </div>
+
+                                                <p className="text-[11px] text-[#98700a]">
+                                                    {produto.categoria}
+                                                </p>
+
+                                                <h4 className="mt-1 min-h-10 text-sm font-semibold text-[#45433d]">
+                                                    {produto.nome}
+                                                </h4>
+
+                                                <p className="mt-2 text-lg font-semibold text-[#89670d]">
+                                                    {moeda(produto.preco)}
+                                                </p>
+
+                                                <div className="mt-3 flex items-center justify-between border-t border-[#eee8dc] pt-3">
+                                                    <div>
+                                                        <p className="text-[11px] text-[#918d83]">
+                                                            Disponível
+                                                        </p>
+                                                        <p
+                                                            className={`mt-1 text-sm font-medium ${
+                                                                produto.quantidade === 0
+                                                                    ? "text-[#b34b40]"
+                                                                    : "text-[#45433d]"
+                                                            }`}
+                                                        >
+                                                            {produto.quantidade} un.
+                                                        </p>
+                                                    </div>
+
+                                                    <button
+                                                        onClick={() =>
+                                                            adicionarItem(produto)
+                                                        }
+                                                        className={`flex items-center gap-2 rounded-md px-3 py-2 text-xs font-semibold text-white transition ${
+                                                            movimentacao.tipo === "entrada"
+                                                                ? "bg-[#98700a] hover:bg-[#806009]"
+                                                                : "bg-[#b34b40] hover:bg-[#963b32]"
+                                                        }`}
+                                                    >
+                                                        <Plus size={15} />
+                                                        Adicionar
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+
+                                {produtosCatalogo.length === 0 && (
+                                    <div className="rounded-lg border border-dashed border-[#d9d0bc] bg-[#fffefa] px-4 py-12 text-center">
+                                        <Package
+                                            size={34}
+                                            className="mx-auto text-[#c8b77e]"
+                                        />
+                                        <p className="mt-3 text-sm font-medium text-[#68645b]">
+                                            Nenhum produto encontrado
+                                        </p>
+                                        <p className="mt-1 text-xs text-[#918d83]">
+                                            Tente outra pesquisa ou selecione outra categoria.
+                                        </p>
+                                        <button
+                                            onClick={() => {
+                                                setBuscaCatalogo("");
+                                                setCategoriaCatalogo("Todas");
+                                            }}
+                                            className="mt-4 text-xs font-semibold text-[#89670d] hover:underline"
+                                        >
+                                            Limpar filtros
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Resumo da movimentação */}
+                            <aside className="flex min-h-0 flex-col border-t border-[#e6dfcd] bg-[#fffefa] lg:border-l lg:border-t-0">
+                                <div className="border-b border-[#e6dfcd] p-5">
+                                    <div className="flex items-center justify-between">
+                                        <h3 className="font-semibold text-[#45433d]">
+                                            Resumo da movimentação
+                                        </h3>
+
+                                        <span className="flex h-7 min-w-7 items-center justify-center rounded-full bg-[#f1e8d1] px-2 text-xs font-semibold text-[#89670d]">
+                                            {itensMovimentacao.length}
+                                        </span>
+                                    </div>
+
+                                    <p className="mt-1 text-xs text-[#918d83]">
+                                        Produtos adicionados à lista
+                                    </p>
+                                </div>
+
+                                <div className="max-h-[340px] flex-1 divide-y divide-[#eee8dc] overflow-y-auto px-4 lg:max-h-none">
+                                    {itensMovimentacao.map((item) => (
+                                        <div key={item.id} className="py-4">
+                                            <div className="flex items-start justify-between gap-3">
+                                                <div className="min-w-0">
+                                                    <p className="text-sm font-medium text-[#45433d]">
+                                                        {item.nome}
+                                                    </p>
+                                                    <p className="mt-1 text-xs text-[#918d83]">
+                                                        {moeda(item.preco)} por unidade
+                                                    </p>
+                                                </div>
+
+                                                <button
+                                                    onClick={() =>
+                                                        removerItem(item.id)
+                                                    }
+                                                    aria-label={`Remover ${item.nome}`}
+                                                    className="shrink-0 rounded-md p-1 text-[#b34b40] transition hover:bg-[#fdf0ed]"
+                                                >
+                                                    <X size={17} />
+                                                </button>
+                                            </div>
+
+                                            <div className="mt-3 flex items-center justify-between gap-3">
+                                                <div className="flex items-center rounded-md border border-[#e3dcc9]">
+                                                    <button
+                                                        onClick={() =>
+                                                            alterarQuantidadeItem(
+                                                                item.id,
+                                                                Math.max(
+                                                                    1,
+                                                                    (Number(item.quantidadeMovimentacao) || 1) - 1
+                                                                )
+                                                            )
+                                                        }
+                                                        className="px-3 py-2 text-[#68645b] transition hover:bg-[#f5f1e7]"
+                                                    >
+                                                        −
+                                                    </button>
+
+                                                    <input
+                                                        type="number"
+                                                        min="1"
+                                                        step="1"
+                                                        max={
+                                                            movimentacao.tipo === "saida"
+                                                                ? item.quantidade
+                                                                : undefined
+                                                        }
+                                                        value={item.quantidadeMovimentacao}
+                                                        onChange={(e) =>
+                                                            alterarQuantidadeItem(
+                                                                item.id,
+                                                                e.target.value === ""
+                                                                    ? ""
+                                                                    : Math.max(
+                                                                        1,
+                                                                        Number(e.target.value)
+                                                                    )
+                                                            )
+                                                        }
+                                                        className="w-12 border-x border-[#e3dcc9] bg-transparent py-2 text-center text-sm text-[#45433d] outline-none"
+                                                    />
+
+                                                    <button
+                                                        disabled={
+                                                            movimentacao.tipo === "saida" &&
+                                                            Number(item.quantidadeMovimentacao) >= item.quantidade
+                                                        }
+                                                        onClick={() =>
+                                                            alterarQuantidadeItem(
+                                                                item.id,
+                                                                (Number(item.quantidadeMovimentacao) || 0) + 1
+                                                            )
+                                                        }
+                                                        className="px-3 py-2 text-[#68645b] transition hover:bg-[#f5f1e7] disabled:cursor-not-allowed disabled:opacity-30"
+                                                    >
+                                                        +
+                                                    </button>
+                                                </div>
+
+                                                <p className="text-sm font-semibold text-[#89670d]">
+                                                    {moeda(
+                                                        item.preco *
+                                                        (Number(item.quantidadeMovimentacao) || 0)
+                                                    )}
+                                                </p>
+                                            </div>
+
+                                            {movimentacao.tipo === "saida" && (
+                                                <p className="mt-2 text-[11px] text-[#918d83]">
+                                                    Disponível: {item.quantidade} unidade(s)
+                                                </p>
+                                            )}
+                                        </div>
+                                    ))}
+
+                                    {itensMovimentacao.length === 0 && (
+                                        <div className="flex min-h-44 flex-col items-center justify-center px-4 text-center">
+                                            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#f5f1e7]">
+                                                <ShoppingCart
+                                                    size={25}
+                                                    className="text-[#b8aa85]"
+                                                />
+                                            </div>
+
+                                            <p className="mt-3 text-sm font-medium text-[#68645b]">
+                                                Sua lista está vazia
+                                            </p>
+                                            <p className="mt-1 text-xs leading-5 text-[#918d83]">
+                                                Adicione produtos do catálogo para começar.
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Totais e confirmação */}
+                                <div className="border-t border-[#e6dfcd] bg-[#faf9f5] p-5">
+                                    <div className="mb-2 flex justify-between text-xs text-[#68645b]">
+                                        <span>Total de unidades</span>
+                                        <span>
+                                            {quantidadeTotalMovimentacao} un.
+                                        </span>
+                                    </div>
+
+                                    <div className="mb-4 flex items-center justify-between gap-2">
+                                        <span className="text-sm font-medium text-[#45433d]">
+                                            Valor dos produtos
+                                        </span>
+                                        <span className="text-lg font-semibold text-[#89670d]">
+                                            {moeda(valorTotalMovimentacao)}
+                                        </span>
+                                    </div>
+
+                                    {mensagem && (
+                                        <p className="mb-3 rounded-md border border-[#e6c8c3] bg-[#fdf0ed] p-3 text-xs leading-5 text-[#b34b40]">
+                                            {mensagem}
+                                        </p>
+                                    )}
+
+                                    <button
+                                        onClick={registrarMovimentacao}
+                                        disabled={itensMovimentacao.length === 0 || salvandoMovimentacao}
+                                        className={`w-full rounded-md px-4 py-3 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-40 ${
+                                            movimentacao.tipo === "entrada"
+                                                ? "bg-[#98700a] hover:bg-[#806009]"
+                                                : "bg-[#b34b40] hover:bg-[#963b32]"
+                                        }`}
+                                    >
+                                        {salvandoMovimentacao
+                                            ? "Salvando..."
+                                            : movimentacao.tipo === "entrada"
+                                                ? "Confirmar entrada"
+                                                : "Confirmar saída"}
+                                    </button>
+
+                                    <button
+                                        onClick={fecharMovimentacao}
+                                        className="mt-2 w-full rounded-md border border-[#e3dcc9] px-4 py-2.5 text-sm text-[#68645b] transition hover:bg-[#f5f1e7]"
+                                    >
+                                        Cancelar
+                                    </button>
+                                </div>
+                            </aside>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal de detalhes do produto */}
+            {produtoDetalhes && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-[#35342f]/40 p-4 backdrop-blur-sm"
+                    onMouseDown={(e) => {
+                        if (e.target === e.currentTarget) {
+                            setProdutoDetalhes(null);
+                        }
+                    }}
+                >
+                    <div className="w-full max-w-md rounded-lg border border-[#e3dcc9] bg-[#fffefa] p-6 shadow-2xl">
+                        <div className="mb-5 flex items-center justify-between">
+                            <h2 className="text-lg text-[#89670d]">
+                                Detalhes do Produto
+                            </h2>
+
+                            <button
+                                onClick={() => setProdutoDetalhes(null)}
+                                aria-label="Fechar detalhes"
+                                className="text-[#918d83] transition hover:text-[#45433d]"
                             >
                                 <X size={20} />
                             </button>
                         </div>
 
-                        <form onSubmit={salvarMovimentacao} className="space-y-4 p-5">
-                            {erro && (
-                                <p className="rounded-md border border-[#e6c8c3] bg-[#fdf0ed] p-3 text-sm text-[#a94338]">
-                                    {erro}
-                                </p>
-                            )}
-
-                            <div>
-                                <label className="text-sm text-[#68645b]">
-                                    Produto
-                                </label>
-                                <select
-                                    required
-                                    value={produtoSelecionado.id}
-                                    onChange={(evento) => {
-                                        const produto = produtos.find(
-                                            (item) => item.id === evento.target.value
-                                        );
-                                        setProdutoSelecionado(produto || null);
-                                        setErro("");
-                                    }}
-                                    className={campoClasse}
-                                >
-                                    {produtos.map((produto) => (
-                                        <option key={produto.id} value={produto.id}>
-                                            {produto.nome} — estoque: {Number(produto.estoque || 0)}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            <div>
-                                <label className="text-sm text-[#68645b]">
-                                    Tipo de movimentação
-                                </label>
-                                <select
-                                    value={tipoMovimentacao}
-                                    onChange={(evento) => setTipoMovimentacao(evento.target.value)}
-                                    className={campoClasse}
-                                >
-                                    <option value="entrada">Entrada</option>
-                                    <option value="saida">Saída</option>
-                                </select>
-                            </div>
-
-                            <div>
-                                <label className="text-sm text-[#68645b]">
-                                    Quantidade
-                                </label>
-                                <input
-                                    required
-                                    type="number"
-                                    min="1"
-                                    step="1"
-                                    value={quantidade}
-                                    onChange={(evento) => setQuantidade(evento.target.value)}
-                                    className={campoClasse}
-                                    placeholder="Informe a quantidade"
+                        <div className="mb-5 flex items-center gap-4 rounded-md border border-[#e6dfcd] bg-[#faf9f5] p-4">
+                            <div className="flex h-14 w-14 items-center justify-center rounded-lg border border-[#e6dfcd] bg-[#f5f1e7]">
+                                <Package
+                                    size={28}
+                                    className="text-[#98700a]"
                                 />
-                                <p className="mt-2 text-xs text-[#918d83]">
-                                    Estoque atual: {Number(produtoSelecionado.estoque || 0)} unidade(s)
-                                </p>
                             </div>
 
-                            <div className="flex flex-col-reverse justify-end gap-3 border-t border-[#eee7d7] pt-4 sm:flex-row">
-                                <button
-                                    type="button"
-                                    onClick={fecharModal}
-                                    disabled={salvando}
-                                    className="rounded-lg border border-[#e3dcc9] px-4 py-3 text-sm text-[#68645b] hover:bg-[#f5f1e7]"
+                            <div>
+                                <p className="font-semibold text-[#45433d]">
+                                    {produtoDetalhes.nome}
+                                </p>
+                                <p className="mt-1 text-sm text-[#918d83]">
+                                    {produtoDetalhes.categoria}
+                                </p>
+                                <span
+                                    className={`mt-2 inline-block rounded-full border px-2.5 py-1 text-xs ${classeStatus(obterStatus(produtoDetalhes))}`}
                                 >
-                                    Cancelar
-                                </button>
-                                <button
-                                    type="submit"
-                                    disabled={salvando}
-                                    className="rounded-lg bg-[#98700a] px-5 py-3 text-sm font-medium text-white hover:bg-[#806009] disabled:cursor-not-allowed disabled:opacity-60"
-                                >
-                                    {salvando ? "Registrando..." : "Registrar movimentação"}
-                                </button>
+                                    {obterStatus(produtoDetalhes)}
+                                </span>
                             </div>
-                        </form>
-                    </section>
+                        </div>
+
+                        <div className="space-y-3">
+                            <div className="flex justify-between text-sm">
+                                <span className="text-[#68645b]">
+                                    Código
+                                </span>
+                                <span className="font-medium text-[#45433d]">
+                                    #{produtoDetalhes.id}
+                                </span>
+                            </div>
+
+                            <div className="flex justify-between text-sm">
+                                <span className="text-[#68645b]">
+                                    Estoque atual
+                                </span>
+                                <span className="font-medium text-[#45433d]">
+                                    {produtoDetalhes.quantidade} unidades
+                                </span>
+                            </div>
+
+                            <div className="flex justify-between text-sm">
+                                <span className="text-[#68645b]">
+                                    Estoque mínimo
+                                </span>
+                                <span className="font-medium text-[#45433d]">
+                                    {produtoDetalhes.minimo} unidades
+                                </span>
+                            </div>
+
+                            <div className="flex justify-between text-sm">
+                                <span className="text-[#68645b]">
+                                    Valor unitário
+                                </span>
+                                <span className="font-semibold text-[#89670d]">
+                                    {moeda(produtoDetalhes.preco)}
+                                </span>
+                            </div>
+
+                            <div className="flex justify-between border-t border-[#e6dfcd] pt-3 text-sm">
+                                <span className="text-[#68645b]">
+                                    Valor total em estoque
+                                </span>
+                                <span className="font-semibold text-[#89670d]">
+                                    {moeda(
+                                        produtoDetalhes.quantidade *
+                                        produtoDetalhes.preco
+                                    )}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div className="mt-6 flex flex-wrap justify-end gap-3">
+                            <button
+                                onClick={() => setProdutoDetalhes(null)}
+                                className={botaoSecundario}
+                            >
+                                Fechar
+                            </button>
+
+                            <button
+                                onClick={() => {
+                                    const produto = produtos.find(
+                                        (p) => p.id === produtoDetalhes.id
+                                    );
+
+                                    setProdutoDetalhes(null);
+                                    abrirMovimentacao("entrada", produto);
+                                }}
+                                className="flex items-center gap-2 rounded-md bg-[#98700a] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#806009]"
+                            >
+                                <ArrowDownToLine size={16} />
+                                Registrar entrada
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>

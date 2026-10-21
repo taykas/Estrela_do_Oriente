@@ -3,169 +3,342 @@ import {
     collection,
     doc,
     getDocs,
-    query,
-    orderBy,
     runTransaction,
     serverTimestamp
 } from "firebase/firestore";
 
-const vendasRef = collection(db, "vendas");
 const produtosRef = collection(db, "produtos");
+const vendasRef = collection(db, "vendas");
 
-const formatarData = (timestamp) => {
-    if (!timestamp) return "";
-
-    const data = timestamp.toDate();
-
-    const ano = data.getFullYear();
-    const mes = String(data.getMonth() + 1).padStart(2, "0");
-    const dia = String(data.getDate()).padStart(2, "0");
-
-    return `${ano}-${mes}-${dia}`;
+const numero = (valor, padrao = 0) => {
+    const convertido = Number(valor);
+    return Number.isFinite(convertido) ? convertido : padrao;
 };
 
-export async function listarVendas() {
-    const consulta = query(vendasRef, orderBy("data", "desc"));
-    const snapshot = await getDocs(consulta);
+const dataLocal = () => {
+    const agora = new Date();
 
-    return snapshot.docs.map((documento) => {
-        const dados = documento.data();
+    return `${agora.getFullYear()}-${String(agora.getMonth() + 1).padStart(2, "0")}-${String(agora.getDate()).padStart(2, "0")}`;
+};
 
-        return {
-            id: documento.id,
-            cliente: dados.cliente,
-            data: formatarData(dados.data),
-            itens: dados.itens || [],
-            pagamento: dados.pagamento,
-            desconto: dados.desconto || 0,
-            subtotal: dados.subtotal ?? 0,
-            total: dados.total ?? 0,
-            status: dados.status || "Concluída"
-        };
-    });
+function formatarProduto(documento) {
+    const dados = documento.data();
+
+    return {
+        id: documento.id,
+        nome: dados.nome || "Produto sem nome",
+        categoria: dados.categoria || "Outros",
+        quantidade: Math.max(
+            0,
+            numero(dados.estoque ?? dados.quantidade, 0)
+        ),
+        minimo: Math.max(
+            0,
+            numero(dados.estoqueMinimo ?? dados.minimo, 5)
+        ),
+        preco: Math.max(0, numero(dados.preco, 0)),
+        status: dados.status || "Ativo"
+    };
 }
 
+function formatarVenda(documento) {
+    const dados = documento.data();
+    let data = dados.data;
+
+    if (data?.toDate) {
+        const d = data.toDate();
+
+        data = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    }
+
+    if (data instanceof Date) {
+        data = `${data.getFullYear()}-${String(data.getMonth() + 1).padStart(2, "0")}-${String(data.getDate()).padStart(2, "0")}`;
+    }
+
+    return {
+        id: dados.numeroVenda ?? documento.id,
+        cliente: dados.cliente || "Cliente não identificado",
+
+        data:
+            typeof data === "string" &&
+            /^\d{4}-\d{2}-\d{2}$/.test(data)
+                ? data
+                : dataLocal(),
+
+        itens: Array.isArray(dados.itens)
+            ? dados.itens.map((item) => ({
+                id: String(item.id ?? item.produtoId ?? ""),
+                nome: item.nome || "Produto",
+                quantidade: Math.max(
+                    0,
+                    numero(item.quantidade, 0)
+                ),
+                preco: Math.max(
+                    0,
+                    numero(item.preco, 0)
+                )
+            }))
+            : [],
+
+        pagamento: dados.pagamento || "Pix",
+
+        crediario:
+            dados.crediario === true ||
+            dados.pagamento === "Crediário",
+
+        desconto: Math.min(
+            100,
+            Math.max(0, numero(dados.desconto, 0))
+        ),
+
+        status: dados.status || "Concluída",
+
+        criadoEm: dados.criadoEm?.toDate?.() ?? null
+    };
+}
+
+export async function listarProdutosVenda() {
+    const snapshot = await getDocs(produtosRef);
+
+    return snapshot.docs
+        .map(formatarProduto)
+        .filter((produto) => produto.status !== "Inativo")
+        .sort((a, b) =>
+            a.nome.localeCompare(b.nome, "pt-BR")
+        );
+}
+
+export async function listarVendas() {
+    const snapshot = await getDocs(vendasRef);
+
+    return snapshot.docs
+        .map(formatarVenda)
+        .sort((a, b) => {
+            const dataA =
+                a.criadoEm?.getTime?.() ??
+                new Date(`${a.data}T00:00:00`).getTime();
+
+            const dataB =
+                b.criadoEm?.getTime?.() ??
+                new Date(`${b.data}T00:00:00`).getTime();
+
+            return (
+                dataB - dataA ||
+                String(b.id).localeCompare(
+                    String(a.id),
+                    "pt-BR",
+                    { numeric: true }
+                )
+            );
+        });
+}
+
+/**
+ * Registra a venda e atualiza o estoque em uma única transação.
+ * Os preços e nomes dos produtos são consultados no Firestore.
+ */
 export async function registrarVenda({
     cliente,
+    data,
     itens,
     pagamento,
-    desconto = 0
+    crediario,
+    desconto
 }) {
     if (!Array.isArray(itens) || itens.length === 0) {
-        throw new Error("Adicione pelo menos um produto à venda.");
-    }
-
-    const descontoNumerico = Number(desconto);
-
-    if (
-        !Number.isFinite(descontoNumerico) ||
-        descontoNumerico < 0 ||
-        descontoNumerico > 100
-    ) {
-        throw new Error("O desconto deve estar entre 0 e 100%.");
-    }
-
-    if (!pagamento) {
-        throw new Error("Informe a forma de pagamento.");
-    }
-
-    const quantidades = new Map();
-
-    for (const item of itens) {
-        if (
-            !item.id ||
-            !Number.isInteger(item.quantidade) ||
-            item.quantidade <= 0
-        ) {
-            throw new Error("Existe um item inválido na venda.");
-        }
-
-        quantidades.set(
-            item.id,
-            (quantidades.get(item.id) || 0) + item.quantidade
+        throw new Error(
+            "Adicione pelo menos um produto à venda."
         );
     }
 
-    const itensAgrupados = [...quantidades.entries()].map(
-        ([id, quantidade]) => ({
-            id,
-            quantidade,
-            referencia: doc(produtosRef, id)
-        })
+    const descontoValidado = Math.min(
+        100,
+        Math.max(0, numero(desconto, 0))
     );
+
+    if (!pagamento) {
+        throw new Error(
+            "Selecione uma forma de pagamento."
+        );
+    }
+
+    const itensValidados = itens.map((item) => {
+        const id = String(item.id ?? "").trim();
+        const quantidade = Number(item.quantidade);
+
+        if (!id) {
+            throw new Error(
+                "Um dos produtos selecionados não possui identificador válido."
+            );
+        }
+
+        if (
+            !Number.isInteger(quantidade) ||
+            quantidade <= 0
+        ) {
+            throw new Error(
+                "A quantidade de cada produto deve ser um número inteiro positivo."
+            );
+        }
+
+        return {
+            id,
+            quantidade
+        };
+    });
+
+    const ids = itensValidados.map((item) => item.id);
+
+    if (new Set(ids).size !== ids.length) {
+        throw new Error(
+            "Há produtos duplicados no carrinho. Remova e adicione novamente o produto."
+        );
+    }
+
+    const refs = itensValidados.map((item) => ({
+        ...item,
+        ref: doc(db, "produtos", item.id)
+    }));
 
     const vendaRef = doc(vendasRef);
 
-    await runTransaction(db, async (transacao) => {
-        const documentos = await Promise.all(
-            itensAgrupados.map(({ referencia }) =>
-                transacao.get(referencia)
-            )
-        );
+    return runTransaction(db, async (transaction) => {
+        // Primeiro, todas as leituras são realizadas.
+        const lidos = [];
 
-        const itensVenda = [];
-        let subtotal = 0;
+        for (const item of refs) {
+            const snapshot = await transaction.get(item.ref);
 
-        documentos.forEach((documento, index) => {
-            const item = itensAgrupados[index];
-
-            if (!documento.exists()) {
-                throw new Error("Um dos produtos não foi encontrado.");
+            if (!snapshot.exists()) {
+                throw new Error(
+                    `Um produto do carrinho não foi encontrado (código ${item.id}). Atualize a página e tente novamente.`
+                );
             }
 
-            const produto = documento.data();
-            const estoqueAtual = produto.estoque;
+            lidos.push({
+                ...item,
+                snapshot
+            });
+        }
+
+        // Valida os produtos e calcula o novo estoque.
+        const itensVenda = lidos.map((item) => {
+            const dados = item.snapshot.data();
+
+            const estoqueAtual = numero(
+                dados.estoque ?? dados.quantidade,
+                0
+            );
+
+            const preco = numero(dados.preco, 0);
 
             if (
                 !Number.isInteger(estoqueAtual) ||
-                estoqueAtual < item.quantidade
+                estoqueAtual < 0
             ) {
                 throw new Error(
-                    `Estoque insuficiente para ${produto.nome}. Disponível: ${estoqueAtual ?? 0}.`
+                    `O estoque de ${dados.nome || item.id} está inválido.`
                 );
             }
 
-            const preco = Number(produto.preco);
-
-            if (!Number.isFinite(preco) || preco < 0) {
+            if (dados.status === "Inativo") {
                 throw new Error(
-                    `Preço inválido para ${produto.nome}.`
+                    `${dados.nome || "Este produto"} está inativo e não pode ser vendido.`
                 );
             }
 
-            itensVenda.push({
-                id: item.id,
-                nome: produto.nome,
-                preco,
-                quantidade: item.quantidade
-            });
+            if (item.quantidade > estoqueAtual) {
+                throw new Error(
+                    `Estoque insuficiente para ${dados.nome || item.id}. Disponível: ${estoqueAtual} unidade(s).`
+                );
+            }
 
-            subtotal += preco * item.quantidade;
+            if (preco < 0) {
+                throw new Error(
+                    `O preço de ${dados.nome || item.id} é inválido.`
+                );
+            }
+
+            return {
+                id: item.id,
+                nome: dados.nome || "Produto sem nome",
+                quantidade: item.quantidade,
+                preco,
+                estoqueAnterior: estoqueAtual,
+                estoqueAtualizado:
+                    estoqueAtual - item.quantidade
+            };
         });
 
-        const total = Number(
-            (subtotal * (1 - descontoNumerico / 100)).toFixed(2)
+        const subtotal = itensVenda.reduce(
+            (soma, item) =>
+                soma + item.quantidade * item.preco,
+            0
         );
 
-        itensAgrupados.forEach((item, index) => {
-            const produto = documentos[index].data();
+        const valorDesconto =
+            subtotal * descontoValidado / 100;
 
-            transacao.update(item.referencia, {
-                estoque: produto.estoque - item.quantidade
-            });
-        });
+        const total = Math.max(
+            0,
+            subtotal - valorDesconto
+        );
 
-        transacao.set(vendaRef, {
-            cliente: cliente?.trim() || "Cliente não identificado",
-            data: serverTimestamp(),
-            itens: itensVenda,
-            pagamento,
-            desconto: descontoNumerico,
-            subtotal: Number(subtotal.toFixed(2)),
+        const dadosVenda = {
+            cliente:
+                String(
+                    cliente || "Cliente não identificado"
+                ).trim() || "Cliente não identificado",
+
+            data:
+                typeof data === "string" &&
+                /^\d{4}-\d{2}-\d{2}$/.test(data)
+                    ? data
+                    : dataLocal(),
+
+            itens: itensVenda.map(
+                ({ id, nome, quantidade, preco }) => ({
+                    id,
+                    nome,
+                    quantidade,
+                    preco
+                })
+            ),
+
+            pagamento:
+                crediario ? "Crediário" : pagamento,
+
+            crediario: Boolean(
+                crediario || pagamento === "Crediário"
+            ),
+
+            desconto: descontoValidado,
+            subtotal,
+            valorDesconto,
             total,
-            status: "Concluída"
-        });
-    });
+            status: "Concluída",
+            criadoEm: serverTimestamp()
+        };
 
-    return vendaRef.id;
+        // Atualiza o estoque de cada produto.
+        for (const item of lidos) {
+            const atualizado = itensVenda.find(
+                (vendaItem) => vendaItem.id === item.id
+            );
+
+            transaction.update(item.ref, {
+                estoque: atualizado.estoqueAtualizado,
+                atualizadoEm: serverTimestamp()
+            });
+        }
+
+        // Salva a venda no Firestore.
+        transaction.set(vendaRef, dadosVenda);
+
+        return {
+            id: vendaRef.id,
+            ...dadosVenda,
+            criadoEm: new Date()
+        };
+    });
 }
