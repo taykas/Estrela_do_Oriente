@@ -603,31 +603,6 @@ export const ProdutosPage = () => {
 
                                     <div className="relative">
                                         <select
-                                            value={categoriaFiltro}
-                                            onChange={(evento) =>
-                                                setCategoriaFiltro(evento.target.value)
-                                            }
-                                            className="w-full appearance-none rounded-lg border border-[#e3dcc9] bg-[#faf9f5] py-2.5 pl-3 pr-9 text-sm text-[#5f5c54] outline-none focus:border-[#b99a43] sm:w-44"
-                                        >
-                                            <option value="Todas">
-                                                Todas as categorias
-                                            </option>
-
-                                            {categorias.map((categoria) => (
-                                                <option key={categoria} value={categoria}>
-                                                    {categoria}
-                                                </option>
-                                            ))}
-                                        </select>
-
-                                        <ChevronDown
-                                            size={15}
-                                            className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#98700a]"
-                                        />
-                                    </div>
-
-                                    <div className="relative">
-                                        <select
                                             value={statusFiltro}
                                             onChange={(evento) =>
                                                 setStatusFiltro(evento.target.value)
