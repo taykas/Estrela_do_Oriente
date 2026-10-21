@@ -149,6 +149,67 @@ export const ProdutosPage = () => {
         }
     }, [formulario.codigoBarras, modalAberto]);
 
+    const codigoBarrasRef = useRef(null);
+
+    // Retorna o próximo ID disponível.
+    const proximoId = () =>
+        produtos.reduce(
+            (maior, produto) => Math.max(maior, produto.id),
+            0
+        ) + 1;
+
+    // Volta o scroll para o início ao entrar na página.
+    useEffect(() => {
+        window.scrollTo(0, 0);
+    }, [location.pathname]);
+
+    // Abre o modal quando a navegação vem do atalho da página inicial.
+    useEffect(() => {
+        if (location.state?.abrirCadastro) {
+            setProdutoEditando(null);
+            setFormulario({
+                ...produtoVazio,
+                codigoBarras: gerarCodigoBarras(proximoId())
+            });
+            setModalAberto(true);
+
+            navegar(location.pathname, {
+                replace: true,
+                state: null
+            });
+        }
+    }, [location.state, location.pathname, navegar]);
+
+    // Gera a pré-visualização do código de barras.
+    useEffect(() => {
+        const svg = codigoBarrasRef.current;
+
+        if (!modalAberto || !svg) return;
+
+        svg.innerHTML = "";
+
+        const codigo = formulario.codigoBarras.trim();
+
+        if (!codigo) return;
+
+        try {
+            JsBarcode(svg, codigo, {
+                format: "CODE128",
+                lineColor: "#35342f",
+                background: "#ffffff",
+                width: 2,
+                height: 65,
+                margin: 10,
+                displayValue: true,
+                font: "monospace",
+                fontSize: 14,
+                textMargin: 6
+            });
+        } catch {
+            svg.innerHTML = "";
+        }
+    }, [formulario.codigoBarras, modalAberto]);
+
     const totalEstoque = produtos.reduce(
         (total, produto) => total + Number(produto.estoque || 0),
         0
@@ -921,13 +982,59 @@ export const ProdutosPage = () => {
                                         }
                                         className={campoClasse}
                                     >
-                                        {categorias.map((categoria) => (
-                                            <option key={categoria} value={categoria}>
-                                                {categoria}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </label>
+                                        Código de barras
+                                    </label>
+
+                                    <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+                                        <input
+                                            id="codigoBarras"
+                                            type="text"
+                                            value={formulario.codigoBarras}
+                                            onChange={(evento) =>
+                                                atualizarCampo(
+                                                    "codigoBarras",
+                                                    evento.target.value.replace(/\s/g, "")
+                                                )
+                                            }
+                                            placeholder="Código de barras"
+                                            className={`${campoClasse} mt-0 min-w-0 flex-1`}
+                                        />
+
+                                        <button
+                                            type="button"
+                                            onClick={() =>
+                                                atualizarCampo(
+                                                    "codigoBarras",
+                                                    gerarCodigoBarras(
+                                                        produtoEditando?.id ?? proximoId()
+                                                    )
+                                                )
+                                            }
+                                            className="rounded-lg border border-[#d9c99e] px-4 py-3 text-sm font-medium text-[#98700a] transition hover:bg-[#f5edda]"
+                                        >
+                                            Gerar código
+                                        </button>
+                                    </div>
+
+                                    <p className="mt-2 text-xs leading-5 text-[#918d83]">
+                                        O código é gerado automaticamente. Você pode alterá-lo
+                                        ou utilizar um leitor USB para preencher o campo.
+                                    </p>
+
+                                    <div className="mt-4 flex min-h-[140px] items-center justify-center overflow-x-auto rounded-xl border border-[#e3dcc9] bg-white p-4">
+                                        {formulario.codigoBarras.trim() ? (
+                                            <svg
+                                                ref={codigoBarrasRef}
+                                                className="h-auto max-w-full"
+                                                aria-label="Pré-visualização do código de barras"
+                                            />
+                                        ) : (
+                                            <p className="text-sm text-[#918d83]">
+                                                O código de barras aparecerá aqui.
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
 
                                 <label className="text-sm font-medium text-[#5f5c54]">
                                     Status *

@@ -19,9 +19,6 @@ function criarJanela() {
         }
     });
 
-    // Abre as ferramentas de desenvolvedor para identificar erros
-    janela.webContents.openDevTools();
-
     janela.webContents.on("did-fail-load", (_event, errorCode, errorDescription) => {
         console.error("Erro ao carregar o aplicativo:", errorCode, errorDescription);
     });
