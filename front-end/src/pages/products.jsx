@@ -1,5 +1,6 @@
+
 import { useNavigate, useLocation } from "react-router-dom";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import JsBarcode from "jsbarcode";
 import {
     Package,
@@ -17,97 +18,13 @@ import {
 } from "lucide-react";
 
 import Sidebar from "../components/Sidebar";
-
-const produtosIniciais = [
-    {
-        id: 1,
-        codigo: "PRD-001",
-        nome: "Incenso Natural",
-        categoria: "Incensos",
-        preco: 12.9,
-        custo: 6.5,
-        estoque: 3,
-        estoqueMinimo: 10,
-        status: "Ativo"
-    },
-    {
-        id: 2,
-        codigo: "PRD-002",
-        nome: "Vela de 7 Dias",
-        categoria: "Velas",
-        preco: 18.9,
-        custo: 9.5,
-        estoque: 25,
-        estoqueMinimo: 10,
-        status: "Ativo"
-    },
-    {
-        id: 3,
-        codigo: "PRD-003",
-        nome: "Patua",
-        categoria: "Acessórios",
-        preco: 24.9,
-        custo: 12,
-        estoque: 2,
-        estoqueMinimo: 5,
-        status: "Ativo"
-    },
-    {
-        id: 4,
-        codigo: "PRD-004",
-        nome: "Erva de Proteção",
-        categoria: "Ervas",
-        preco: 9.9,
-        custo: 4.5,
-        estoque: 4,
-        estoqueMinimo: 10,
-        status: "Ativo"
-    },
-    {
-        id: 5,
-        codigo: "PRD-005",
-        nome: "Óleo de Unção",
-        categoria: "Óleos",
-        preco: 32.9,
-        custo: 16,
-        estoque: 2,
-        estoqueMinimo: 5,
-        status: "Ativo"
-    },
-    {
-        id: 6,
-        codigo: "PRD-006",
-        nome: "Vela Aromática",
-        categoria: "Velas",
-        preco: 22.5,
-        custo: 11,
-        estoque: 18,
-        estoqueMinimo: 5,
-        status: "Ativo"
-    },
-    {
-        id: 7,
-        codigo: "PRD-007",
-        nome: "Incenso de Mirra",
-        categoria: "Incensos",
-        preco: 15.9,
-        custo: 7,
-        estoque: 0,
-        estoqueMinimo: 8,
-        status: "Ativo"
-    },
-    {
-        id: 8,
-        codigo: "PRD-008",
-        nome: "Colar de Proteção",
-        categoria: "Acessórios",
-        preco: 39.9,
-        custo: 18,
-        estoque: 12,
-        estoqueMinimo: 4,
-        status: "Inativo"
-    }
-];
+import {
+    listarProdutos,
+    cadastrarProduto,
+    atualizarProduto,
+    excluirProduto,
+    gerarCodigoBarras
+} from "../services/products";
 
 const categorias = [
     "Incensos",
@@ -115,18 +32,18 @@ const categorias = [
     "Acessórios",
     "Ervas",
     "Óleos",
+    "Cristais",
+    "Insumos",
     "Outros"
 ];
 
 const moeda = (valor) =>
-    valor.toLocaleString("pt-BR", {
+    Number(valor || 0).toLocaleString("pt-BR", {
         style: "currency",
         currency: "BRL"
     });
 
-// Gera um código numérico interno baseado no ID do produto.
-const gerarCodigoBarras = (id) =>
-    `200${String(id).padStart(9, "0")}`;
+const novoCodigoBarras = () => gerarCodigoBarras(Date.now());
 
 const produtoVazio = {
     nome: "",
@@ -146,7 +63,7 @@ export const ProdutosPage = () => {
     const location = useLocation();
     const navegar = useNavigate();
 
-    const [produtos, setProdutos] = useState(produtosIniciais);
+    const [produtos, setProdutos] = useState([]);
     const [busca, setBusca] = useState("");
     const [categoriaFiltro, setCategoriaFiltro] = useState("Todas");
     const [statusFiltro, setStatusFiltro] = useState("Todos");
@@ -154,6 +71,83 @@ export const ProdutosPage = () => {
     const [produtoEditando, setProdutoEditando] = useState(null);
     const [formulario, setFormulario] = useState(produtoVazio);
     const [menuAberto, setMenuAberto] = useState(false);
+    const [carregando, setCarregando] = useState(true);
+    const [salvando, setSalvando] = useState(false);
+    const [excluindoId, setExcluindoId] = useState(null);
+    const [erro, setErro] = useState("");
+
+    const codigoBarrasRef = useRef(null);
+
+    const carregarProdutos = useCallback(async () => {
+        setCarregando(true);
+        setErro("");
+
+        try {
+            const dados = await listarProdutos();
+            setProdutos(dados);
+        } catch (error) {
+            console.error("Erro ao carregar produtos:", error);
+            setErro(
+                "Não foi possível carregar os produtos. Verifique sua conexão e as permissões do Firebase."
+            );
+        } finally {
+            setCarregando(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        window.scrollTo(0, 0);
+    }, [location.pathname]);
+
+    useEffect(() => {
+        carregarProdutos();
+    }, [carregarProdutos]);
+
+    useEffect(() => {
+        if (!location.state?.abrirCadastro) return;
+
+        setProdutoEditando(null);
+        setFormulario({
+            ...produtoVazio,
+            codigoBarras: novoCodigoBarras()
+        });
+        setErro("");
+        setModalAberto(true);
+
+        navegar(location.pathname, {
+            replace: true,
+            state: null
+        });
+    }, [location.state, location.pathname, navegar]);
+
+    useEffect(() => {
+        const svg = codigoBarrasRef.current;
+
+        if (!modalAberto || !svg) return;
+
+        svg.innerHTML = "";
+
+        const codigo = formulario.codigoBarras.trim();
+
+        if (!codigo) return;
+
+        try {
+            JsBarcode(svg, codigo, {
+                format: "CODE128",
+                lineColor: "#35342f",
+                background: "#ffffff",
+                width: 2,
+                height: 65,
+                margin: 10,
+                displayValue: true,
+                font: "monospace",
+                fontSize: 14,
+                textMargin: 6
+            });
+        } catch {
+            svg.innerHTML = "";
+        }
+    }, [formulario.codigoBarras, modalAberto]);
 
     const codigoBarrasRef = useRef(null);
 
@@ -217,7 +211,7 @@ export const ProdutosPage = () => {
     }, [formulario.codigoBarras, modalAberto]);
 
     const totalEstoque = produtos.reduce(
-        (total, produto) => total + produto.estoque,
+        (total, produto) => total + Number(produto.estoque || 0),
         0
     );
 
@@ -228,22 +222,27 @@ export const ProdutosPage = () => {
     const produtosEstoqueBaixo = produtos.filter(
         (produto) =>
             produto.status === "Ativo" &&
-            produto.estoque <= produto.estoqueMinimo
+            Number(produto.estoque) <= Number(produto.estoqueMinimo)
     ).length;
 
     const valorEstoque = produtos.reduce(
-        (total, produto) => total + produto.estoque * produto.custo,
+        (total, produto) =>
+            total +
+            Number(produto.estoque || 0) *
+                Number(produto.custo || 0),
         0
     );
 
-    const produtosFiltrados = produtos.filter((produto) => {
-        const termo = busca.toLowerCase();
+    const termoBusca = busca.trim().toLowerCase();
 
+    const produtosFiltrados = produtos.filter((produto) => {
         const correspondeBusca =
-            produto.nome.toLowerCase().includes(termo) ||
-            produto.codigo.toLowerCase().includes(termo) ||
-            (produto.codigoBarras || "").toLowerCase().includes(termo) ||
-            produto.categoria.toLowerCase().includes(termo);
+            String(produto.nome || "").toLowerCase().includes(termoBusca) ||
+            String(produto.codigo || "").toLowerCase().includes(termoBusca) ||
+            String(produto.codigoBarras || "")
+                .toLowerCase()
+                .includes(termoBusca) ||
+            String(produto.categoria || "").toLowerCase().includes(termoBusca);
 
         const correspondeCategoria =
             categoriaFiltro === "Todas" ||
@@ -262,12 +261,11 @@ export const ProdutosPage = () => {
 
     const abrirCadastro = () => {
         setProdutoEditando(null);
-
         setFormulario({
             ...produtoVazio,
-            codigoBarras: gerarCodigoBarras(proximoId())
+            codigoBarras: novoCodigoBarras()
         });
-
+        setErro("");
         setModalAberto(true);
     };
 
@@ -275,18 +273,26 @@ export const ProdutosPage = () => {
         setProdutoEditando(produto);
 
         setFormulario({
-            nome: produto.nome,
-            codigoBarras:
-                produto.codigoBarras || gerarCodigoBarras(produto.id),
-            categoria: produto.categoria,
-            preco: String(produto.preco),
-            custo: String(produto.custo),
-            estoque: String(produto.estoque),
-            estoqueMinimo: String(produto.estoqueMinimo),
-            status: produto.status
+            nome: produto.nome || "",
+            codigoBarras: produto.codigoBarras || novoCodigoBarras(),
+            categoria: produto.categoria || "Outros",
+            preco: String(produto.preco ?? ""),
+            custo: String(produto.custo ?? ""),
+            estoque: String(produto.estoque ?? ""),
+            estoqueMinimo: String(produto.estoqueMinimo ?? 5),
+            status: produto.status || "Ativo"
         });
 
+        setErro("");
         setModalAberto(true);
+    };
+
+    const fecharModal = () => {
+        if (salvando) return;
+
+        setModalAberto(false);
+        setProdutoEditando(null);
+        setErro("");
     };
 
     const atualizarCampo = (campo, valor) => {
@@ -296,8 +302,10 @@ export const ProdutosPage = () => {
         }));
     };
 
-    const salvarProduto = (evento) => {
+    const salvarProduto = async (evento) => {
         evento.preventDefault();
+
+        if (salvando) return;
 
         const nome = formulario.nome.trim();
         const preco = Number(formulario.preco);
@@ -322,26 +330,23 @@ export const ProdutosPage = () => {
             !Number.isInteger(estoque) ||
             !Number.isInteger(estoqueMinimo)
         ) {
-            alert(
+            setErro(
                 "Preencha os campos corretamente. Estoque e estoque mínimo devem ser números inteiros não negativos."
             );
             return;
         }
 
-        const idProduto = produtoEditando?.id ?? proximoId();
-
         const codigoBarras =
-            formulario.codigoBarras.trim() ||
-            gerarCodigoBarras(idProduto);
+            formulario.codigoBarras.trim() || novoCodigoBarras();
 
         const codigoDuplicado = produtos.some(
             (produto) =>
-                produto.codigoBarras === codigoBarras &&
+                String(produto.codigoBarras || "") === codigoBarras &&
                 produto.id !== produtoEditando?.id
         );
 
         if (codigoDuplicado) {
-            alert(
+            setErro(
                 "Já existe um produto cadastrado com esse código de barras."
             );
             return;
@@ -358,40 +363,69 @@ export const ProdutosPage = () => {
             status: formulario.status
         };
 
-        if (produtoEditando) {
-            setProdutos((anteriores) =>
-                anteriores.map((produto) =>
-                    produto.id === produtoEditando.id
-                        ? { ...produto, ...dadosProduto }
-                        : produto
-                )
+        setSalvando(true);
+        setErro("");
+
+        try {
+            if (produtoEditando) {
+                const atualizado = await atualizarProduto(
+                    produtoEditando.id,
+                    dadosProduto
+                );
+
+                setProdutos((anteriores) =>
+                    anteriores.map((produto) =>
+                        produto.id === atualizado.id ? atualizado : produto
+                    )
+                );
+            } else {
+                const novoProduto = await cadastrarProduto(dadosProduto);
+
+                setProdutos((anteriores) => [
+                    novoProduto,
+                    ...anteriores
+                ]);
+            }
+
+            setModalAberto(false);
+            setProdutoEditando(null);
+            setFormulario(produtoVazio);
+        } catch (error) {
+            console.error("Erro ao salvar produto:", error);
+            setErro(
+                "Não foi possível salvar o produto no Firebase. Verifique sua conexão e as permissões do Firestore."
             );
-        } else {
-            const novoProduto = {
-                id: idProduto,
-                codigo: `PRD-${String(idProduto).padStart(3, "0")}`,
-                ...dadosProduto
-            };
-
-            setProdutos((anteriores) => [
-                novoProduto,
-                ...anteriores
-            ]);
+        } finally {
+            setSalvando(false);
         }
-
-        setModalAberto(false);
     };
 
-    const excluirProduto = (produto) => {
+    const excluirProdutoHandler = async (produto) => {
+        if (excluindoId !== null) return;
+
         const confirmar = window.confirm(
             `Deseja realmente excluir o produto "${produto.nome}"?`
         );
 
         if (!confirmar) return;
 
-        setProdutos((anteriores) =>
-            anteriores.filter((item) => item.id !== produto.id)
-        );
+        setExcluindoId(produto.id);
+        setErro("");
+
+        try {
+            await excluirProduto(produto.id);
+
+            setProdutos((anteriores) =>
+                anteriores.filter((item) => item.id !== produto.id)
+            );
+        } catch (error) {
+            console.error("Erro ao excluir produto:", error);
+            setErro(
+                `Não foi possível excluir "${produto.nome}". Verifique sua conexão e as permissões do Firestore.`
+            );
+        } finally {
+            setExcluindoId(null);
+        }
     };
 
     const indicadorClasse =
@@ -465,6 +499,27 @@ export const ProdutosPage = () => {
                         </button>
                     </section>
 
+                    {erro && !modalAberto && (
+                        <section
+                            role="alert"
+                            className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700"
+                        >
+                            <AlertTriangle
+                                size={20}
+                                className="mt-0.5 shrink-0"
+                            />
+                            <div className="flex-1">{erro}</div>
+                            <button
+                                type="button"
+                                onClick={() => setErro("")}
+                                aria-label="Fechar mensagem de erro"
+                                className="rounded p-1 hover:bg-red-100"
+                            >
+                                <X size={17} />
+                            </button>
+                        </section>
+                    )}
+
                     <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
                         <div className={indicadorClasse}>
                             <div className="flex items-center justify-between gap-3">
@@ -476,7 +531,7 @@ export const ProdutosPage = () => {
                                 </div>
                             </div>
                             <p className="mt-5 text-3xl font-semibold text-[#8b690e]">
-                                {produtos.length}
+                                {carregando ? "—" : produtos.length}
                             </p>
                             <p className="mt-1 text-xs text-[#969187]">
                                 Total de registros
@@ -493,7 +548,7 @@ export const ProdutosPage = () => {
                                 </div>
                             </div>
                             <p className="mt-5 text-3xl font-semibold text-[#8b690e]">
-                                {produtosAtivos}
+                                {carregando ? "—" : produtosAtivos}
                             </p>
                             <p className="mt-1 text-xs text-[#969187]">
                                 Disponíveis no catálogo
@@ -510,7 +565,7 @@ export const ProdutosPage = () => {
                                 </div>
                             </div>
                             <p className="mt-5 text-3xl font-semibold text-[#8b690e]">
-                                {totalEstoque}
+                                {carregando ? "—" : totalEstoque}
                             </p>
                             <p className="mt-1 text-xs text-[#969187]">
                                 Soma das quantidades
@@ -527,7 +582,7 @@ export const ProdutosPage = () => {
                                 </div>
                             </div>
                             <p className="mt-5 break-words text-2xl font-semibold text-[#8b690e]">
-                                {moeda(valorEstoque)}
+                                {carregando ? "—" : moeda(valorEstoque)}
                             </p>
                             <p className="mt-1 text-xs text-[#969187]">
                                 Custo das unidades disponíveis
@@ -535,7 +590,7 @@ export const ProdutosPage = () => {
                         </div>
                     </section>
 
-                    {produtosEstoqueBaixo > 0 && (
+                    {!carregando && produtosEstoqueBaixo > 0 && (
                         <section className="flex items-start gap-3 rounded-xl border border-[#e8d9b4] bg-[#f8f1df] p-4">
                             <AlertTriangle
                                 size={21}
@@ -555,7 +610,8 @@ export const ProdutosPage = () => {
                             </div>
                         </section>
                     )}
-                                        <section className="overflow-hidden rounded-xl border border-[#e6dfcd] bg-[#fffefa] shadow-sm">
+
+                    <section className="overflow-hidden rounded-xl border border-[#e6dfcd] bg-[#fffefa] shadow-sm">
                         <div className="border-b border-[#eee7d7] p-5">
                             <div className="flex flex-col justify-between gap-4 xl:flex-row xl:items-center">
                                 <div>
@@ -653,110 +709,130 @@ export const ProdutosPage = () => {
                                 </thead>
 
                                 <tbody>
-                                    {produtosFiltrados.map((produto, index) => {
-                                        const estoqueBaixo =
-                                            produto.estoque <= produto.estoqueMinimo;
-
-                                        return (
-                                            <tr
-                                                key={produto.id}
-                                                className={`border-t border-[#eeeae0] text-[#5f5c54] transition-colors hover:bg-[#f8f5ed] ${
-                                                    index % 2 === 1
-                                                        ? "bg-[#fcfbf7]"
-                                                        : ""
-                                                }`}
+                                    {carregando ? (
+                                        <tr>
+                                            <td
+                                                colSpan={5}
+                                                className="px-5 py-14 text-center text-sm text-[#918d83]"
                                             >
-                                                <td className="px-5 py-4">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-[#e9dfc4] bg-[#f5edda]">
-                                                            <Package
-                                                                size={19}
-                                                                className="text-[#98700a]"
-                                                            />
-                                                        </div>
-                                                        <div>
-                                                            <p className="font-medium text-[#45433d]">
-                                                                {produto.nome}
-                                                            </p>
-                                                            <p className="mt-1 text-xs text-[#969187]">
-                                                                {produto.codigo}
-                                                            </p>
-                                                            {produto.codigoBarras && (
-                                                                <p className="mt-1 text-[11px] text-[#98700a]">
-                                                                    EAN interno: {produto.codigoBarras}
+                                                Carregando produtos do Firebase...
+                                            </td>
+                                        </tr>
+                                    ) : (
+                                        produtosFiltrados.map((produto, index) => {
+                                            const estoqueBaixo =
+                                                Number(produto.estoque) <=
+                                                Number(produto.estoqueMinimo);
+
+                                            return (
+                                                <tr
+                                                    key={produto.id}
+                                                    className={`border-t border-[#eeeae0] text-[#5f5c54] transition-colors hover:bg-[#f8f5ed] ${
+                                                        index % 2 === 1
+                                                            ? "bg-[#fcfbf7]"
+                                                            : ""
+                                                    }`}
+                                                >
+                                                    <td className="px-5 py-4">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-[#e9dfc4] bg-[#f5edda]">
+                                                                <Package
+                                                                    size={19}
+                                                                    className="text-[#98700a]"
+                                                                />
+                                                            </div>
+                                                            <div>
+                                                                <p className="font-medium text-[#45433d]">
+                                                                    {produto.nome}
                                                                 </p>
+                                                                <p className="mt-1 text-xs text-[#969187]">
+                                                                    {produto.codigo}
+                                                                </p>
+                                                                {produto.codigoBarras && (
+                                                                    <p className="mt-1 text-[11px] text-[#98700a]">
+                                                                        EAN interno:{" "}
+                                                                        {produto.codigoBarras}
+                                                                    </p>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </td>
+
+                                                    <td className="whitespace-nowrap px-4 py-4 font-medium text-[#45433d]">
+                                                        {moeda(produto.preco)}
+                                                    </td>
+
+                                                    <td className="px-4 py-4">
+                                                        <div className="flex items-center gap-2">
+                                                            <span
+                                                                className={
+                                                                    estoqueBaixo
+                                                                        ? "font-medium text-amber-700"
+                                                                        : "text-[#5f5c54]"
+                                                                }
+                                                            >
+                                                                {produto.estoque} un.
+                                                            </span>
+                                                            {estoqueBaixo && (
+                                                                <AlertTriangle
+                                                                    size={14}
+                                                                    className="text-amber-600"
+                                                                    title="Estoque baixo"
+                                                                />
                                                             )}
                                                         </div>
-                                                    </div>
-                                                </td>
+                                                        <p className="mt-1 text-[11px] text-[#969187]">
+                                                            Mínimo: {produto.estoqueMinimo}
+                                                        </p>
+                                                    </td>
 
-                                                <td className="whitespace-nowrap px-4 py-4 font-medium text-[#45433d]">
-                                                    {moeda(produto.preco)}
-                                                </td>
-
-                                                <td className="px-4 py-4">
-                                                    <div className="flex items-center gap-2">
+                                                    <td className="px-4 py-4">
                                                         <span
-                                                            className={
-                                                                estoqueBaixo
-                                                                    ? "font-medium text-amber-700"
-                                                                    : "text-[#5f5c54]"
-                                                            }
+                                                            className={`rounded-full px-2.5 py-1 text-xs font-medium ${
+                                                                produto.status === "Ativo"
+                                                                    ? "bg-emerald-100 text-emerald-700"
+                                                                    : "bg-[#eeece6] text-[#77746b]"
+                                                            }`}
                                                         >
-                                                            {produto.estoque} un.
+                                                            {produto.status}
                                                         </span>
-                                                        {estoqueBaixo && (
-                                                            <AlertTriangle
-                                                                size={14}
-                                                                className="text-amber-600"
-                                                                title="Estoque baixo"
-                                                            />
-                                                        )}
-                                                    </div>
-                                                    <p className="mt-1 text-[11px] text-[#969187]">
-                                                        Mínimo: {produto.estoqueMinimo}
-                                                    </p>
-                                                </td>
+                                                    </td>
 
-                                                <td className="px-4 py-4">
-                                                    <span
-                                                        className={`rounded-full px-2.5 py-1 text-xs font-medium ${
-                                                            produto.status === "Ativo"
-                                                                ? "bg-emerald-100 text-emerald-700"
-                                                                : "bg-[#eeece6] text-[#77746b]"
-                                                        }`}
-                                                    >
-                                                        {produto.status}
-                                                    </span>
-                                                </td>
-
-                                                <td className="px-5 py-4">
-                                                    <div className="flex justify-end gap-2">
-                                                        <button
-                                                            onClick={() => abrirEdicao(produto)}
-                                                            title="Editar produto"
-                                                            aria-label={`Editar ${produto.nome}`}
-                                                            className="rounded-lg border border-[#e6dfcd] p-2 text-[#8b690e] transition hover:border-[#d4bd7c] hover:bg-[#f5edda]"
-                                                        >
-                                                            <Pencil size={16} />
-                                                        </button>
-                                                        <button
-                                                            onClick={() => excluirProduto(produto)}
-                                                            title="Excluir produto"
-                                                            aria-label={`Excluir ${produto.nome}`}
-                                                            className="rounded-lg border border-red-200 p-2 text-red-600 transition hover:bg-red-50"
-                                                        >
-                                                            <Trash2 size={16} />
-                                                        </button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        );
-                                    })}
+                                                    <td className="px-5 py-4">
+                                                        <div className="flex justify-end gap-2">
+                                                            <button
+                                                                onClick={() => abrirEdicao(produto)}
+                                                                title="Editar produto"
+                                                                aria-label={`Editar ${produto.nome}`}
+                                                                className="rounded-lg border border-[#e6dfcd] p-2 text-[#8b690e] transition hover:border-[#d4bd7c] hover:bg-[#f5edda]"
+                                                            >
+                                                                <Pencil size={16} />
+                                                            </button>
+                                                            <button
+                                                                onClick={() =>
+                                                                    excluirProdutoHandler(produto)
+                                                                }
+                                                                disabled={excluindoId !== null}
+                                                                title="Excluir produto"
+                                                                aria-label={`Excluir ${produto.nome}`}
+                                                                className="rounded-lg border border-red-200 p-2 text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                                                            >
+                                                                {excluindoId === produto.id ? (
+                                                                    <span className="block h-4 w-4 animate-spin rounded-full border-2 border-red-600 border-t-transparent" />
+                                                                ) : (
+                                                                    <Trash2 size={16} />
+                                                                )}
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })
+                                    )}
                                 </tbody>
                             </table>
 
-                            {produtosFiltrados.length === 0 && (
+                            {!carregando && produtosFiltrados.length === 0 && (
                                 <div className="px-5 py-14 text-center">
                                     <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-xl bg-[#f5f1e7]">
                                         <Package
@@ -765,10 +841,14 @@ export const ProdutosPage = () => {
                                         />
                                     </div>
                                     <p className="mt-3 text-sm font-medium text-[#45433d]">
-                                        Nenhum produto encontrado.
+                                        {produtos.length === 0
+                                            ? "Nenhum produto cadastrado."
+                                            : "Nenhum produto encontrado."}
                                     </p>
                                     <p className="mt-1 text-xs text-[#918d83]">
-                                        Tente alterar a pesquisa ou os filtros.
+                                        {produtos.length === 0
+                                            ? "Cadastre um produto para começar."
+                                            : "Tente alterar a pesquisa ou os filtros."}
                                     </p>
                                 </div>
                             )}
@@ -776,20 +856,20 @@ export const ProdutosPage = () => {
 
                         <div className="flex flex-col gap-2 border-t border-[#eee7d7] bg-[#faf9f5] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
                             <p className="text-xs text-[#918d83]">
-                                Exibindo {produtosFiltrados.length} de {produtos.length} produtos
+                                Exibindo {carregando ? "—" : produtosFiltrados.length} de{" "}
+                                {carregando ? "—" : produtos.length} produtos
                             </p>
                         </div>
                     </section>
                 </main>
             </div>
 
-            {/* Modal de cadastro e edição */}
             {modalAberto && (
                 <div
                     className="fixed inset-0 z-[60] flex items-center justify-center overflow-y-auto bg-[#35342f]/45 p-4 backdrop-blur-sm"
                     onMouseDown={(evento) => {
                         if (evento.target === evento.currentTarget) {
-                            setModalAberto(false);
+                            fecharModal();
                         }
                     }}
                 >
@@ -808,9 +888,10 @@ export const ProdutosPage = () => {
 
                             <button
                                 type="button"
-                                onClick={() => setModalAberto(false)}
+                                onClick={fecharModal}
+                                disabled={salvando}
                                 aria-label="Fechar modal"
-                                className="rounded-lg p-2 text-[#89867d] transition hover:bg-[#f0ece2] hover:text-[#78601e]"
+                                className="rounded-lg p-2 text-[#89867d] transition hover:bg-[#f0ece2] hover:text-[#78601e] disabled:opacity-50"
                             >
                                 <X size={21} />
                             </button>
@@ -834,11 +915,72 @@ export const ProdutosPage = () => {
                                     />
                                 </label>
 
-                                {/* Código de barras */}
                                 <div className="sm:col-span-2">
                                     <label
                                         htmlFor="codigoBarras"
                                         className="text-sm font-medium text-[#5f5c54]"
+                                    >
+                                        Código de barras
+                                    </label>
+
+                                    <div className="mt-2 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
+                                        <input
+                                            id="codigoBarras"
+                                            type="text"
+                                            value={formulario.codigoBarras}
+                                            onChange={(evento) =>
+                                                atualizarCampo(
+                                                    "codigoBarras",
+                                                    evento.target.value.replace(/\s/g, "")
+                                                )
+                                            }
+                                            placeholder="Código de barras"
+                                            className="!mt-0 !h-[42px] !min-h-0 w-full min-w-0 box-border rounded-lg border border-[#e3dcc9] bg-[#faf9f5] px-3 text-sm text-[#45433d] outline-none transition placeholder:text-[#aaa59a] focus:border-[#b99a43] focus:ring-2 focus:ring-[#b99a43]/10"
+                                        />
+
+                                        <button
+                                            type="button"
+                                            onClick={() =>
+                                                atualizarCampo(
+                                                    "codigoBarras",
+                                                    novoCodigoBarras()
+                                                )
+                                            }
+                                            className="!mt-0 !h-[42px] box-border whitespace-nowrap rounded-lg bg-[#b18a20] px-5 text-sm font-medium text-white transition hover:bg-[#98700a]"
+                                        >
+                                            Gerar código
+                                        </button>
+                                    </div>
+
+                                    <p className="mt-2 text-xs leading-5 text-[#918d83]">
+                                        O código é gerado automaticamente. Você pode alterá-lo
+                                        ou utilizar um leitor USB para preencher o campo.
+                                    </p>
+
+                                    <div className="mt-4 flex min-h-[140px] items-center justify-center overflow-x-auto rounded-xl border border-[#e3dcc9] bg-white p-4">
+                                        {formulario.codigoBarras.trim() ? (
+                                            <svg
+                                                ref={codigoBarrasRef}
+                                                className="h-auto max-w-full"
+                                                aria-label="Pré-visualização do código de barras"
+                                            />
+                                        ) : (
+                                            <p className="text-sm text-[#918d83]">
+                                                O código de barras aparecerá aqui.
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <label className="text-sm font-medium text-[#5f5c54]">
+                                    Categoria *
+                                    <select
+                                        required
+                                        value={formulario.categoria}
+                                        onChange={(evento) =>
+                                            atualizarCampo("categoria", evento.target.value)
+                                        }
+                                        className={campoClasse}
                                     >
                                         Código de barras
                                     </label>
@@ -985,25 +1127,46 @@ export const ProdutosPage = () => {
                                         </p>
                                     </div>
                                 </div>
+
+                                {erro && (
+                                    <div
+                                        role="alert"
+                                        className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700 sm:col-span-2"
+                                    >
+                                        <AlertTriangle
+                                            size={17}
+                                            className="mt-0.5 shrink-0"
+                                        />
+                                        <p>{erro}</p>
+                                    </div>
+                                )}
                             </div>
 
                             <div className="flex flex-col-reverse gap-3 border-t border-[#eee7d7] bg-[#faf9f5] p-5 sm:flex-row sm:justify-end">
                                 <button
                                     type="button"
-                                    onClick={() => setModalAberto(false)}
-                                    className="rounded-lg border border-[#e3dcc9] px-5 py-3 text-sm font-medium text-[#68645b] transition hover:bg-[#f0ece2]"
+                                    onClick={fecharModal}
+                                    disabled={salvando}
+                                    className="rounded-lg border border-[#e3dcc9] px-5 py-3 text-sm font-medium text-[#68645b] transition hover:bg-[#f0ece2] disabled:cursor-not-allowed disabled:opacity-50"
                                 >
                                     Cancelar
                                 </button>
 
                                 <button
                                     type="submit"
-                                    className="flex items-center justify-center gap-2 rounded-lg bg-[#b18a20] px-5 py-3 text-sm font-medium text-white transition hover:bg-[#98700a]"
+                                    disabled={salvando}
+                                    className="flex items-center justify-center gap-2 rounded-lg bg-[#b18a20] px-5 py-3 text-sm font-medium text-white transition hover:bg-[#98700a] disabled:cursor-not-allowed disabled:opacity-60"
                                 >
-                                    <Plus size={17} />
-                                    {produtoEditando
-                                        ? "Salvar alterações"
-                                        : "Cadastrar produto"}
+                                    {salvando ? (
+                                        <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                                    ) : (
+                                        <Plus size={17} />
+                                    )}
+                                    {salvando
+                                        ? "Salvando..."
+                                        : produtoEditando
+                                          ? "Salvar alterações"
+                                          : "Cadastrar produto"}
                                 </button>
                             </div>
                         </form>

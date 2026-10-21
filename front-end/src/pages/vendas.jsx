@@ -1,13 +1,13 @@
-import { useMemo, useState, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 
 import Sidebar from "../components/Sidebar";
+import { listarProdutosVenda, listarVendas, registrarVenda as salvarVenda } from "../services/vendas";
 import {
     Package,
     ShoppingCart,
     Menu,
     Search,
-    Bell,
     Plus,
     X,
     Minus,
@@ -24,87 +24,6 @@ import {
     CircleAlert,
     ChartNoAxesCombined
 } from "lucide-react";
-
-const produtosIniciais = [
-    { id: 1, nome: "Incenso Natural", categoria: "Incensos", quantidade: 3, minimo: 10, preco: 12.90 },
-    { id: 2, nome: "Vela de 7 Dias", categoria: "Velas", quantidade: 5, minimo: 10, preco: 18.90 },
-    { id: 3, nome: "Patuá", categoria: "Acessórios", quantidade: 2, minimo: 5, preco: 24.90 },
-    { id: 4, nome: "Erva de Proteção", categoria: "Ervas", quantidade: 4, minimo: 10, preco: 9.90 },
-    { id: 5, nome: "Óleo de Unção", categoria: "Óleos", quantidade: 2, minimo: 5, preco: 15.90 },
-    { id: 6, nome: "Sal Grosso", categoria: "Insumos", quantidade: 15, minimo: 10, preco: 5.90 },
-    { id: 7, nome: "Defumador", categoria: "Incensos", quantidade: 20, minimo: 10, preco: 22.90 },
-    { id: 8, nome: "Pau Santo", categoria: "Ervas", quantidade: 12, minimo: 10, preco: 14.90 },
-    { id: 9, nome: "Quartzo Rosa", categoria: "Cristais", quantidade: 8, minimo: 10, preco: 29.90 },
-    { id: 10, nome: "Xarope de Guiné", categoria: "Ervas", quantidade: 0, minimo: 5, preco: 19.90 },
-    { id: 11, nome: "Vela Aromática", categoria: "Velas", quantidade: 32, minimo: 10, preco: 16.90 },
-    { id: 12, nome: "Incenso de Mirra", categoria: "Incensos", quantidade: 28, minimo: 10, preco: 11.90 }
-];
-
-const vendasIniciais = [
-    {
-        id: 1001,
-        cliente: "Maria Oliveira",
-        data: "2026-10-15",
-        itens: [
-            { id: 7, nome: "Defumador", quantidade: 2, preco: 22.90 },
-            { id: 11, nome: "Vela Aromática", quantidade: 1, preco: 16.90 }
-        ],
-        pagamento: "Pix",
-        crediario: false,
-        desconto: 0,
-        status: "Concluída"
-    },
-    {
-        id: 1002,
-        cliente: "João Santos",
-        data: "2026-10-15",
-        itens: [
-            { id: 9, nome: "Quartzo Rosa", quantidade: 1, preco: 29.90 },
-            { id: 3, nome: "Patuá", quantidade: 1, preco: 24.90 }
-        ],
-        pagamento: "Dinheiro",
-        crediario: false,
-        desconto: 0,
-        status: "Concluída"
-    },
-    {
-        id: 1003,
-        cliente: "Ana Costa",
-        data: "2026-10-14",
-        itens: [
-            { id: 2, nome: "Vela de 7 Dias", quantidade: 2, preco: 18.90 }
-        ],
-        pagamento: "Cartão de débito",
-        crediario: false,
-        desconto: 0,
-        status: "Concluída"
-    },
-    {
-        id: 1004,
-        cliente: "Carlos Mendes",
-        data: "2026-10-14",
-        itens: [
-            { id: 12, nome: "Incenso de Mirra", quantidade: 3, preco: 11.90 }
-        ],
-        pagamento: "Pix",
-        crediario: false,
-        desconto: 0,
-        status: "Cancelada"
-    },
-    {
-        id: 1005,
-        cliente: "Fernanda Lima",
-        data: "2026-10-13",
-        itens: [
-            { id: 4, nome: "Erva de Proteção", quantidade: 2, preco: 9.90 },
-            { id: 5, nome: "Óleo de Unção", quantidade: 1, preco: 15.90 }
-        ],
-        pagamento: "Cartão de crédito",
-        crediario: false,
-        desconto: 0,
-        status: "Concluída"
-    }
-];
 
 const moeda = (valor) =>
     valor.toLocaleString("pt-BR", {
@@ -150,8 +69,10 @@ export const Vendas = () => {
         window.scrollTo(0, 0);
     }, [pathname]);
 
-    const [produtos, setProdutos] = useState(produtosIniciais);
-    const [vendas, setVendas] = useState(vendasIniciais);
+    const [produtos, setProdutos] = useState([]);
+    const [vendas, setVendas] = useState([]);
+    const [carregando, setCarregando] = useState(true);
+    const [salvando, setSalvando] = useState(false);
 
     const [busca, setBusca] = useState("");
     const [filtroStatus, setFiltroStatus] = useState("Todas");
@@ -261,6 +182,35 @@ export const Vendas = () => {
         setTipoMensagem(tipo);
     };
 
+    useEffect(() => {
+        let ativo = true;
+
+        const carregarDados = async () => {
+            setCarregando(true);
+            try {
+                const [produtosCarregados, vendasCarregadas] = await Promise.all([
+                    listarProdutosVenda(),
+                    listarVendas()
+                ]);
+
+                if (ativo) {
+                    setProdutos(produtosCarregados);
+                    setVendas(vendasCarregadas);
+                }
+            } catch (erro) {
+                if (ativo) {
+                    mostrarMensagem(erro?.message || "Não foi possível carregar os dados de vendas.");
+                }
+            } finally {
+                if (ativo) setCarregando(false);
+            }
+        };
+
+        carregarDados();
+        return () => { ativo = false; };
+    }, []);
+
+
     const abrirNovaVenda = () => {
         setCarrinho([]);
         setCliente("");
@@ -302,7 +252,7 @@ export const Vendas = () => {
         }
 
         const itemExistente = carrinho.find(
-            (item) => item.id === produto.id
+            (item) => String(item.id) === String(produto.id)
         );
 
         const quantidadeNoCarrinho = itemExistente?.quantidade || 0;
@@ -339,7 +289,7 @@ export const Vendas = () => {
     };
 
     const alterarQuantidade = (id, variacao) => {
-        const itemAtual = carrinho.find((item) => item.id === id);
+        const itemAtual = carrinho.find((item) => String(item.id) === String(id));
 
         if (!itemAtual) return;
 
@@ -373,79 +323,52 @@ export const Vendas = () => {
         setMensagem("");
     };
 
-    const registrarVenda = () => {
+    const registrarVenda = async () => {
         if (carrinho.length === 0) {
             mostrarMensagem("Adicione pelo menos um produto à venda.");
             return;
         }
 
-        const estoqueInsuficiente = carrinho.find((item) => {
-            const produtoAtual = produtos.find(
-                (produto) => produto.id === item.id
-            );
+        if (salvando) return;
 
-            return (
-                !produtoAtual ||
-                item.quantidade > produtoAtual.quantidade
-            );
-        });
+        setSalvando(true);
+        setMensagem("");
 
-        if (estoqueInsuficiente) {
-            mostrarMensagem(
-                `Estoque insuficiente para ${estoqueInsuficiente.nome}.`
-            );
-            return;
+        try {
+            const novaVenda = await salvarVenda({
+                cliente: cliente.trim() || "Cliente não identificado",
+                data: dataAtual(),
+                itens: carrinho.map(({ id, quantidade }) => ({ id, quantidade })),
+                pagamento,
+                crediario,
+                desconto: descontoNumerico
+            });
+
+            const [produtosAtualizados, vendasAtualizadas] = await Promise.all([
+                listarProdutosVenda(),
+                listarVendas()
+            ]);
+
+            setProdutos(produtosAtualizados);
+            setVendas(vendasAtualizadas);
+            setPagina(1);
+            setCarrinho([]);
+            setCliente("");
+            setPagamento("Pix");
+            setCrediario(false);
+            setDesconto("0");
+            mostrarMensagem(`Venda #${novaVenda.id} registrada com sucesso!`, "sucesso");
+
+            setTimeout(() => {
+                setModalAberto(false);
+                setMensagem("");
+                setVendaSelecionada(null);
+            }, 900);
+        } catch (erro) {
+            mostrarMensagem(erro?.message || "Não foi possível registrar a venda.");
+        } finally {
+            setSalvando(false);
         }
-
-        const novaVenda = {
-            id: vendas.length
-                ? Math.max(...vendas.map((venda) => venda.id)) + 1
-                : 1001,
-            cliente: cliente.trim() || "Cliente não identificado",
-            data: dataAtual(),
-            itens: carrinho.map(({ id, nome, preco, quantidade }) => ({
-                id,
-                nome,
-                preco,
-                quantidade
-            })),
-            pagamento,
-            crediario,
-            desconto: descontoNumerico,
-            status: "Concluída"
-        };
-
-        setProdutos((atuais) =>
-            atuais.map((produto) => {
-                const itemVendido = carrinho.find(
-                    (item) => item.id === produto.id
-                );
-
-                return itemVendido
-                    ? {
-                        ...produto,
-                        quantidade:
-                            produto.quantidade - itemVendido.quantidade
-                    }
-                    : produto;
-            })
-        );
-
-        setVendas((atuais) => [novaVenda, ...atuais]);
-        setPagina(1);
-
-        setCarrinho([]);
-        setCliente("");
-        setPagamento("Pix");
-        setCrediario(false);
-        setDesconto("0");
-
-        mostrarMensagem("Venda registrada com sucesso!", "sucesso");
-
-        setTimeout(() => {
-            setModalAberto(false);
-            setMensagem("");
-        }, 900);
     };
 
     const indicadores = [
@@ -476,7 +399,7 @@ export const Vendas = () => {
     ];
 
     return (
-        
+
         <div className="min-h-screen bg-[#f3f1eb] text-[#35342f]">
             <Sidebar />
 
@@ -517,6 +440,12 @@ export const Vendas = () => {
                 </header>
 
                 <main className="space-y-6 p-4 sm:p-6 lg:p-8">
+                    {mensagem && !modalAberto && tipoMensagem !== "sucesso" && (
+                        <div className="flex items-start gap-2 rounded-lg border border-[#e6c8c3] bg-[#fdf0ed] p-3 text-sm text-[#b34b40]">
+                            <CircleAlert size={18} className="mt-0.5 shrink-0" />
+                            <p>{mensagem}</p>
+                        </div>
+                    )}
                     {/* Título e ação */}
                     <section className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
                         <div>
@@ -644,7 +573,7 @@ export const Vendas = () => {
                             </div>
 
                             <div className="divide-y divide-[#eeeae0] px-4">
-                                {vendas.slice(0, 4).map((venda) => (
+                                {vendas.slice(0, 3).map((venda) => (
                                     <div
                                         key={venda.id}
                                         className="flex items-center justify-between gap-3 py-4"
@@ -669,11 +598,10 @@ export const Vendas = () => {
                                                 {moeda(totalVenda(venda))}
                                             </p>
                                             <p
-                                                className={`mt-1 text-[10px] ${
-                                                    venda.status === "Concluída"
+                                                className={`mt-1 text-[10px] ${venda.status === "Concluída"
                                                         ? "text-emerald-700"
                                                         : "text-amber-700"
-                                                }`}
+                                                    }`}
                                             >
                                                 {venda.status}
                                             </p>
@@ -772,9 +700,8 @@ export const Vendas = () => {
                                     {vendasPagina.map((venda, index) => (
                                         <tr
                                             key={venda.id}
-                                            className={`border-t border-[#eeeae0] text-[#5f5c54] transition-colors hover:bg-[#f8f5ed] ${
-                                                index % 2 === 1 ? "bg-[#fcfbf7]" : ""
-                                            }`}
+                                            className={`border-t border-[#eeeae0] text-[#5f5c54] transition-colors hover:bg-[#f8f5ed] ${index % 2 === 1 ? "bg-[#fcfbf7]" : ""
+                                                }`}
                                         >
                                             <td className="whitespace-nowrap px-4 py-4 font-medium text-[#98700a]">
                                                 #{venda.id}
@@ -796,11 +723,10 @@ export const Vendas = () => {
                                             </td>
                                             <td className="px-4 py-4">
                                                 <span
-                                                    className={`whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium ${
-                                                        ehCrediario(venda)
+                                                    className={`whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium ${ehCrediario(venda)
                                                             ? "bg-amber-100 text-amber-800"
                                                             : "bg-stone-100 text-stone-600"
-                                                    }`}
+                                                        }`}
                                                 >
                                                     {ehCrediario(venda) ? "Sim" : "Não"}
                                                 </span>
@@ -810,11 +736,10 @@ export const Vendas = () => {
                                             </td>
                                             <td className="px-4 py-4">
                                                 <span
-                                                    className={`whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium ${
-                                                        venda.status === "Concluída"
+                                                    className={`whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium ${venda.status === "Concluída"
                                                             ? "bg-emerald-100 text-emerald-700"
                                                             : "bg-amber-100 text-amber-800"
-                                                    }`}
+                                                        }`}
                                                 >
                                                     {venda.status}
                                                 </span>
@@ -887,7 +812,7 @@ export const Vendas = () => {
             </div>
 
             {/* O modal continua na Parte 3 */}
-            
+
             {modalAberto && (
                 <div
                     className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-[#35342f]/40 p-4 backdrop-blur-sm"
@@ -949,11 +874,10 @@ export const Vendas = () => {
                                     <div className="rounded-lg border border-[#e6dfcd] bg-[#faf9f5] p-4">
                                         <p className="text-xs text-[#918d83]">Venda no crediário?</p>
                                         <p
-                                            className={`mt-2 font-medium ${
-                                                ehCrediario(vendaSelecionada)
+                                            className={`mt-2 font-medium ${ehCrediario(vendaSelecionada)
                                                     ? "text-amber-700"
                                                     : "text-[#45433d]"
-                                            }`}
+                                                }`}
                                         >
                                             {ehCrediario(vendaSelecionada) ? "Sim" : "Não"}
                                         </p>
@@ -1062,7 +986,7 @@ export const Vendas = () => {
                                     <div className="max-h-[380px] space-y-2 overflow-y-auto pr-1">
                                         {produtosDisponiveis.map((produto) => {
                                             const noCarrinho = carrinho.find(
-                                                (item) => item.id === produto.id
+                                                (item) => String(item.id) === String(produto.id)
                                             );
 
                                             const semEstoque = produto.quantidade === 0;
@@ -1284,11 +1208,10 @@ export const Vendas = () => {
                                     {/* Mensagens */}
                                     {mensagem && (
                                         <div
-                                            className={`mt-4 flex items-start gap-2 rounded-lg border p-3 text-sm ${
-                                                tipoMensagem === "sucesso"
+                                            className={`mt-4 flex items-start gap-2 rounded-lg border p-3 text-sm ${tipoMensagem === "sucesso"
                                                     ? "border-[#b9d9c5] bg-[#edf7f0] text-[#32734a]"
                                                     : "border-[#e6c8c3] bg-[#fdf0ed] text-[#b34b40]"
-                                            }`}
+                                                }`}
                                         >
                                             {tipoMensagem === "sucesso" ? (
                                                 <CheckCircle2 size={18} className="mt-0.5 shrink-0" />

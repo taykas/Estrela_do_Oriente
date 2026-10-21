@@ -1,6 +1,7 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 import Sidebar from "../components/Sidebar";
+import { listarProdutosEstoque, registrarMovimentacaoEstoque } from "../services/estoque";
 import {
     Home,
     Package,
@@ -25,21 +26,6 @@ import {
     ChevronLeft,
     ChevronRight
 } from "lucide-react";
-
-const produtosIniciais = [
-    { id: 1, nome: "Incenso Natural", categoria: "Incensos", quantidade: 3, minimo: 10, preco: 12.90 },
-    { id: 2, nome: "Vela de 7 Dias", categoria: "Velas", quantidade: 5, minimo: 10, preco: 18.90 },
-    { id: 3, nome: "Patuá", categoria: "Acessórios", quantidade: 2, minimo: 5, preco: 24.90 },
-    { id: 4, nome: "Erva de Proteção", categoria: "Ervas", quantidade: 4, minimo: 10, preco: 9.90 },
-    { id: 5, nome: "Óleo de Unção", categoria: "Óleos", quantidade: 2, minimo: 5, preco: 15.90 },
-    { id: 6, nome: "Sal Grosso", categoria: "Insumos", quantidade: 15, minimo: 10, preco: 5.90 },
-    { id: 7, nome: "Defumador", categoria: "Incensos", quantidade: 20, minimo: 10, preco: 22.90 },
-    { id: 8, nome: "Pau Santo", categoria: "Ervas", quantidade: 12, minimo: 10, preco: 14.90 },
-    { id: 9, nome: "Quartzo Rosa", categoria: "Cristais", quantidade: 8, minimo: 10, preco: 29.90 },
-    { id: 10, nome: "Xarope de Guiné", categoria: "Ervas", quantidade: 0, minimo: 5, preco: 19.90 },
-    { id: 11, nome: "Vela Aromática", categoria: "Velas", quantidade: 32, minimo: 10, preco: 16.90 },
-    { id: 12, nome: "Incenso de Mirra", categoria: "Incensos", quantidade: 28, minimo: 10, preco: 11.90 }
-];
 
 const categorias = [
     "Incensos",
@@ -89,7 +75,10 @@ export const Estoque = () => {
         window.scrollTo(0, 0);
     }, [pathname]);
 
-    const [produtos, setProdutos] = useState(produtosIniciais);
+    const [produtos, setProdutos] = useState([]);
+    const [carregando, setCarregando] = useState(true);
+    const [salvandoMovimentacao, setSalvandoMovimentacao] = useState(false);
+    const [erroCarregamento, setErroCarregamento] = useState("");
     const [busca, setBusca] = useState("");
     const [categoriaSelecionada, setCategoriaSelecionada] = useState("Todas");
     const [statusSelecionado, setStatusSelecionado] = useState("Todos");
@@ -102,6 +91,24 @@ export const Estoque = () => {
     const [mensagem, setMensagem] = useState("");
 
     const [produtoDetalhes, setProdutoDetalhes] = useState(null);
+
+    const carregarProdutos = async () => {
+        setCarregando(true);
+        setErroCarregamento("");
+        try {
+            const dados = await listarProdutosEstoque();
+            setProdutos(dados);
+        } catch (erro) {
+            console.error("Erro ao carregar produtos do estoque:", erro);
+            setErroCarregamento("Não foi possível carregar os produtos do Firestore. Verifique sua conexão e as configurações do Firebase e tente novamente.");
+        } finally {
+            setCarregando(false);
+        }
+    };
+
+    useEffect(() => {
+        carregarProdutos();
+    }, []);
 
     const porPagina = 10;
 
@@ -348,77 +355,49 @@ export const Estoque = () => {
             0
         );
 
-    const registrarMovimentacao = () => {
+    const registrarMovimentacao = async () => {
+        if (!movimentacao || salvandoMovimentacao) return;
+
         if (itensMovimentacao.length === 0) {
-            setMensagem(
-                "Adicione pelo menos um produto à movimentação."
-            );
+            setMensagem("Adicione pelo menos um produto à movimentação.");
             return;
         }
 
         for (const item of itensMovimentacao) {
-            const quantidade = Number(
-                item.quantidadeMovimentacao
-            );
-
-            if (
-                !Number.isInteger(quantidade) ||
-                quantidade <= 0
-            ) {
-                setMensagem(
-                    `Informe uma quantidade inteira válida para ${item.nome}.`
-                );
+            const quantidade = Number(item.quantidadeMovimentacao);
+            if (!Number.isInteger(quantidade) || quantidade <= 0) {
+                setMensagem(`Informe uma quantidade inteira válida para ${item.nome}.`);
                 return;
             }
 
-            const produtoAtual = produtos.find(
-                (produto) => produto.id === item.id
-            );
-
-            if (!produtoAtual) {
-                setMensagem(
-                    `O produto ${item.nome} não foi encontrado.`
-                );
-                return;
-            }
-
-            if (
-                movimentacao.tipo === "saida" &&
-                quantidade > produtoAtual.quantidade
-            ) {
-                setMensagem(
-                    `Estoque insuficiente para ${item.nome}. Disponível: ${produtoAtual.quantidade} unidade(s).`
-                );
+            if (movimentacao.tipo === "saida" && quantidade > item.quantidade) {
+                setMensagem(`Estoque insuficiente para ${item.nome}. Disponível: ${item.quantidade} unidade(s).`);
                 return;
             }
         }
 
-        setProdutos((atuais) =>
-            atuais.map((produto) => {
-                const item = itensMovimentacao.find(
-                    (selecionado) =>
-                        selecionado.id === produto.id
-                );
+        setSalvandoMovimentacao(true);
+        setMensagem("");
+        try {
+            await registrarMovimentacaoEstoque({
+                tipo: movimentacao.tipo,
+                itens: itensMovimentacao.map((item) => ({
+                    id: item.id,
+                    nome: item.nome,
+                    quantidadeMovimentacao: Number(item.quantidadeMovimentacao)
+                }))
+            });
 
-                if (!item) return produto;
-
-                const quantidade = Number(
-                    item.quantidadeMovimentacao
-                );
-
-                return {
-                    ...produto,
-                    quantidade:
-                        produto.quantidade +
-                        (movimentacao.tipo === "entrada"
-                            ? quantidade
-                            : -quantidade)
-                };
-            })
-        );
-
-        fecharMovimentacao();
+            await carregarProdutos();
+            fecharMovimentacao();
+        } catch (erro) {
+            console.error("Erro ao registrar movimentação de estoque:", erro);
+            setMensagem(erro?.message || "Não foi possível registrar a movimentação. Tente novamente.");
+        } finally {
+            setSalvandoMovimentacao(false);
+        }
     };
+
         return (
         <div className="min-h-screen bg-[#f3f1eb] text-[#35342f]">
             <Sidebar />
@@ -469,6 +448,19 @@ export const Estoque = () => {
                 </header>
 
                 <main className="space-y-6 p-4 sm:p-6 lg:p-8">
+                    {erroCarregamento && (
+                        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[#e6c8c3] bg-[#fdf0ed] p-4 text-sm text-[#b34b40]" role="alert">
+                            <span>{erroCarregamento}</span>
+                            <button onClick={carregarProdutos} className="rounded-md border border-[#e6c8c3] px-3 py-2 font-medium transition hover:bg-white/60">
+                                Tentar novamente
+                            </button>
+                        </div>
+                    )}
+                    {carregando && (
+                        <div className="rounded-lg border border-[#e6dfcd] bg-[#fffefa] p-4 text-sm text-[#68645b]" role="status">
+                            Carregando produtos do estoque...
+                        </div>
+                    )}
                     {/* Ações de entrada e saída */}
                     <section className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <button
@@ -780,7 +772,7 @@ export const Estoque = () => {
                                                     colSpan={6}
                                                     className="px-4 py-12 text-center text-[#918d83]"
                                                 >
-                                                    Nenhum produto encontrado.
+                                                    {carregando ? "Carregando produtos..." : erroCarregamento ? "Não foi possível carregar os produtos." : "Nenhum produto encontrado."}
                                                 </td>
                                             </tr>
                                         )}
@@ -1247,16 +1239,18 @@ export const Estoque = () => {
 
                                     <button
                                         onClick={registrarMovimentacao}
-                                        disabled={itensMovimentacao.length === 0}
+                                        disabled={itensMovimentacao.length === 0 || salvandoMovimentacao}
                                         className={`w-full rounded-md px-4 py-3 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-40 ${
                                             movimentacao.tipo === "entrada"
                                                 ? "bg-[#98700a] hover:bg-[#806009]"
                                                 : "bg-[#b34b40] hover:bg-[#963b32]"
                                         }`}
                                     >
-                                        {movimentacao.tipo === "entrada"
-                                            ? "Confirmar entrada"
-                                            : "Confirmar saída"}
+                                        {salvandoMovimentacao
+                                            ? "Salvando..."
+                                            : movimentacao.tipo === "entrada"
+                                                ? "Confirmar entrada"
+                                                : "Confirmar saída"}
                                     </button>
 
                                     <button
