@@ -1,3 +1,4 @@
+
 import {
     Package,
     ShoppingCart,
@@ -12,8 +13,9 @@ import {
 } from "lucide-react";
 
 import { useNavigate, useLocation } from "react-router-dom";
-import { useEffect } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Sidebar from "../components/Sidebar";
+import { listarProdutos } from "../services/products";
 
 const vendasRecentes = [
     { id: "#0049", data: "15/10/2026", cliente: "Cliente 021", total: "R$ 89,90", status: "Concluída" },
@@ -22,35 +24,6 @@ const vendasRecentes = [
     { id: "#0046", data: "12/10/2026", cliente: "Cliente 017", total: "R$ 129,90", status: "Concluída" },
     { id: "#0045", data: "12/10/2026", cliente: "Cliente 061", total: "R$ 379,80", status: "Pendente" },
     { id: "#0044", data: "11/10/2026", cliente: "Cliente 023", total: "R$ 89,90", status: "Concluída" }
-];
-
-const estoqueBaixo = [
-    { nome: "Incenso Natural", categoria: "Incensos", quantidade: 3 },
-    { nome: "Vela de 7 Dias", categoria: "Velas", quantidade: 5 },
-    { nome: "Patua", categoria: "Acessórios", quantidade: 2 },
-    { nome: "Erva de Proteção", categoria: "Ervas", quantidade: 4 },
-    { nome: "Óleo de Unção", categoria: "Óleos", quantidade: 2 }
-];
-
-const indicadores = [
-    {
-        titulo: "Total de Produtos",
-        valor: "248",
-        descricao: "Produtos cadastrados",
-        icone: Package
-    },
-    {
-        titulo: "Vendas do Mês",
-        valor: "R$ 4.892,30",
-        descricao: "Faturamento mensal",
-        icone: ShoppingCart
-    },
-    {
-        titulo: "Pedidos em Aberto",
-        valor: "7",
-        descricao: "Aguardando conclusão",
-        icone: ClipboardList
-    }
 ];
 
 const atalhos = [
@@ -67,12 +40,6 @@ const atalhos = [
         destino: "Vendas"
     },
     {
-        titulo: "Gerar Pedido",
-        descricao: "Criar pedido de compra",
-        icone: ClipboardList,
-        destino: "Pedidos"
-    },
-    {
         titulo: "Ver Relatórios",
         descricao: "Consultar resultados",
         icone: ChartNoAxesCombined,
@@ -84,9 +51,52 @@ export const MainPage = () => {
     const navegar = useNavigate();
     const { pathname } = useLocation();
 
+    const [produtos, setProdutos] = useState([]);
+
+    const carregarProdutos = useCallback(async () => {
+        try {
+            const dados = await listarProdutos();
+            setProdutos(dados);
+        } catch (error) {
+            console.error("Erro ao carregar produtos:", error);
+        }
+    }, []);
+
     useEffect(() => {
         window.scrollTo(0, 0);
     }, [pathname]);
+
+    useEffect(() => {
+        carregarProdutos();
+    }, [carregarProdutos]);
+
+    const estoqueBaixo = produtos.filter(
+        (produto) =>
+            produto.status === "Ativo" &&
+            Number(produto.estoque || 0) <=
+                Number(produto.estoqueMinimo ?? 5)
+    );
+
+    const indicadores = [
+        {
+            titulo: "Total de Produtos",
+            valor: produtos.length,
+            descricao: "Produtos cadastrados",
+            icone: Package
+        },
+        {
+            titulo: "Vendas do Mês",
+            valor: "R$ 4.892,30",
+            descricao: "Faturamento mensal",
+            icone: ShoppingCart
+        },
+        {
+            titulo: "Pedidos em Aberto",
+            valor: "7",
+            descricao: "Aguardando conclusão",
+            icone: ClipboardList
+        }
+    ];
 
     return (
         <div className="min-h-screen bg-[#f3f1eb] text-[#35342f]">
@@ -114,6 +124,15 @@ export const MainPage = () => {
                                 Gerenciamento da loja
                             </p>
                         </div>
+                    </div>
+
+                    <div className="hidden border-l border-[#e3dcc9] pl-4 sm:block">
+                        <p className="text-sm text-[#89670d]">
+                            Estrela do Oriente
+                        </p>
+                        <p className="text-xs text-[#918d83]">
+                            {new Date().toLocaleDateString("pt-BR")}
+                        </p>
                     </div>
                 </header>
 
@@ -282,9 +301,9 @@ export const MainPage = () => {
                             </div>
 
                             <div className="divide-y divide-[#eeeae0] px-4">
-                                {estoqueBaixo.map((produto) => (
+                                {estoqueBaixo.slice(0, 5).map((produto) => (
                                     <div
-                                        key={produto.nome}
+                                        key={produto.id}
                                         className="flex items-center justify-between gap-3 py-4"
                                     >
                                         <div className="flex min-w-0 items-center gap-3">
@@ -308,7 +327,7 @@ export const MainPage = () => {
 
                                         <div className="shrink-0 text-right">
                                             <p className="text-sm font-semibold text-[#98700a]">
-                                                {produto.quantidade} un.
+                                                {Number(produto.estoque || 0)} un.
                                             </p>
 
                                             <p className="mt-1 text-[10px] text-[#969187]">
@@ -342,7 +361,15 @@ export const MainPage = () => {
                                 return (
                                     <button
                                         key={atalho.titulo}
-                                        onClick={() => navegar(`/${atalho.destino}`)}
+                                        onClick={() => {
+                                            if (atalho.titulo === "Cadastrar Produto") {
+                                                navegar("/produtos", {
+                                                    state: { abrirCadastro: true }
+                                                });
+                                            } else {
+                                                navegar(`/${atalho.destino.toLowerCase()}`);
+                                            }
+                                        }}
                                         className="group flex items-center gap-4 rounded-lg border border-[#e6dfcd] bg-[#fffefa] p-4 text-left transition-all hover:border-[#cfb15a] hover:bg-[#f8f3e6] hover:shadow-sm"
                                     >
                                         <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-[#f3ead3] text-[#98700a] transition-colors group-hover:bg-[#e9d7a4]">

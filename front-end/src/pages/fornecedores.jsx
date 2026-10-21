@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import {
     Menu,
@@ -36,7 +37,6 @@ const fornecedoresIniciais = [
         telefone: "(11) 98765-4321",
         cidade: "São Paulo",
         estado: "SP",
-        categoria: "Incensos",
         status: "Ativo",
         dataCadastro: "2026-02-10",
         observacoes: "Fornecedor principal de incensos naturais.",
@@ -50,7 +50,6 @@ const fornecedoresIniciais = [
         telefone: "(11) 97654-3210",
         cidade: "Guarulhos",
         estado: "SP",
-        categoria: "Velas",
         status: "Ativo",
         dataCadastro: "2026-03-15",
         observacoes: "Fornece velas tradicionais e aromáticas.",
@@ -64,7 +63,6 @@ const fornecedoresIniciais = [
         telefone: "(19) 96543-2109",
         cidade: "Campinas",
         estado: "SP",
-        categoria: "Ervas",
         status: "Ativo",
         dataCadastro: "2026-04-02",
         observacoes: "Especializada em ervas e produtos naturais.",
@@ -78,7 +76,6 @@ const fornecedoresIniciais = [
         telefone: "(21) 95432-1098",
         cidade: "Rio de Janeiro",
         estado: "RJ",
-        categoria: "Cristais",
         status: "Inativo",
         dataCadastro: "2026-01-20",
         observacoes: "Fornecedor de cristais e pedras naturais.",
@@ -92,7 +89,6 @@ const fornecedoresIniciais = [
         telefone: "(31) 94321-0987",
         cidade: "Belo Horizonte",
         estado: "MG",
-        categoria: "Óleos",
         status: "Ativo",
         dataCadastro: "2026-05-11",
         observacoes: "Fornece óleos, essências e produtos aromáticos.",
@@ -106,7 +102,6 @@ const fornecedoresIniciais = [
         telefone: "(41) 93210-9876",
         cidade: "Curitiba",
         estado: "PR",
-        categoria: "Acessórios",
         status: "Ativo",
         dataCadastro: "2026-06-08",
         observacoes: "Distribuição de patuás e acessórios.",
@@ -120,7 +115,6 @@ const fornecedoresIniciais = [
         telefone: "(11) 92109-8765",
         cidade: "Osasco",
         estado: "SP",
-        categoria: "Incensos",
         status: "Inativo",
         dataCadastro: "2026-07-01",
         observacoes: "",
@@ -210,6 +204,12 @@ const Campo = ({
 );
 
 export const Fornecedores = () => {
+    const { pathname } = useLocation();
+
+    useEffect(() => {
+        window.scrollTo(0, 0);
+    }, [pathname]);
+
     const [fornecedores, setFornecedores] = useState(fornecedoresIniciais);
 
     const [busca, setBusca] = useState("");
@@ -471,21 +471,16 @@ export const Fornecedores = () => {
                             </p>
                         </div>
                     </div>
-
-                    <div className="flex items-center gap-3">
-                        <div className="hidden text-right sm:block">
-                            <p className="text-sm font-medium text-[#35342f]">
-                                Estrela do Oriente
-                            </p>
-                            <p className="text-xs text-[#89867d]">
-                                Gestão da loja
-                            </p>
-                        </div>
-
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full border border-[#e6dfcd] bg-[#f5edda] text-[#98700a]">
-                            <Bell size={18} />
-                        </div>
+                    
+                    <div className="hidden border-l border-[#e3dcc9] pl-4 sm:block">
+                        <p className="text-sm text-[#89670d]">
+                            Estrela do Oriente
+                        </p>
+                        <p className="text-xs text-[#918d83]">
+                            {new Date().toLocaleDateString("pt-BR")}
+                        </p>
                     </div>
+
                 </header>
 
                 <main className="space-y-6 p-4 sm:p-6 lg:p-8">
@@ -598,29 +593,6 @@ export const Fornecedores = () => {
                                 </p>
                             </div>
                         </div>
-
-                        <div className="rounded-xl border border-[#e6dfcd] bg-[#fffefa] p-5 shadow-sm transition-all hover:border-[#d4b65e] hover:shadow-md">
-                            <div className="flex items-start justify-between">
-                                <div>
-                                    <p className="text-sm text-[#77746b]">
-                                        Categorias atendidas
-                                    </p>
-                                    <h3 className="mt-3 text-2xl font-semibold text-[#8b690e]">
-                                        {totalCategorias}
-                                    </h3>
-                                </div>
-
-                                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#f5edda] text-[#98700a]">
-                                    <Package size={21} />
-                                </div>
-                            </div>
-
-                            <div className="mt-4 border-t border-[#eee7d7] pt-3">
-                                <p className="text-xs text-[#969187]">
-                                    Categorias com fornecedores ativos
-                                </p>
-                            </div>
-                        </div>
                     </section>
 
                     {/* Lista de fornecedores */}
@@ -719,9 +691,6 @@ export const Fornecedores = () => {
                                             Fornecedor
                                         </th>
                                         <th className="px-5 py-3.5 font-medium">
-                                            Categoria
-                                        </th>
-                                        <th className="px-5 py-3.5 font-medium">
                                             Contato
                                         </th>
                                         <th className="px-5 py-3.5 font-medium">
@@ -766,13 +735,6 @@ export const Fornecedores = () => {
                                                             </p>
                                                         </div>
                                                     </div>
-                                                </td>
-
-                                                <td className="px-5 py-4">
-                                                    <span className="inline-flex rounded-md border border-[#e9e1ce] bg-[#f8f4e9] px-2.5 py-1 text-xs text-[#786b49]">
-                                                        {fornecedor.categoria ||
-                                                            "Não definida"}
-                                                    </span>
                                                 </td>
 
                                                 <td className="px-5 py-4">
@@ -929,74 +891,6 @@ export const Fornecedores = () => {
                                     <ChevronRight size={17} />
                                 </button>
                             </div>
-                        </div>
-                    </section>
-
-                    {/* Resumo de categorias */}
-                    <section className="rounded-xl border border-[#e6dfcd] bg-[#fffefa] p-5 shadow-sm">
-                        <div className="mb-4">
-                            <h2 className="text-base font-medium text-[#78601e]">
-                                Fornecedores por categoria
-                            </h2>
-                            <p className="mt-1 text-xs text-[#89867d]">
-                                Distribuição dos fornecedores cadastrados.
-                            </p>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-                            {categorias.map((categoria) => {
-                                const quantidade = fornecedores.filter(
-                                    (fornecedor) =>
-                                        fornecedor.categoria === categoria
-                                ).length;
-
-                                return (
-                                    <button
-                                        key={categoria}
-                                        type="button"
-                                        onClick={() => {
-                                            mudouCategoria(
-                                                filtroCategoria === categoria
-                                                    ? "Todas"
-                                                    : categoria
-                                            );
-
-                                            document
-                                                .querySelector("table")
-                                                ?.scrollIntoView({
-                                                    behavior: "smooth",
-                                                    block: "start",
-                                                });
-                                        }}
-                                        className={`rounded-lg border p-4 text-left transition ${
-                                            filtroCategoria === categoria
-                                                ? "border-[#c6a64b] bg-[#f8f1df]"
-                                                : "border-[#eee7d7] bg-[#fcfbf7] hover:border-[#d4b65e] hover:bg-[#f8f5ed]"
-                                        }`}
-                                    >
-                                        <div className="flex items-center justify-between gap-2">
-                                            <span className="text-sm text-[#555248]">
-                                                {categoria}
-                                            </span>
-
-                                            <Package
-                                                size={17}
-                                                className="shrink-0 text-[#98700a]"
-                                            />
-                                        </div>
-
-                                        <p className="mt-3 text-xl font-semibold text-[#8b690e]">
-                                            {quantidade}
-                                        </p>
-
-                                        <p className="mt-1 text-xs text-[#969187]">
-                                            {quantidade === 1
-                                                ? "fornecedor"
-                                                : "fornecedores"}
-                                        </p>
-                                    </button>
-                                );
-                            })}
                         </div>
                     </section>
                 </main>
@@ -1286,20 +1180,6 @@ export const Fornecedores = () => {
                                         <p className="mt-2 break-words text-sm text-[#35342f]">
                                             {fornecedorSelecionado.documento ||
                                                 "Não informado"}
-                                        </p>
-                                    </div>
-
-                                    <div className="rounded-lg border border-[#eee7d7] bg-[#fcfbf7] p-4">
-                                        <div className="flex items-center gap-2 text-[#98700a]">
-                                            <Package size={16} />
-                                            <span className="text-xs font-medium">
-                                                Categoria
-                                            </span>
-                                        </div>
-
-                                        <p className="mt-2 text-sm text-[#35342f]">
-                                            {fornecedorSelecionado.categoria ||
-                                                "Não definida"}
                                         </p>
                                     </div>
                                 </div>
