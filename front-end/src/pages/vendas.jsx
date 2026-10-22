@@ -173,8 +173,7 @@ export const Vendas = () => {
     const totalCarrinho = Math.max(0, subtotal - valorDesconto);
 
     const produtosDisponiveis = produtos.filter((produto) =>
-        produto.nome.toLowerCase().includes(buscaProduto.toLowerCase()) ||
-        produto.categoria.toLowerCase().includes(buscaProduto.toLowerCase())
+        produto.nome.toLowerCase().includes(buscaProduto.toLowerCase())
     );
 
     const mostrarMensagem = (texto, tipo = "erro") => {
@@ -977,7 +976,7 @@ export const Vendas = () => {
                                             <input
                                                 value={buscaProduto}
                                                 onChange={(e) => setBuscaProduto(e.target.value)}
-                                                placeholder="Buscar produto por nome ou categoria..."
+                                                placeholder="Buscar produto por nome..."
                                                 className="w-full bg-transparent text-sm text-[#45433d] outline-none placeholder:text-[#918d83]"
                                             />
                                         </div>
@@ -1010,7 +1009,7 @@ export const Vendas = () => {
                                                             </p>
 
                                                             <p className="mt-1 text-xs text-[#918d83]">
-                                                                {produto.categoria} · Estoque: {produto.quantidade}
+                                                                Estoque: {produto.quantidade}
                                                             </p>
 
                                                             <p className="mt-1 text-sm font-semibold text-[#8b690e]">

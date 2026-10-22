@@ -21,7 +21,6 @@ function formatarProduto(documento) {
         codigo: dados.codigo || `PRD-${documento.id.slice(0, 6).toUpperCase()}`,
         codigoBarras: dados.codigoBarras || "",
         nome: dados.nome || "",
-        categoria: dados.categoria || "Outros",
         preco: Number(dados.preco ?? 0),
         custo: Number(dados.custo ?? 0),
         estoque: Number(dados.estoque ?? 0),
@@ -59,7 +58,6 @@ export async function buscarProduto(id) {
 export async function cadastrarProduto(dadosProduto) {
     const dados = {
         nome: dadosProduto.nome.trim(),
-        categoria: dadosProduto.categoria,
         preco: Number(dadosProduto.preco),
         custo: Number(dadosProduto.custo),
         estoque: Number(dadosProduto.estoque),
@@ -91,7 +89,6 @@ export async function atualizarProduto(id, dadosProduto) {
 
     const dados = {
         nome: dadosProduto.nome.trim(),
-        categoria: dadosProduto.categoria,
         preco: Number(dadosProduto.preco),
         custo: Number(dadosProduto.custo),
         estoque: Number(dadosProduto.estoque),

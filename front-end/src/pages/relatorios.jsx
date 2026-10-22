@@ -1,6 +1,7 @@
 import { useMemo, useState, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
+import { listarDadosRelatorios } from "../services/relatorios";
 import {
     Menu,
     Bell,
@@ -20,40 +21,8 @@ import {
     ChevronDown,
 } from "lucide-react";
 
-const vendasExemplo = [
-    { id: 1001, data: "2026-10-15", cliente: "Maria Oliveira", total: 62.70, pagamento: "Pix", status: "Concluída" },
-    { id: 1002, data: "2026-10-15", cliente: "João Santos", total: 54.80, pagamento: "Dinheiro", status: "Concluída" },
-    { id: 1003, data: "2026-10-14", cliente: "Ana Costa", total: 37.80, pagamento: "Cartão de débito", status: "Concluída" },
-    { id: 1004, data: "2026-10-14", cliente: "Carlos Mendes", total: 35.70, pagamento: "Pix", status: "Cancelada" },
-    { id: 1005, data: "2026-10-13", cliente: "Fernanda Lima", total: 35.70, pagamento: "Cartão de crédito", status: "Concluída" },
-    { id: 1006, data: "2026-10-12", cliente: "Paula Souza", total: 89.90, pagamento: "Pix", status: "Concluída" },
-    { id: 1007, data: "2026-10-11", cliente: "Lucas Mendes", total: 45.80, pagamento: "Dinheiro", status: "Concluída" },
-    { id: 1008, data: "2026-10-10", cliente: "Beatriz Lima", total: 120.50, pagamento: "Cartão de crédito", status: "Concluída" },
-    { id: 1009, data: "2026-10-09", cliente: "Rafael Costa", total: 28.90, pagamento: "Pix", status: "Concluída" },
-    { id: 1010, data: "2026-10-08", cliente: "Camila Alves", total: 76.40, pagamento: "Cartão de débito", status: "Concluída" },
-    { id: 1011, data: "2026-10-05", cliente: "Marcos Silva", total: 48.90, pagamento: "Pix", status: "Concluída" },
-    { id: 1012, data: "2026-10-02", cliente: "Juliana Rocha", total: 94.70, pagamento: "Dinheiro", status: "Concluída" },
-    { id: 1013, data: "2026-09-28", cliente: "Amanda Reis", total: 67.80, pagamento: "Pix", status: "Concluída" },
-    { id: 1014, data: "2026-09-24", cliente: "Pedro Lima", total: 112.90, pagamento: "Cartão de crédito", status: "Concluída" },
-    { id: 1015, data: "2026-09-20", cliente: "Carolina Melo", total: 39.90, pagamento: "Dinheiro", status: "Concluída" },
-    { id: 1016, data: "2026-09-15", cliente: "Gabriel Souza", total: 85.90, pagamento: "Pix", status: "Concluída" },
-    { id: 1017, data: "2026-09-10", cliente: "Larissa Dias", total: 56.90, pagamento: "Cartão de débito", status: "Concluída" },
-    { id: 1018, data: "2026-09-05", cliente: "Thiago Alves", total: 73.90, pagamento: "Pix", status: "Concluída" },
-];
-
-const produtosExemplo = [
-    { id: 1, nome: "Defumador", categoria: "Incensos", vendidos: 48, receita: 1055.20, estoque: 20 },
-    { id: 2, nome: "Vela Aromática", categoria: "Velas", vendidos: 42, receita: 709.80, estoque: 32 },
-    { id: 3, nome: "Quartzo Rosa", categoria: "Cristais", vendidos: 26, receita: 777.40, estoque: 8 },
-    { id: 4, nome: "Incenso Natural", categoria: "Incensos", vendidos: 35, receita: 451.50, estoque: 3 },
-    { id: 5, nome: "Patuá", categoria: "Acessórios", vendidos: 21, receita: 522.90, estoque: 2 },
-    { id: 6, nome: "Vela de 7 Dias", categoria: "Velas", vendidos: 31, receita: 585.90, estoque: 5 },
-    { id: 7, nome: "Erva de Proteção", categoria: "Ervas", vendidos: 19, receita: 188.10, estoque: 4 },
-    { id: 8, nome: "Sal Grosso", categoria: "Insumos", vendidos: 16, receita: 94.40, estoque: 15 },
-];
-
 const moeda = (valor) =>
-    valor.toLocaleString("pt-BR", {
+    Number(valor || 0).toLocaleString("pt-BR", {
         style: "currency",
         currency: "BRL",
     });
@@ -88,12 +57,10 @@ const CardIndicador = ({
                     {valor}
                 </h3>
             </div>
-
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#f5edda] text-[#98700a]">
                 <Icone size={21} />
             </div>
         </div>
-
         <div className="mt-4 flex items-center gap-2 border-t border-[#eee7d7] pt-3">
             {variacao && (
                 <span
@@ -109,7 +76,6 @@ const CardIndicador = ({
                     {variacao}
                 </span>
             )}
-
             <p className="text-xs text-[#969187]">{descricao}</p>
         </div>
     </div>
@@ -117,7 +83,6 @@ const CardIndicador = ({
 
 const BarraHorizontal = ({ titulo, valor, total, legenda }) => {
     const percentual = total > 0 ? (valor / total) * 100 : 0;
-
     return (
         <div className="space-y-2">
             <div className="flex items-center justify-between gap-3">
@@ -126,7 +91,6 @@ const BarraHorizontal = ({ titulo, valor, total, legenda }) => {
                     {legenda ?? valor}
                 </span>
             </div>
-
             <div className="h-2 overflow-hidden rounded-full bg-[#eee9dc]">
                 <div
                     className="h-full rounded-full bg-[#b99a42] transition-all duration-500"
@@ -139,20 +103,55 @@ const BarraHorizontal = ({ titulo, valor, total, legenda }) => {
 
 export const Relatorios = () => {
     const { pathname } = useLocation();
+    const [vendasDados, setVendasDados] = useState([]);
+    const [produtosDados, setProdutosDados] = useState([]);
+    const [carregando, setCarregando] = useState(true);
+    const [erroCarregamento, setErroCarregamento] = useState("");
+
+    useEffect(() => {
+        let ativo = true;
+
+        async function carregarRelatorios() {
+            try {
+                setCarregando(true);
+                setErroCarregamento("");
+                const dados = await listarDadosRelatorios();
+
+                if (ativo) {
+                    setVendasDados(Array.isArray(dados?.vendas) ? dados.vendas : []);
+                    setProdutosDados(Array.isArray(dados?.produtos) ? dados.produtos : []);
+                }
+            } catch (erro) {
+                console.error("Erro ao carregar os relatórios:", erro);
+
+                if (ativo) {
+                    setErroCarregamento(
+                        "Não foi possível carregar os dados dos relatórios. Verifique sua conexão e tente novamente."
+                    );
+                }
+            } finally {
+                if (ativo) setCarregando(false);
+            }
+        }
+
+        carregarRelatorios();
+        return () => {
+            ativo = false;
+        };
+    }, []);
 
     useEffect(() => {
         window.scrollTo(0, 0);
     }, [pathname]);
-    
-    const hoje = obterHoje();
 
+    const hoje = obterHoje();
     const [periodo, setPeriodo] = useState("mes");
     const [dataInicio, setDataInicio] = useState(obterInicioMes(new Date()));
     const [dataFim, setDataFim] = useState(hoje);
     const [tipoRelatorio, setTipoRelatorio] = useState("vendas");
     const [categoria, setCategoria] = useState("Todas");
 
-    const vendasFiltradas = useMemo(() => {
+    const obterIntervalo = () => {
         let inicio = dataInicio;
         let fim = dataFim;
 
@@ -169,56 +168,53 @@ export const Relatorios = () => {
             fim = hoje;
         }
 
-        return vendasExemplo.filter(
+        return { inicio, fim };
+    };
+
+    const { inicio: inicioPeriodo, fim: fimPeriodo } = obterIntervalo();
+
+    const vendasFiltradas = useMemo(() => {
+        return vendasDados.filter(
             (venda) =>
-                venda.data >= inicio &&
-                venda.data <= fim &&
+                venda.data >= inicioPeriodo &&
+                venda.data <= fimPeriodo &&
                 venda.status === "Concluída"
         );
-    }, [periodo, dataInicio, dataFim, hoje]);
+    }, [vendasDados, inicioPeriodo, fimPeriodo]);
 
     const produtosFiltrados = useMemo(() => {
-        if (categoria === "Todas") return produtosExemplo;
+        if (categoria === "Todas") return produtosDados;
 
-        return produtosExemplo.filter(
+        return produtosDados.filter(
             (produto) => produto.categoria === categoria
         );
-    }, [categoria]);
+    }, [categoria, produtosDados]);
 
     const faturamento = vendasFiltradas.reduce(
-        (total, venda) => total + venda.total,
+        (total, venda) => total + Number(venda.total || 0),
         0
     );
 
     const quantidadeVendas = vendasFiltradas.length;
 
-    const quantidadeTotalVendas = vendasExemplo.filter((venda) => {
-        let inicio = dataInicio;
-        let fim = dataFim;
-
-        if (periodo === "hoje") {
-            inicio = hoje;
-            fim = hoje;
-        } else if (periodo === "7dias") {
-            const data = new Date();
-            data.setDate(data.getDate() - 6);
-            inicio = `${data.getFullYear()}-${String(data.getMonth() + 1).padStart(2, "0")}-${String(data.getDate()).padStart(2, "0")}`;
-            fim = hoje;
-        } else if (periodo === "mes") {
-            inicio = obterInicioMes(new Date());
-            fim = hoje;
-        }
-
-        return venda.data >= inicio && venda.data <= fim;
-    }).length;
+    const quantidadeTotalVendas = vendasDados.filter(
+        (venda) =>
+            venda.data >= inicioPeriodo &&
+            venda.data <= fimPeriodo
+    ).length;
 
     const produtosVendidos = produtosFiltrados.reduce(
-        (total, produto) => total + produto.vendidos,
+        (total, produto) => total + Number(produto.vendidos || 0),
         0
     );
 
     const vendasPorPagamento = useMemo(() => {
-        const pagamentos = ["Pix", "Dinheiro", "Cartão de débito", "Cartão de crédito"];
+        const pagamentos = [
+            "Pix",
+            "Dinheiro",
+            "Cartão de débito",
+            "Cartão de crédito",
+        ];
 
         return pagamentos.map((pagamento) => {
             const vendas = vendasFiltradas.filter(
@@ -228,7 +224,10 @@ export const Relatorios = () => {
             return {
                 nome: pagamento,
                 quantidade: vendas.length,
-                valor: vendas.reduce((total, venda) => total + venda.total, 0),
+                valor: vendas.reduce(
+                    (total, venda) => total + Number(venda.total || 0),
+                    0
+                ),
             };
         });
     }, [vendasFiltradas]);
@@ -243,7 +242,7 @@ export const Relatorios = () => {
 
         vendasFiltradas.forEach((venda) => {
             agrupadas[venda.data] =
-                (agrupadas[venda.data] || 0) + venda.total;
+                (agrupadas[venda.data] || 0) + Number(venda.total || 0);
         });
 
         return Object.entries(agrupadas)
@@ -262,7 +261,8 @@ export const Relatorios = () => {
 
         produtosFiltrados.forEach((produto) => {
             agrupadas[produto.categoria] =
-                (agrupadas[produto.categoria] || 0) + produto.receita;
+                (agrupadas[produto.categoria] || 0) +
+                Number(produto.receita || 0);
         });
 
         return Object.entries(agrupadas)
@@ -276,13 +276,13 @@ export const Relatorios = () => {
     );
 
     const produtosComEstoqueBaixo = produtosFiltrados.filter(
-        (produto) => produto.estoque <= 5
+        (produto) => Number(produto.estoque || 0) <= 5
     );
 
     const exportarCSV = () => {
         const linhas = [
             ["Relatório de vendas"],
-            ["Período", dataInicio, dataFim],
+            ["Período", inicioPeriodo, fimPeriodo],
             [],
             ["Código", "Data", "Cliente", "Pagamento", "Status", "Total"],
             ...vendasFiltradas.map((venda) => [
@@ -291,7 +291,7 @@ export const Relatorios = () => {
                 venda.cliente,
                 venda.pagamento,
                 venda.status,
-                venda.total.toFixed(2).replace(".", ","),
+                Number(venda.total || 0).toFixed(2).replace(".", ","),
             ]),
             [],
             ["Faturamento total", faturamento.toFixed(2).replace(".", ",")],
@@ -314,11 +314,9 @@ export const Relatorios = () => {
 
         const url = URL.createObjectURL(arquivo);
         const link = document.createElement("a");
-
         link.href = url;
         link.download = "relatorio-vendas.csv";
         link.click();
-
         URL.revokeObjectURL(url);
     };
 
@@ -334,7 +332,6 @@ export const Relatorios = () => {
     return (
         <div className="min-h-screen bg-[#f3f1eb] text-[#35342f]">
             <Sidebar />
-
             <div className="min-h-screen lg:ml-60">
                 <header className="sticky top-0 z-30 flex h-24 items-center justify-between border-b border-[#e3dcc9] bg-[#faf9f5]/95 px-4 backdrop-blur-sm sm:px-6 lg:px-8">
                     <div className="flex items-center gap-3">
@@ -345,7 +342,6 @@ export const Relatorios = () => {
                         >
                             <Menu size={21} />
                         </button>
-
                         <div>
                             <h1
                                 className="text-lg text-[#98700a] sm:text-xl"
@@ -358,7 +354,6 @@ export const Relatorios = () => {
                             </p>
                         </div>
                     </div>
-
                     <div className="hidden border-l border-[#e3dcc9] pl-4 sm:block">
                         <p className="text-sm text-[#89670d]">
                             Estrela do Oriente
@@ -368,8 +363,20 @@ export const Relatorios = () => {
                         </p>
                     </div>
                 </header>
-
                 <main className="space-y-6 p-4 sm:p-6 lg:p-8">
+                    {erroCarregamento && (
+                        <div
+                            role="alert"
+                            className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700"
+                        >
+                            {erroCarregamento}
+                        </div>
+                    )}
+                    {carregando && (
+                        <div className="rounded-xl border border-[#e6dfcd] bg-[#fffefa] p-4 text-sm text-[#77746b]">
+                            Carregando dados dos relatórios...
+                        </div>
+                    )}
                     {/* Título */}
                     <section className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
                         <div>
@@ -381,7 +388,6 @@ export const Relatorios = () => {
                             </p>
                         </div>
                     </section>
-
                     {/* Filtros */}
                     <section className="rounded-xl border border-[#e6dfcd] bg-[#fffefa] p-5 shadow-sm">
                         <div className="mb-4 flex items-center gap-2">
@@ -390,7 +396,6 @@ export const Relatorios = () => {
                                 Filtros do relatório
                             </h2>
                         </div>
-
                         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
                             <div className="space-y-1.5">
                                 <label className="text-xs font-medium text-[#77746b]">
@@ -414,7 +419,6 @@ export const Relatorios = () => {
                                     />
                                 </div>
                             </div>
-
                             <div className="space-y-1.5">
                                 <label className="text-xs font-medium text-[#77746b]">
                                     Período
@@ -438,7 +442,6 @@ export const Relatorios = () => {
                                     />
                                 </div>
                             </div>
-
                             {periodo === "personalizado" ? (
                                 <>
                                     <div className="space-y-1.5">
@@ -455,7 +458,6 @@ export const Relatorios = () => {
                                             className="w-full rounded-lg border border-[#e6dfcd] bg-[#fcfbf7] px-3 py-2.5 text-sm outline-none focus:border-[#c6a64b]"
                                         />
                                     </div>
-
                                     <div className="space-y-1.5">
                                         <label className="text-xs font-medium text-[#77746b]">
                                             Data final
@@ -495,7 +497,6 @@ export const Relatorios = () => {
                                 </div>
                             )}
                         </div>
-
                         {tipoRelatorio === "produtos" && (
                             <div className="mt-4 max-w-xs space-y-1.5">
                                 <label className="text-xs font-medium text-[#77746b]">
@@ -519,7 +520,6 @@ export const Relatorios = () => {
                             </div>
                         )}
                     </section>
-
                     {/* Indicadores de vendas */}
                     {tipoRelatorio === "vendas" && (
                         <>
@@ -530,21 +530,18 @@ export const Relatorios = () => {
                                     descricao="No período selecionado"
                                     icone={CircleDollarSign}
                                 />
-
                                 <CardIndicador
                                     titulo="Vendas concluídas"
                                     valor={quantidadeVendas}
                                     descricao="Vendas válidas no período"
                                     icone={ShoppingCart}
                                 />
-
                                 <CardIndicador
                                     titulo="Total de vendas"
                                     valor={quantidadeTotalVendas}
                                     descricao="Inclui vendas concluídas"
                                     icone={ShoppingCart}
                                 />
-
                                 <CardIndicador
                                     titulo="Produtos vendidos"
                                     valor={produtosVendidos}
@@ -552,7 +549,6 @@ export const Relatorios = () => {
                                     icone={Package}
                                 />
                             </section>
-
                             {/* Gráficos */}
                             <section className="grid grid-cols-1 gap-6 xl:grid-cols-2">
                                 <div className="rounded-xl border border-[#e6dfcd] bg-[#fffefa] p-5 shadow-sm">
@@ -564,7 +560,6 @@ export const Relatorios = () => {
                                             Evolução das vendas no período selecionado
                                         </p>
                                     </div>
-
                                     {totalVendasPorDia.length > 0 ? (
                                         <div className="space-y-4">
                                             {totalVendasPorDia.map((item) => (
@@ -583,7 +578,6 @@ export const Relatorios = () => {
                                         </p>
                                     )}
                                 </div>
-
                                 <div className="rounded-xl border border-[#e6dfcd] bg-[#fffefa] p-5 shadow-sm">
                                     <div className="mb-5">
                                         <h2 className="text-base font-medium text-[#78601e]">
@@ -593,7 +587,6 @@ export const Relatorios = () => {
                                             Distribuição do faturamento por pagamento
                                         </p>
                                     </div>
-
                                     <div className="space-y-5">
                                         {vendasPorPagamento.map((item) => (
                                             <div key={item.nome}>
@@ -611,7 +604,6 @@ export const Relatorios = () => {
                                     </div>
                                 </div>
                             </section>
-
                             {/* Tabela de vendas */}
                             <section className="overflow-hidden rounded-xl border border-[#e6dfcd] bg-[#fffefa] shadow-sm">
                                 <div className="flex flex-col gap-2 border-b border-[#eee7d7] p-5 sm:flex-row sm:items-center sm:justify-between">
@@ -623,12 +615,10 @@ export const Relatorios = () => {
                                             Detalhamento das vendas concluídas
                                         </p>
                                     </div>
-
                                     <span className="text-xs text-[#89867d]">
                                         {vendasFiltradas.length} registro(s)
                                     </span>
                                 </div>
-
                                 <div className="overflow-x-auto">
                                     <table className="w-full min-w-[650px] text-left">
                                         <thead>
@@ -640,7 +630,6 @@ export const Relatorios = () => {
                                                 <th className="px-5 py-3.5 text-right font-medium">Total</th>
                                             </tr>
                                         </thead>
-
                                         <tbody>
                                             {vendasFiltradas.map((venda, indice) => (
                                                 <tr
@@ -668,7 +657,6 @@ export const Relatorios = () => {
                                                     </td>
                                                 </tr>
                                             ))}
-
                                             {vendasFiltradas.length === 0 && (
                                                 <tr>
                                                     <td
@@ -680,7 +668,6 @@ export const Relatorios = () => {
                                                 </tr>
                                             )}
                                         </tbody>
-
                                         {vendasFiltradas.length > 0 && (
                                             <tfoot>
                                                 <tr className="border-t border-[#e6dfcd] bg-[#f8f5ed]">
@@ -701,7 +688,6 @@ export const Relatorios = () => {
                             </section>
                         </>
                     )}
-
                     {/* Relatório de produtos */}
                     {tipoRelatorio === "produtos" && (
                         <>
@@ -712,14 +698,12 @@ export const Relatorios = () => {
                                     descricao="Na categoria selecionada"
                                     icone={Package}
                                 />
-
                                 <CardIndicador
                                     titulo="Unidades vendidas"
                                     valor={produtosVendidos}
                                     descricao="Quantidade de produtos vendidos"
                                     icone={ShoppingCart}
                                 />
-
                                 <CardIndicador
                                     titulo="Receita dos produtos"
                                     valor={moeda(totalReceitaProdutos)}
@@ -727,7 +711,6 @@ export const Relatorios = () => {
                                     icone={TrendingUp}
                                 />
                             </section>
-
                             <section className="grid grid-cols-1 gap-6 xl:grid-cols-2">
                                 <div className="rounded-xl border border-[#e6dfcd] bg-[#fffefa] p-5 shadow-sm">
                                     <h2 className="text-base font-medium text-[#78601e]">
@@ -736,7 +719,6 @@ export const Relatorios = () => {
                                     <p className="mb-5 mt-1 text-xs text-[#89867d]">
                                         Categorias com maior receita estimada
                                     </p>
-
                                     <div className="space-y-5">
                                         {faturamentoPorCategoria.map((item) => (
                                             <BarraHorizontal
@@ -754,7 +736,6 @@ export const Relatorios = () => {
                                         ))}
                                     </div>
                                 </div>
-
                                 <div className="overflow-hidden rounded-xl border border-[#e6dfcd] bg-[#fffefa] shadow-sm">
                                     <div className="border-b border-[#eee7d7] p-5">
                                         <h2 className="text-base font-medium text-[#78601e]">
@@ -764,7 +745,6 @@ export const Relatorios = () => {
                                             Quantidade vendida e receita por produto
                                         </p>
                                     </div>
-
                                     <div className="overflow-x-auto">
                                         <table className="w-full min-w-[450px] text-left">
                                             <thead>
@@ -810,18 +790,16 @@ export const Relatorios = () => {
                             </section>
                         </>
                     )}
-
                     {/* Relatório de estoque */}
                     {tipoRelatorio === "estoque" && (
                         <>
                             <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
                                 <CardIndicador
                                     titulo="Produtos monitorados"
-                                    valor={produtosExemplo.length}
-                                    descricao="Produtos no catálogo de exemplo"
+                                    valor={produtosDados.length}
+                                    descricao="Produtos cadastrados"
                                     icone={Package}
                                 />
-
                                 <CardIndicador
                                     titulo="Estoque baixo"
                                     valor={produtosComEstoqueBaixo.length}
@@ -829,7 +807,6 @@ export const Relatorios = () => {
                                     icone={FileText}
                                     positivo={false}
                                 />
-
                                 <CardIndicador
                                     titulo="Unidades vendidas"
                                     valor={produtosVendidos}
@@ -837,7 +814,6 @@ export const Relatorios = () => {
                                     icone={ShoppingCart}
                                 />
                             </section>
-
                             <section className="overflow-hidden rounded-xl border border-[#e6dfcd] bg-[#fffefa] shadow-sm">
                                 <div className="border-b border-[#eee7d7] p-5">
                                     <h2 className="text-base font-medium text-[#78601e]">
@@ -847,7 +823,6 @@ export const Relatorios = () => {
                                         Produtos que precisam de atenção
                                     </p>
                                 </div>
-
                                 <div className="overflow-x-auto">
                                     <table className="w-full min-w-[600px] text-left">
                                         <thead>
@@ -859,7 +834,7 @@ export const Relatorios = () => {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {produtosExemplo
+                                            {produtosDados
                                                 .slice()
                                                 .sort((a, b) => a.estoque - b.estoque)
                                                 .map((produto, indice) => (
