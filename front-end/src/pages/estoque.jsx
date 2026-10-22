@@ -27,15 +27,6 @@ import {
     ChevronRight
 } from "lucide-react";
 
-const categorias = [
-    "Incensos",
-    "Velas",
-    "Acessórios",
-    "Ervas",
-    "Óleos",
-    "Cristais",
-    "Insumos"
-];
 
 const moeda = (valor) =>
     Number(valor || 0).toLocaleString("pt-BR", {
@@ -80,13 +71,11 @@ export const Estoque = () => {
     const [salvandoMovimentacao, setSalvandoMovimentacao] = useState(false);
     const [erroCarregamento, setErroCarregamento] = useState("");
     const [busca, setBusca] = useState("");
-    const [categoriaSelecionada, setCategoriaSelecionada] = useState("Todas");
     const [statusSelecionado, setStatusSelecionado] = useState("Todos");
     const [pagina, setPagina] = useState(1);
 
     const [movimentacao, setMovimentacao] = useState(null);
     const [buscaCatalogo, setBuscaCatalogo] = useState("");
-    const [categoriaCatalogo, setCategoriaCatalogo] = useState("Todas");
     const [itensMovimentacao, setItensMovimentacao] = useState([]);
     const [mensagem, setMensagem] = useState("");
 
@@ -117,12 +106,7 @@ export const Estoque = () => {
 
         const correspondeBusca =
             produto.nome.toLowerCase().includes(termo) ||
-            produto.categoria.toLowerCase().includes(termo) ||
             String(produto.id).includes(termo);
-
-        const correspondeCategoria =
-            categoriaSelecionada === "Todas" ||
-            produto.categoria === categoriaSelecionada;
 
         const correspondeStatus =
             statusSelecionado === "Todos" ||
@@ -130,7 +114,6 @@ export const Estoque = () => {
 
         return (
             correspondeBusca &&
-            correspondeCategoria &&
             correspondeStatus
         );
     });
@@ -165,13 +148,6 @@ export const Estoque = () => {
         (produto) => produto.quantidade === 0
     ).length;
 
-    const quantidadePorCategoria = (categoria) =>
-        produtos
-            .filter((produto) => produto.categoria === categoria)
-            .reduce(
-                (total, produto) => total + produto.quantidade,
-                0
-            );
 
     const indicadores = [
         {
@@ -204,7 +180,6 @@ export const Estoque = () => {
     const abrirMovimentacao = (tipo, produto = null) => {
         setMensagem("");
         setBuscaCatalogo("");
-        setCategoriaCatalogo("Todas");
 
         setItensMovimentacao(
             produto
@@ -223,7 +198,6 @@ export const Estoque = () => {
         setItensMovimentacao([]);
         setMensagem("");
         setBuscaCatalogo("");
-        setCategoriaCatalogo("Todas");
     };
 
     // Adiciona vários produtos à mesma movimentação.
@@ -315,12 +289,7 @@ export const Estoque = () => {
 
         const correspondeBusca =
             produto.nome.toLowerCase().includes(termo) ||
-            produto.categoria.toLowerCase().includes(termo) ||
             String(produto.id).includes(termo);
-
-        const correspondeCategoria =
-            categoriaCatalogo === "Todas" ||
-            produto.categoria === categoriaCatalogo;
 
         const jaAdicionado = itensMovimentacao.some(
             (item) => item.id === produto.id
@@ -332,7 +301,6 @@ export const Estoque = () => {
 
         return (
             correspondeBusca &&
-            correspondeCategoria &&
             !jaAdicionado &&
             disponivelParaSaida
         );
@@ -578,7 +546,7 @@ export const Estoque = () => {
 
                             {/* Pesquisa e filtros da tabela */}
                             <div className="grid grid-cols-1 gap-3 p-4 md:grid-cols-3">
-                                <div className="flex items-center gap-2 rounded-md border border-[#e3dcc9] bg-[#faf9f5] px-3 py-2">
+                                <div className="flex items-center gap-2 rounded-md border border-[#e3dcc9] bg-[#faf9f5] px-3 py-2 sm:col-span-2">
                                     <Search
                                         size={17}
                                         className="shrink-0 text-[#918d83]"
@@ -594,28 +562,6 @@ export const Estoque = () => {
                                     />
                                 </div>
 
-                                <select
-                                    value={categoriaSelecionada}
-                                    onChange={(e) => {
-                                        setCategoriaSelecionada(
-                                            e.target.value
-                                        );
-                                        setPagina(1);
-                                    }}
-                                    className="rounded-md border border-[#e3dcc9] bg-[#faf9f5] px-3 py-2 text-sm text-[#68645b] outline-none focus:border-[#b18a20]"
-                                >
-                                    <option value="Todas">
-                                        Todas as categorias
-                                    </option>
-                                    {categorias.map((categoria) => (
-                                        <option
-                                            key={categoria}
-                                            value={categoria}
-                                        >
-                                            {categoria}
-                                        </option>
-                                    ))}
-                                </select>
 
                                 <select
                                     value={statusSelecionado}
@@ -648,9 +594,6 @@ export const Estoque = () => {
                                         <tr className="bg-[#f5f1e7] text-xs text-[#89670d]">
                                             <th className="px-3 py-4 font-medium">
                                                 Produto
-                                            </th>
-                                            <th className="px-3 py-4 font-medium">
-                                                Categoria
                                             </th>
                                             <th className="px-3 py-4 font-medium">
                                                 Estoque Atual
@@ -688,10 +631,6 @@ export const Estoque = () => {
                                                                 {produto.nome}
                                                             </span>
                                                         </div>
-                                                    </td>
-
-                                                    <td className="px-3 py-4">
-                                                        {produto.categoria}
                                                     </td>
 
                                                     <td
@@ -957,7 +896,7 @@ export const Estoque = () => {
                                         onChange={(e) =>
                                             setBuscaCatalogo(e.target.value)
                                         }
-                                        placeholder="Buscar por nome, categoria ou código..."
+                                        placeholder="Buscar por nome ou código..."
                                         className="w-full bg-transparent text-sm text-[#45433d] outline-none placeholder:text-[#aaa496]"
                                     />
 
@@ -1006,13 +945,13 @@ export const Estoque = () => {
                                                     </span>
                                                 </div>
 
-                                                <p className="text-[11px] text-[#98700a]">
-                                                    {produto.categoria}
-                                                </p>
-
-                                                <h4 className="mt-1 min-h-10 text-sm font-semibold text-[#45433d]">
+                                                <h4 className="mt-1 min-h-5 text-s font-semibold text-[#45433d]">
                                                     {produto.nome}
                                                 </h4>
+
+                                                <p className="text-[13px] text-[#918d83]">
+                                                    {produto.codigo}
+                                                </p>
 
                                                 <p className="mt-2 text-lg font-semibold text-[#89670d]">
                                                     {moeda(produto.preco)}
@@ -1063,12 +1002,11 @@ export const Estoque = () => {
                                             Nenhum produto encontrado
                                         </p>
                                         <p className="mt-1 text-xs text-[#918d83]">
-                                            Tente outra pesquisa ou selecione outra categoria.
+                                            Tente outra pesquisa.
                                         </p>
                                         <button
                                             onClick={() => {
                                                 setBuscaCatalogo("");
-                                                setCategoriaCatalogo("Todas");
                                             }}
                                             className="mt-4 text-xs font-semibold text-[#89670d] hover:underline"
                                         >
@@ -1302,9 +1240,6 @@ export const Estoque = () => {
                             <div>
                                 <p className="font-semibold text-[#45433d]">
                                     {produtoDetalhes.nome}
-                                </p>
-                                <p className="mt-1 text-sm text-[#918d83]">
-                                    {produtoDetalhes.categoria}
                                 </p>
                                 <span
                                     className={`mt-2 inline-block rounded-full border px-2.5 py-1 text-xs ${classeStatus(obterStatus(produtoDetalhes))}`}

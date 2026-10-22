@@ -25,16 +25,6 @@ import {
     gerarCodigoBarras
 } from "../services/products";
 
-const categorias = [
-    "Incensos",
-    "Velas",
-    "Acessórios",
-    "Ervas",
-    "Óleos",
-    "Cristais",
-    "Insumos",
-    "Outros"
-];
 
 const moeda = (valor) =>
     Number(valor || 0).toLocaleString("pt-BR", {
@@ -47,7 +37,6 @@ const novoCodigoBarras = () => gerarCodigoBarras(Date.now());
 const produtoVazio = {
     nome: "",
     codigoBarras: "",
-    categoria: "Incensos",
     preco: "",
     custo: "",
     estoque: "",
@@ -64,7 +53,6 @@ export const ProdutosPage = () => {
 
     const [produtos, setProdutos] = useState([]);
     const [busca, setBusca] = useState("");
-    const [categoriaFiltro, setCategoriaFiltro] = useState("Todas");
     const [statusFiltro, setStatusFiltro] = useState("Todos");
     const [modalAberto, setModalAberto] = useState(false);
     const [produtoEditando, setProdutoEditando] = useState(null);
@@ -172,7 +160,7 @@ export const ProdutosPage = () => {
         (total, produto) =>
             total +
             Number(produto.estoque || 0) *
-                Number(produto.custo || 0),
+            Number(produto.custo || 0),
         0
     );
 
@@ -182,14 +170,7 @@ export const ProdutosPage = () => {
         const correspondeBusca =
             String(produto.nome || "").toLowerCase().includes(termoBusca) ||
             String(produto.codigo || "").toLowerCase().includes(termoBusca) ||
-            String(produto.codigoBarras || "")
-                .toLowerCase()
-                .includes(termoBusca) ||
-            String(produto.categoria || "").toLowerCase().includes(termoBusca);
-
-        const correspondeCategoria =
-            categoriaFiltro === "Todas" ||
-            produto.categoria === categoriaFiltro;
+            String(produto.codigoBarras || "").toLowerCase().includes(termoBusca);
 
         const correspondeStatus =
             statusFiltro === "Todos" ||
@@ -197,7 +178,6 @@ export const ProdutosPage = () => {
 
         return (
             correspondeBusca &&
-            correspondeCategoria &&
             correspondeStatus
         );
     });
@@ -218,7 +198,6 @@ export const ProdutosPage = () => {
         setFormulario({
             nome: produto.nome || "",
             codigoBarras: produto.codigoBarras || novoCodigoBarras(),
-            categoria: produto.categoria || "Outros",
             preco: String(produto.preco ?? ""),
             custo: String(produto.custo ?? ""),
             estoque: String(produto.estoque ?? ""),
@@ -298,7 +277,6 @@ export const ProdutosPage = () => {
         const dadosProduto = {
             nome,
             codigoBarras,
-            categoria: formulario.categoria,
             preco,
             custo,
             estoque,
@@ -627,14 +605,14 @@ export const ProdutosPage = () => {
 
                         <div className="overflow-x-auto">
                             <table className="w-full min-w-[1000px] table-fixed border-collapse text-left text-sm">
-                            <colgroup>
-                                <col style={{ width: "34%" }} />
-                                <col style={{ width: "15%" }} />
-                                <col style={{ width: "15%" }} />
-                                <col style={{ width: "13%" }} />
-                                <col style={{ width: "10%" }} />
-                                <col style={{ width: "13%" }} />
-                            </colgroup>
+                                <colgroup>
+                                    <col style={{ width: "34%" }} />
+                                    <col style={{ width: "15%" }} />
+                                    <col style={{ width: "15%" }} />
+                                    <col style={{ width: "13%" }} />
+                                    <col style={{ width: "10%" }} />
+                                    <col style={{ width: "13%" }} />
+                                </colgroup>
                                 <thead>
                                     <tr className="bg-[#f5f1e7] text-xs text-[#81734e]">
                                         <th className="px-5 py-4 font-medium">
@@ -677,11 +655,10 @@ export const ProdutosPage = () => {
                                             return (
                                                 <tr
                                                     key={produto.id}
-                                                    className={`border-t border-[#eeeae0] text-[#5f5c54] transition-colors hover:bg-[#f8f5ed] ${
-                                                        index % 2 === 1
+                                                    className={`border-t border-[#eeeae0] text-[#5f5c54] transition-colors hover:bg-[#f8f5ed] ${index % 2 === 1
                                                             ? "bg-[#fcfbf7]"
                                                             : ""
-                                                    }`}
+                                                        }`}
                                                 >
                                                     <td className="px-5 py-4">
                                                         <div className="flex items-center gap-3">
@@ -747,11 +724,10 @@ export const ProdutosPage = () => {
 
                                                     <td className="px-4 py-4">
                                                         <span
-                                                            className={`rounded-full px-2.5 py-1 text-xs font-medium ${
-                                                                produto.status === "Ativo"
+                                                            className={`rounded-full px-2.5 py-1 text-xs font-medium ${produto.status === "Ativo"
                                                                     ? "bg-emerald-100 text-emerald-700"
                                                                     : "bg-[#eeece6] text-[#77746b]"
-                                                            }`}
+                                                                }`}
                                                         >
                                                             {produto.status}
                                                         </span>
@@ -866,57 +842,40 @@ export const ProdutosPage = () => {
 
                         <form onSubmit={salvarProduto}>
                             <div className="grid grid-cols-1 gap-5 p-5 sm:grid-cols-2">
-                                <label className="text-sm font-medium text-[#5f5c54] sm:col-span-2">
-                                    Nome do produto *
-                                    <input
-                                        required
-                                        autoFocus
-                                        type="text"
-                                        maxLength={100}
-                                        value={formulario.nome}
-                                        onChange={(evento) =>
-                                            atualizarCampo("nome", evento.target.value)
-                                        }
-                                        placeholder="Ex.: Incenso Natural"
-                                        className={campoClasse}
-                                    />
-                                </label>
+                                <div className="sm:col-span-2 grid grid-cols-1 gap-5 sm:grid-cols-4">
+                                    <label className="text-sm font-medium text-[#5f5c54] sm:col-span-2">
+                                        Nome do produto *
+                                        <input
+                                            required
+                                            autoFocus
+                                            type="text"
+                                            maxLength={100}
+                                            value={formulario.nome}
+                                            onChange={(evento) =>
+                                                atualizarCampo("nome", evento.target.value)
+                                            }
+                                            placeholder="Ex.: Incenso Natural"
+                                            className={campoClasse}
+                                        />
+                                    </label>
 
-                                <label className="text-sm font-medium text-[#5f5c54]">
-                                    Categoria *
-                                    <select
-                                        required
-                                        value={formulario.categoria}
-                                        onChange={(evento) =>
-                                            atualizarCampo(
-                                                "categoria",
-                                                evento.target.value
-                                            )
-                                        }
-                                        className={campoClasse}
-                                    >
-                                        {categorias.map((categoria) => (
-                                            <option key={categoria} value={categoria}>
-                                                {categoria}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </label>
 
-                                <label className="text-sm font-medium text-[#5f5c54]">
-                                    Status *
-                                    <select
-                                        required
-                                        value={formulario.status}
-                                        onChange={(evento) =>
-                                            atualizarCampo("status", evento.target.value)
-                                        }
-                                        className={campoClasse}
-                                    >
-                                        <option value="Ativo">Ativo</option>
-                                        <option value="Inativo">Inativo</option>
-                                    </select>
-                                </label>
+
+                                    <label className="text-sm font-medium text-[#5f5c54] sm:col-span-2">
+                                        Status *
+                                        <select
+                                            required
+                                            value={formulario.status}
+                                            onChange={(evento) =>
+                                                atualizarCampo("status", evento.target.value)
+                                            }
+                                            className={campoClasse}
+                                        >
+                                            <option value="Ativo">Ativo</option>
+                                            <option value="Inativo">Inativo</option>
+                                        </select>
+                                    </label>
+                                </div>
 
                                 <div className="sm:col-span-2">
                                     <label
@@ -1094,8 +1053,8 @@ export const ProdutosPage = () => {
                                     {salvando
                                         ? "Salvando..."
                                         : produtoEditando
-                                          ? "Salvar alterações"
-                                          : "Cadastrar produto"}
+                                            ? "Salvar alterações"
+                                            : "Cadastrar produto"}
                                 </button>
                             </div>
                         </form>

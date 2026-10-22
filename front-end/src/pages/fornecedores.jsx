@@ -1,10 +1,10 @@
+
 import { useMemo, useState, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import {
     Menu,
     Search,
-    Bell,
     Plus,
     X,
     Eye,
@@ -12,7 +12,6 @@ import {
     Trash2,
     Truck,
     Users,
-    Package,
     CircleCheck,
     CircleAlert,
     Mail,
@@ -22,104 +21,17 @@ import {
     CalendarDays,
     ChevronLeft,
     ChevronRight,
-    Filter,
     Save,
     RotateCcw,
 } from "lucide-react";
 
-const fornecedoresIniciais = [
-    {
-        id: 1,
-        nome: "Distribuidora Luz do Oriente",
-        documento: "12.345.678/0001-90",
-        contato: "Mariana Oliveira",
-        email: "contato@luzdooriente.com.br",
-        telefone: "(11) 98765-4321",
-        cidade: "São Paulo",
-        estado: "SP",
-        status: "Ativo",
-        dataCadastro: "2026-02-10",
-        observacoes: "Fornecedor principal de incensos naturais.",
-    },
-    {
-        id: 2,
-        nome: "Velas Estrela Dourada",
-        documento: "23.456.789/0001-01",
-        contato: "Roberto Santos",
-        email: "vendas@estreladourada.com.br",
-        telefone: "(11) 97654-3210",
-        cidade: "Guarulhos",
-        estado: "SP",
-        status: "Ativo",
-        dataCadastro: "2026-03-15",
-        observacoes: "Fornece velas tradicionais e aromáticas.",
-    },
-    {
-        id: 3,
-        nome: "Ervas e Raízes Naturais",
-        documento: "34.567.890/0001-12",
-        contato: "Camila Ferreira",
-        email: "comercial@ervaserraizes.com.br",
-        telefone: "(19) 96543-2109",
-        cidade: "Campinas",
-        estado: "SP",
-        status: "Ativo",
-        dataCadastro: "2026-04-02",
-        observacoes: "Especializada em ervas e produtos naturais.",
-    },
-    {
-        id: 4,
-        nome: "Cristais da Terra",
-        documento: "45.678.901/0001-23",
-        contato: "Felipe Almeida",
-        email: "contato@cristaisdaterra.com.br",
-        telefone: "(21) 95432-1098",
-        cidade: "Rio de Janeiro",
-        estado: "RJ",
-        status: "Inativo",
-        dataCadastro: "2026-01-20",
-        observacoes: "Fornecedor de cristais e pedras naturais.",
-    },
-    {
-        id: 5,
-        nome: "Essência Sagrada",
-        documento: "56.789.012/0001-34",
-        contato: "Juliana Costa",
-        email: "pedidos@essenciasagrada.com.br",
-        telefone: "(31) 94321-0987",
-        cidade: "Belo Horizonte",
-        estado: "MG",
-        status: "Ativo",
-        dataCadastro: "2026-05-11",
-        observacoes: "Fornece óleos, essências e produtos aromáticos.",
-    },
-    {
-        id: 6,
-        nome: "Artigos Místicos Brasil",
-        documento: "67.890.123/0001-45",
-        contato: "André Martins",
-        email: "vendas@artigosmisticos.com.br",
-        telefone: "(41) 93210-9876",
-        cidade: "Curitiba",
-        estado: "PR",
-        status: "Ativo",
-        dataCadastro: "2026-06-08",
-        observacoes: "Distribuição de patuás e acessórios.",
-    },
-    {
-        id: 7,
-        nome: "Mundo dos Incensos",
-        documento: "78.901.234/0001-56",
-        contato: "Patrícia Lima",
-        email: "contato@mundodosincensos.com.br",
-        telefone: "(11) 92109-8765",
-        cidade: "Osasco",
-        estado: "SP",
-        status: "Inativo",
-        dataCadastro: "2026-07-01",
-        observacoes: "",
-    },
-];
+import {
+    listarFornecedores,
+    cadastrarFornecedor as cadastrarFornecedorFirebase,
+    atualizarFornecedor as atualizarFornecedorFirebase,
+    alterarStatusFornecedor,
+    excluirFornecedor as excluirFornecedorFirebase,
+} from "../services/fornecedores";
 
 const fornecedorVazio = {
     nome: "",
@@ -148,17 +60,14 @@ const categorias = [
 const formatarData = (data) => {
     if (!data) return "—";
 
-    const [ano, mes, dia] = data.split("-");
+    if (typeof data !== "string") return "—";
+
+    const partes = data.split("-");
+
+    if (partes.length !== 3) return data;
+
+    const [ano, mes, dia] = partes;
     return `${dia}/${mes}/${ano}`;
-};
-
-const dataAtual = () => {
-    const data = new Date();
-
-    return `${data.getFullYear()}-${String(data.getMonth() + 1).padStart(
-        2,
-        "0"
-    )}-${String(data.getDate()).padStart(2, "0")}`;
 };
 
 const BadgeStatus = ({ status }) => (
@@ -194,7 +103,7 @@ const Campo = ({
 
         <input
             type={type}
-            value={value}
+            value={value ?? ""}
             onChange={onChange}
             placeholder={placeholder}
             required={required}
@@ -206,11 +115,9 @@ const Campo = ({
 export const Fornecedores = () => {
     const { pathname } = useLocation();
 
-    useEffect(() => {
-        window.scrollTo(0, 0);
-    }, [pathname]);
-
-    const [fornecedores, setFornecedores] = useState(fornecedoresIniciais);
+    const [fornecedores, setFornecedores] = useState([]);
+    const [carregando, setCarregando] = useState(true);
+    const [erroCarregamento, setErroCarregamento] = useState("");
 
     const [busca, setBusca] = useState("");
     const [filtroStatus, setFiltroStatus] = useState("Todos");
@@ -220,23 +127,84 @@ export const Fornecedores = () => {
     const [modalAberto, setModalAberto] = useState(false);
     const [fornecedorSelecionado, setFornecedorSelecionado] = useState(null);
     const [modoModal, setModoModal] = useState("cadastro");
-    const [formulario, setFormulario] = useState(fornecedorVazio);
+    const [formulario, setFormulario] = useState({ ...fornecedorVazio });
+
     const [mensagem, setMensagem] = useState("");
     const [tipoMensagem, setTipoMensagem] = useState("sucesso");
+    const [salvando, setSalvando] = useState(false);
 
     const itensPorPagina = 6;
+
+    useEffect(() => {
+        window.scrollTo(0, 0);
+    }, [pathname]);
+
+    useEffect(() => {
+        let ativo = true;
+
+        const carregarFornecedores = async () => {
+            try {
+                setCarregando(true);
+                setErroCarregamento("");
+
+                const dados = await listarFornecedores();
+
+                if (ativo) {
+                    setFornecedores(dados);
+                }
+            } catch (erro) {
+                console.error("Erro ao carregar fornecedores:", erro);
+
+                if (ativo) {
+                    setErroCarregamento(
+                        "Não foi possível carregar os fornecedores. Verifique sua conexão e tente novamente."
+                    );
+                }
+            } finally {
+                if (ativo) setCarregando(false);
+            }
+        };
+
+        carregarFornecedores();
+
+        return () => {
+            ativo = false;
+        };
+    }, []);
+
+    const exibirMensagem = (texto, tipo = "sucesso") => {
+        setMensagem(texto);
+        setTipoMensagem(tipo);
+
+        window.setTimeout(() => {
+            setMensagem("");
+        }, 3500);
+    };
+
+    const atualizarCampo = (campo, valor) => {
+        setFormulario((anterior) => ({
+            ...anterior,
+            [campo]: valor,
+        }));
+    };
 
     const fornecedoresFiltrados = useMemo(() => {
         const termo = busca.toLowerCase().trim();
 
         return fornecedores.filter((fornecedor) => {
+            const nome = (fornecedor.nome || "").toLowerCase();
+            const documento = (fornecedor.documento || "").toLowerCase();
+            const contato = (fornecedor.contato || "").toLowerCase();
+            const email = (fornecedor.email || "").toLowerCase();
+            const cidade = (fornecedor.cidade || "").toLowerCase();
+
             const correspondeBusca =
                 !termo ||
-                fornecedor.nome.toLowerCase().includes(termo) ||
-                fornecedor.documento.toLowerCase().includes(termo) ||
-                fornecedor.contato.toLowerCase().includes(termo) ||
-                fornecedor.email.toLowerCase().includes(termo) ||
-                fornecedor.cidade.toLowerCase().includes(termo);
+                nome.includes(termo) ||
+                documento.includes(termo) ||
+                contato.includes(termo) ||
+                email.includes(termo) ||
+                cidade.includes(termo);
 
             const correspondeStatus =
                 filtroStatus === "Todos" ||
@@ -259,6 +227,12 @@ export const Fornecedores = () => {
         Math.ceil(fornecedoresFiltrados.length / itensPorPagina)
     );
 
+    useEffect(() => {
+        if (pagina > totalPaginas) {
+            setPagina(totalPaginas);
+        }
+    }, [pagina, totalPaginas]);
+
     const fornecedoresPaginados = fornecedoresFiltrados.slice(
         (pagina - 1) * itensPorPagina,
         pagina * itensPorPagina
@@ -272,29 +246,6 @@ export const Fornecedores = () => {
         (fornecedor) => fornecedor.status === "Inativo"
     ).length;
 
-    const totalCategorias = new Set(
-        fornecedores
-            .filter((fornecedor) => fornecedor.status === "Ativo")
-            .map((fornecedor) => fornecedor.categoria)
-            .filter(Boolean)
-    ).size;
-
-    const exibirMensagem = (texto, tipo = "sucesso") => {
-        setMensagem(texto);
-        setTipoMensagem(tipo);
-
-        setTimeout(() => {
-            setMensagem("");
-        }, 3500);
-    };
-
-    const atualizarCampo = (campo, valor) => {
-        setFormulario((anterior) => ({
-            ...anterior,
-            [campo]: valor,
-        }));
-    };
-
     const abrirCadastro = () => {
         setFornecedorSelecionado(null);
         setFormulario({ ...fornecedorVazio });
@@ -305,6 +256,7 @@ export const Fornecedores = () => {
     const abrirEdicao = (fornecedor) => {
         setFornecedorSelecionado(fornecedor);
         setFormulario({
+            ...fornecedorVazio,
             ...fornecedor,
         });
         setModoModal("edicao");
@@ -318,18 +270,29 @@ export const Fornecedores = () => {
     };
 
     const fecharModal = () => {
+        if (salvando) return;
+
         setModalAberto(false);
         setFornecedorSelecionado(null);
         setFormulario({ ...fornecedorVazio });
     };
 
-    const salvarFornecedor = (evento) => {
+    const salvarFornecedor = async (evento) => {
         evento.preventDefault();
+
+        if (salvando) return;
+
+        const nome = formulario.nome.trim();
+
+        if (!nome) {
+            exibirMensagem("Informe o nome do fornecedor.", "erro");
+            return;
+        }
 
         const nomeDuplicado = fornecedores.some(
             (fornecedor) =>
-                fornecedor.nome.trim().toLowerCase() ===
-                    formulario.nome.trim().toLowerCase() &&
+                (fornecedor.nome || "").trim().toLowerCase() ===
+                    nome.toLowerCase() &&
                 fornecedor.id !== fornecedorSelecionado?.id
         );
 
@@ -341,83 +304,123 @@ export const Fornecedores = () => {
             return;
         }
 
-        if (modoModal === "edicao" && fornecedorSelecionado) {
-            setFornecedores((anteriores) =>
-                anteriores.map((fornecedor) =>
-                    fornecedor.id === fornecedorSelecionado.id
-                        ? {
-                              ...fornecedor,
-                              ...formulario,
-                              nome: formulario.nome.trim(),
-                          }
-                        : fornecedor
-                )
-            );
+        try {
+            setSalvando(true);
 
-            exibirMensagem("Fornecedor atualizado com sucesso.");
-        } else {
-            const novoFornecedor = {
+            const dados = {
                 ...formulario,
-                id:
-                    fornecedores.length > 0
-                        ? Math.max(
-                              ...fornecedores.map((fornecedor) => fornecedor.id)
-                          ) + 1
-                        : 1,
-                nome: formulario.nome.trim(),
-                dataCadastro: dataAtual(),
+                nome,
+                estado: (formulario.estado || "").trim().toUpperCase(),
             };
 
-            setFornecedores((anteriores) => [
-                novoFornecedor,
-                ...anteriores,
-            ]);
+            if (modoModal === "edicao" && fornecedorSelecionado) {
+                const atualizado = await atualizarFornecedorFirebase(
+                    fornecedorSelecionado.id,
+                    dados
+                );
 
-            setPagina(1);
-            exibirMensagem("Fornecedor cadastrado com sucesso.");
+                setFornecedores((anteriores) =>
+                    anteriores.map((fornecedor) =>
+                        fornecedor.id === fornecedorSelecionado.id
+                            ? {
+                                  ...fornecedor,
+                                  ...atualizado,
+                                  ...dados,
+                              }
+                            : fornecedor
+                    )
+                );
+
+                exibirMensagem("Fornecedor atualizado com sucesso.");
+            } else {
+                const novoFornecedor =
+                    await cadastrarFornecedorFirebase(dados);
+
+                setFornecedores((anteriores) => [
+                    novoFornecedor,
+                    ...anteriores,
+                ]);
+
+                setPagina(1);
+                exibirMensagem("Fornecedor cadastrado com sucesso.");
+            }
+
+            setModalAberto(false);
+            setFornecedorSelecionado(null);
+            setFormulario({ ...fornecedorVazio });
+        } catch (erro) {
+            console.error("Erro ao salvar fornecedor:", erro);
+            exibirMensagem(
+                "Não foi possível salvar o fornecedor. Tente novamente.",
+                "erro"
+            );
+        } finally {
+            setSalvando(false);
         }
-
-        fecharModal();
     };
 
-    const alterarStatus = (fornecedor) => {
+    const alterarStatus = async (fornecedor) => {
         const novoStatus =
             fornecedor.status === "Ativo" ? "Inativo" : "Ativo";
 
-        setFornecedores((anteriores) =>
-            anteriores.map((item) =>
-                item.id === fornecedor.id
-                    ? { ...item, status: novoStatus }
-                    : item
-            )
-        );
+        try {
+            await alterarStatusFornecedor(fornecedor.id, novoStatus);
 
-        if (fornecedorSelecionado?.id === fornecedor.id) {
-            setFornecedorSelecionado({
+            const atualizado = {
                 ...fornecedor,
                 status: novoStatus,
-            });
-        }
+            };
 
-        exibirMensagem(
-            `Fornecedor ${novoStatus === "Ativo" ? "ativado" : "inativado"} com sucesso.`
-        );
+            setFornecedores((anteriores) =>
+                anteriores.map((item) =>
+                    item.id === fornecedor.id ? atualizado : item
+                )
+            );
+
+            if (fornecedorSelecionado?.id === fornecedor.id) {
+                setFornecedorSelecionado(atualizado);
+            }
+
+            exibirMensagem(
+                `Fornecedor ${novoStatus === "Ativo" ? "ativado" : "inativado"} com sucesso.`
+            );
+
+            fecharModal();
+        } catch (erro) {
+            console.error("Erro ao alterar status:", erro);
+            exibirMensagem(
+                "Não foi possível alterar o status do fornecedor.",
+                "erro"
+            );
+        }
     };
 
-    const excluirFornecedor = (fornecedor) => {
+    const excluirFornecedor = async (fornecedor) => {
         const confirmar = window.confirm(
             `Deseja realmente excluir o fornecedor "${fornecedor.nome}"?`
         );
 
         if (!confirmar) return;
 
-        setFornecedores((anteriores) =>
-            anteriores.filter((item) => item.id !== fornecedor.id)
-        );
+        try {
+            await excluirFornecedorFirebase(fornecedor.id);
 
-        fecharModal();
-        setPagina(1);
-        exibirMensagem("Fornecedor excluído com sucesso.");
+            setFornecedores((anteriores) =>
+                anteriores.filter((item) => item.id !== fornecedor.id)
+            );
+
+            setModalAberto(false);
+            setFornecedorSelecionado(null);
+            setPagina(1);
+
+            exibirMensagem("Fornecedor excluído com sucesso.");
+        } catch (erro) {
+            console.error("Erro ao excluir fornecedor:", erro);
+            exibirMensagem(
+                "Não foi possível excluir o fornecedor. Tente novamente.",
+                "erro"
+            );
+        }
     };
 
     const limparFiltros = () => {
@@ -447,7 +450,6 @@ export const Fornecedores = () => {
             <Sidebar />
 
             <div className="min-h-screen lg:ml-60">
-                {/* Cabeçalho */}
                 <header className="sticky top-0 z-30 flex h-24 items-center justify-between border-b border-[#e3dcc9] bg-[#faf9f5]/95 px-4 backdrop-blur-sm sm:px-6 lg:px-8">
                     <div className="flex items-center gap-3">
                         <button
@@ -471,7 +473,7 @@ export const Fornecedores = () => {
                             </p>
                         </div>
                     </div>
-                    
+
                     <div className="hidden border-l border-[#e3dcc9] pl-4 sm:block">
                         <p className="text-sm text-[#89670d]">
                             Estrela do Oriente
@@ -480,11 +482,9 @@ export const Fornecedores = () => {
                             {new Date().toLocaleDateString("pt-BR")}
                         </p>
                     </div>
-
                 </header>
 
                 <main className="space-y-6 p-4 sm:p-6 lg:p-8">
-                    {/* Mensagem */}
                     {mensagem && (
                         <div
                             className={`flex items-center gap-2 rounded-xl border px-4 py-3 text-sm ${
@@ -502,7 +502,34 @@ export const Fornecedores = () => {
                         </div>
                     )}
 
-                    {/* Título da página */}
+                    {erroCarregamento && (
+                        <div className="flex flex-col gap-3 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 sm:flex-row sm:items-center sm:justify-between">
+                            <span>{erroCarregamento}</span>
+                            <button
+                                type="button"
+                                onClick={async () => {
+                                    try {
+                                        setCarregando(true);
+                                        setErroCarregamento("");
+                                        setFornecedores(
+                                            await listarFornecedores()
+                                        );
+                                    } catch (erro) {
+                                        console.error(erro);
+                                        setErroCarregamento(
+                                            "Não foi possível carregar os fornecedores. Verifique sua conexão e tente novamente."
+                                        );
+                                    } finally {
+                                        setCarregando(false);
+                                    }
+                                }}
+                                className="shrink-0 font-medium underline"
+                            >
+                                Tentar novamente
+                            </button>
+                        </div>
+                    )}
+
                     <section className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
                         <div>
                             <h2 className="text-lg font-medium text-[#78601e]">
@@ -523,8 +550,7 @@ export const Fornecedores = () => {
                         </button>
                     </section>
 
-                    {/* Indicadores */}
-                    <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                    <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
                         <div className="rounded-xl border border-[#e6dfcd] bg-[#fffefa] p-5 shadow-sm transition-all hover:border-[#d4b65e] hover:shadow-md">
                             <div className="flex items-start justify-between">
                                 <div>
@@ -532,7 +558,7 @@ export const Fornecedores = () => {
                                         Total de fornecedores
                                     </p>
                                     <h3 className="mt-3 text-2xl font-semibold text-[#8b690e]">
-                                        {fornecedores.length}
+                                        {carregando ? "—" : fornecedores.length}
                                     </h3>
                                 </div>
 
@@ -555,7 +581,7 @@ export const Fornecedores = () => {
                                         Fornecedores ativos
                                     </p>
                                     <h3 className="mt-3 text-2xl font-semibold text-[#8b690e]">
-                                        {totalAtivos}
+                                        {carregando ? "—" : totalAtivos}
                                     </h3>
                                 </div>
 
@@ -578,7 +604,7 @@ export const Fornecedores = () => {
                                         Fornecedores inativos
                                     </p>
                                     <h3 className="mt-3 text-2xl font-semibold text-[#8b690e]">
-                                        {totalInativos}
+                                        {carregando ? "—" : totalInativos}
                                     </h3>
                                 </div>
 
@@ -595,7 +621,6 @@ export const Fornecedores = () => {
                         </div>
                     </section>
 
-                    {/* Lista de fornecedores */}
                     <section className="overflow-hidden rounded-xl border border-[#e6dfcd] bg-[#fffefa] shadow-sm">
                         <div className="flex flex-col gap-4 border-b border-[#eee7d7] p-5 lg:flex-row lg:items-center lg:justify-between">
                             <div>
@@ -603,7 +628,9 @@ export const Fornecedores = () => {
                                     Lista de fornecedores
                                 </h2>
                                 <p className="mt-1 text-xs text-[#89867d]">
-                                    {fornecedoresFiltrados.length} fornecedor(es) encontrado(s)
+                                    {carregando
+                                        ? "Carregando fornecedores..."
+                                        : `${fornecedoresFiltrados.length} fornecedor(es) encontrado(s)`}
                                 </p>
                             </div>
 
@@ -626,11 +653,6 @@ export const Fornecedores = () => {
                                 </div>
 
                                 <div className="flex items-center gap-2">
-                                    <Filter
-                                        size={17}
-                                        className="shrink-0 text-[#a29b8b]"
-                                    />
-
                                     <select
                                         value={filtroStatus}
                                         onChange={(evento) =>
@@ -650,7 +672,9 @@ export const Fornecedores = () => {
                                         }
                                         className="min-w-0 rounded-lg border border-[#e6dfcd] bg-[#fcfbf7] px-3 py-2.5 text-sm text-[#555248] outline-none focus:border-[#c6a64b]"
                                     >
-                                        <option value="Todas">Todas as categorias</option>
+                                        <option value="Todas">
+                                            Todas as categorias
+                                        </option>
                                         {categorias.map((categoria) => (
                                             <option
                                                 key={categoria}
@@ -709,116 +733,125 @@ export const Fornecedores = () => {
                                 </thead>
 
                                 <tbody>
-                                    {fornecedoresPaginados.map(
-                                        (fornecedor, indice) => (
-                                            <tr
-                                                key={fornecedor.id}
-                                                className={`border-t border-[#eeeae0] transition hover:bg-[#f8f5ed] ${
-                                                    indice % 2 === 0
-                                                        ? "bg-[#fffefa]"
-                                                        : "bg-[#fcfbf7]"
-                                                }`}
-                                            >
-                                                <td className="px-5 py-4">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#f5edda] text-[#98700a]">
-                                                            <Building2 size={19} />
-                                                        </div>
-
-                                                        <div className="min-w-0">
-                                                            <p className="max-w-[230px] truncate text-sm font-medium text-[#35342f]">
-                                                                {fornecedor.nome}
-                                                            </p>
-                                                            <p className="mt-1 text-xs text-[#969187]">
-                                                                {fornecedor.documento ||
-                                                                    "Documento não informado"}
-                                                            </p>
-                                                        </div>
-                                                    </div>
-                                                </td>
-
-                                                <td className="px-5 py-4">
-                                                    <p className="text-sm text-[#555248]">
-                                                        {fornecedor.contato ||
-                                                            "Não informado"}
-                                                    </p>
-                                                    <p className="mt-1 text-xs text-[#969187]">
-                                                        {fornecedor.telefone ||
-                                                            "Sem telefone"}
-                                                    </p>
-                                                </td>
-
-                                                <td className="px-5 py-4">
-                                                    <p className="text-sm text-[#555248]">
-                                                        {fornecedor.cidade || "—"}
-                                                    </p>
-                                                    <p className="mt-1 text-xs text-[#969187]">
-                                                        {fornecedor.estado || ""}
-                                                    </p>
-                                                </td>
-
-                                                <td className="px-5 py-4 text-sm text-[#77746b]">
-                                                    {formatarData(
-                                                        fornecedor.dataCadastro
-                                                    )}
-                                                </td>
-
-                                                <td className="px-5 py-4">
-                                                    <BadgeStatus
-                                                        status={fornecedor.status}
-                                                    />
-                                                </td>
-
-                                                <td className="px-5 py-4">
-                                                    <div className="flex items-center justify-center gap-1">
-                                                        <button
-                                                            type="button"
-                                                            onClick={() =>
-                                                                abrirDetalhes(
-                                                                    fornecedor
-                                                                )
-                                                            }
-                                                            title="Ver detalhes"
-                                                            className="rounded-lg p-2 text-[#89867d] transition hover:bg-[#f1e8d1] hover:text-[#98700a]"
-                                                        >
-                                                            <Eye size={17} />
-                                                        </button>
-
-                                                        <button
-                                                            type="button"
-                                                            onClick={() =>
-                                                                abrirEdicao(
-                                                                    fornecedor
-                                                                )
-                                                            }
-                                                            title="Editar fornecedor"
-                                                            className="rounded-lg p-2 text-[#89867d] transition hover:bg-[#f1e8d1] hover:text-[#98700a]"
-                                                        >
-                                                            <Pencil size={16} />
-                                                        </button>
-
-                                                        <button
-                                                            type="button"
-                                                            onClick={() =>
-                                                                excluirFornecedor(
-                                                                    fornecedor
-                                                                )
-                                                            }
-                                                            title="Excluir fornecedor"
-                                                            className="rounded-lg p-2 text-[#aaa69b] transition hover:bg-rose-50 hover:text-rose-600"
-                                                        >
-                                                            <Trash2 size={16} />
-                                                        </button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        )
-                                    )}
-
-                                    {fornecedoresPaginados.length === 0 && (
+                                    {carregando ? (
                                         <tr>
                                             <td
-                                                colSpan={7}
+                                                colSpan={6}
+                                                className="px-5 py-14 text-center text-sm text-[#89867d]"
+                                            >
+                                                Carregando fornecedores...
+                                            </td>
+                                        </tr>
+                                    ) : fornecedoresPaginados.length > 0 ? (
+                                        fornecedoresPaginados.map(
+                                            (fornecedor, indice) => (
+                                                <tr
+                                                    key={fornecedor.id}
+                                                    className={`border-t border-[#eeeae0] transition hover:bg-[#f8f5ed] ${
+                                                        indice % 2 === 0
+                                                            ? "bg-[#fffefa]"
+                                                            : "bg-[#fcfbf7]"
+                                                    }`}
+                                                >
+                                                    <td className="px-5 py-4">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#f5edda] text-[#98700a]">
+                                                                <Building2 size={19} />
+                                                            </div>
+
+                                                            <div className="min-w-0">
+                                                                <p className="max-w-[230px] truncate text-sm font-medium text-[#35342f]">
+                                                                    {fornecedor.nome}
+                                                                </p>
+                                                                <p className="mt-1 text-xs text-[#969187]">
+                                                                    {fornecedor.documento ||
+                                                                        "Documento não informado"}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+
+                                                    <td className="px-5 py-4">
+                                                        <p className="text-sm text-[#555248]">
+                                                            {fornecedor.contato ||
+                                                                "Não informado"}
+                                                        </p>
+                                                        <p className="mt-1 text-xs text-[#969187]">
+                                                            {fornecedor.telefone ||
+                                                                "Sem telefone"}
+                                                        </p>
+                                                    </td>
+
+                                                    <td className="px-5 py-4">
+                                                        <p className="text-sm text-[#555248]">
+                                                            {fornecedor.cidade || "—"}
+                                                        </p>
+                                                        <p className="mt-1 text-xs text-[#969187]">
+                                                            {fornecedor.estado || ""}
+                                                        </p>
+                                                    </td>
+
+                                                    <td className="px-5 py-4 text-sm text-[#77746b]">
+                                                        {formatarData(
+                                                            fornecedor.dataCadastro
+                                                        )}
+                                                    </td>
+
+                                                    <td className="px-5 py-4">
+                                                        <BadgeStatus
+                                                            status={fornecedor.status}
+                                                        />
+                                                    </td>
+
+                                                    <td className="px-5 py-4">
+                                                        <div className="flex items-center justify-center gap-1">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() =>
+                                                                    abrirDetalhes(
+                                                                        fornecedor
+                                                                    )
+                                                                }
+                                                                title="Ver detalhes"
+                                                                className="rounded-lg p-2 text-[#89867d] transition hover:bg-[#f1e8d1] hover:text-[#98700a]"
+                                                            >
+                                                                <Eye size={17} />
+                                                            </button>
+
+                                                            <button
+                                                                type="button"
+                                                                onClick={() =>
+                                                                    abrirEdicao(
+                                                                        fornecedor
+                                                                    )
+                                                                }
+                                                                title="Editar fornecedor"
+                                                                className="rounded-lg p-2 text-[#89867d] transition hover:bg-[#f1e8d1] hover:text-[#98700a]"
+                                                            >
+                                                                <Pencil size={16} />
+                                                            </button>
+
+                                                            <button
+                                                                type="button"
+                                                                onClick={() =>
+                                                                    excluirFornecedor(
+                                                                        fornecedor
+                                                                    )
+                                                                }
+                                                                title="Excluir fornecedor"
+                                                                className="rounded-lg p-2 text-[#aaa69b] transition hover:bg-rose-50 hover:text-rose-600"
+                                                            >
+                                                                <Trash2 size={16} />
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            )
+                                        )
+                                    ) : (
+                                        <tr>
+                                            <td
+                                                colSpan={6}
                                                 className="px-5 py-14 text-center"
                                             >
                                                 <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-[#f5edda] text-[#98700a]">
@@ -847,7 +880,6 @@ export const Fornecedores = () => {
                             </table>
                         </div>
 
-                        {/* Paginação */}
                         <div className="flex flex-col gap-3 border-t border-[#eee7d7] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
                             <p className="text-xs text-[#89867d]">
                                 {fornecedoresFiltrados.length === 0
@@ -896,7 +928,6 @@ export const Fornecedores = () => {
                 </main>
             </div>
 
-            {/* Modal de cadastro e edição */}
             {modalAberto && modoModal !== "detalhes" && (
                 <div
                     className="fixed inset-0 z-50 flex items-center justify-center bg-[#28251e]/40 p-4 backdrop-blur-[2px]"
@@ -929,20 +960,14 @@ export const Fornecedores = () => {
                             </button>
                         </div>
 
-                        <form
-                            onSubmit={salvarFornecedor}
-                            className="overflow-y-auto"
-                        >
+                        <form onSubmit={salvarFornecedor} className="overflow-y-auto">
                             <div className="grid grid-cols-1 gap-4 p-5 sm:grid-cols-2 sm:p-6">
                                 <div className="sm:col-span-2">
                                     <Campo
                                         label="Nome do fornecedor"
                                         value={formulario.nome}
                                         onChange={(evento) =>
-                                            atualizarCampo(
-                                                "nome",
-                                                evento.target.value
-                                            )
+                                            atualizarCampo("nome", evento.target.value)
                                         }
                                         placeholder="Ex.: Distribuidora Luz do Oriente"
                                         required
@@ -953,10 +978,7 @@ export const Fornecedores = () => {
                                     label="CNPJ / CPF"
                                     value={formulario.documento}
                                     onChange={(evento) =>
-                                        atualizarCampo(
-                                            "documento",
-                                            evento.target.value
-                                        )
+                                        atualizarCampo("documento", evento.target.value)
                                     }
                                     placeholder="00.000.000/0000-00"
                                 />
@@ -965,10 +987,7 @@ export const Fornecedores = () => {
                                     label="Pessoa de contato"
                                     value={formulario.contato}
                                     onChange={(evento) =>
-                                        atualizarCampo(
-                                            "contato",
-                                            evento.target.value
-                                        )
+                                        atualizarCampo("contato", evento.target.value)
                                     }
                                     placeholder="Nome do responsável"
                                 />
@@ -978,10 +997,7 @@ export const Fornecedores = () => {
                                     type="email"
                                     value={formulario.email}
                                     onChange={(evento) =>
-                                        atualizarCampo(
-                                            "email",
-                                            evento.target.value
-                                        )
+                                        atualizarCampo("email", evento.target.value)
                                     }
                                     placeholder="contato@empresa.com.br"
                                 />
@@ -990,10 +1006,7 @@ export const Fornecedores = () => {
                                     label="Telefone"
                                     value={formulario.telefone}
                                     onChange={(evento) =>
-                                        atualizarCampo(
-                                            "telefone",
-                                            evento.target.value
-                                        )
+                                        atualizarCampo("telefone", evento.target.value)
                                     }
                                     placeholder="(00) 00000-0000"
                                 />
@@ -1002,10 +1015,7 @@ export const Fornecedores = () => {
                                     label="Cidade"
                                     value={formulario.cidade}
                                     onChange={(evento) =>
-                                        atualizarCampo(
-                                            "cidade",
-                                            evento.target.value
-                                        )
+                                        atualizarCampo("cidade", evento.target.value)
                                     }
                                     placeholder="Cidade"
                                 />
@@ -1038,22 +1048,13 @@ export const Fornecedores = () => {
                                     <select
                                         value={formulario.categoria}
                                         onChange={(evento) =>
-                                            atualizarCampo(
-                                                "categoria",
-                                                evento.target.value
-                                            )
+                                            atualizarCampo("categoria", evento.target.value)
                                         }
                                         className="w-full rounded-lg border border-[#e6dfcd] bg-[#fcfbf7] px-3.5 py-2.5 text-sm text-[#35342f] outline-none transition focus:border-[#c6a64b]"
                                     >
-                                        <option value="">
-                                            Selecione uma categoria
-                                        </option>
-
+                                        <option value="">Selecione uma categoria</option>
                                         {categorias.map((categoria) => (
-                                            <option
-                                                key={categoria}
-                                                value={categoria}
-                                            >
+                                            <option key={categoria} value={categoria}>
                                                 {categoria}
                                             </option>
                                         ))}
@@ -1068,10 +1069,7 @@ export const Fornecedores = () => {
                                     <select
                                         value={formulario.status}
                                         onChange={(evento) =>
-                                            atualizarCampo(
-                                                "status",
-                                                evento.target.value
-                                            )
+                                            atualizarCampo("status", evento.target.value)
                                         }
                                         className="w-full rounded-lg border border-[#e6dfcd] bg-[#fcfbf7] px-3.5 py-2.5 text-sm text-[#35342f] outline-none transition focus:border-[#c6a64b]"
                                     >
@@ -1104,19 +1102,23 @@ export const Fornecedores = () => {
                                 <button
                                     type="button"
                                     onClick={fecharModal}
-                                    className="rounded-lg border border-[#e6dfcd] px-4 py-2.5 text-sm font-medium text-[#77746b] transition hover:bg-[#f1eee6]"
+                                    disabled={salvando}
+                                    className="rounded-lg border border-[#e6dfcd] px-4 py-2.5 text-sm font-medium text-[#77746b] transition hover:bg-[#f1eee6] disabled:opacity-50"
                                 >
                                     Cancelar
                                 </button>
 
                                 <button
                                     type="submit"
-                                    className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#98700a] px-4 py-2.5 text-sm font-medium text-white transition hover:bg-[#806009]"
+                                    disabled={salvando}
+                                    className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#98700a] px-4 py-2.5 text-sm font-medium text-white transition hover:bg-[#806009] disabled:cursor-wait disabled:opacity-60"
                                 >
                                     <Save size={17} />
-                                    {modoModal === "edicao"
-                                        ? "Salvar alterações"
-                                        : "Cadastrar fornecedor"}
+                                    {salvando
+                                        ? "Salvando..."
+                                        : modoModal === "edicao"
+                                          ? "Salvar alterações"
+                                          : "Cadastrar fornecedor"}
                                 </button>
                             </div>
                         </form>
@@ -1124,7 +1126,6 @@ export const Fornecedores = () => {
                 </div>
             )}
 
-            {/* Modal de detalhes */}
             {modalAberto &&
                 modoModal === "detalhes" &&
                 fornecedorSelecionado && (
@@ -1149,11 +1150,7 @@ export const Fornecedores = () => {
                                         </h2>
 
                                         <div className="mt-1.5">
-                                            <BadgeStatus
-                                                status={
-                                                    fornecedorSelecionado.status
-                                                }
-                                            />
+                                            <BadgeStatus status={fornecedorSelecionado.status} />
                                         </div>
                                     </div>
                                 </div>
@@ -1180,6 +1177,20 @@ export const Fornecedores = () => {
                                         <p className="mt-2 break-words text-sm text-[#35342f]">
                                             {fornecedorSelecionado.documento ||
                                                 "Não informado"}
+                                        </p>
+                                    </div>
+
+                                    <div className="rounded-lg border border-[#eee7d7] bg-[#fcfbf7] p-4">
+                                        <div className="flex items-center gap-2 text-[#98700a]">
+                                            <Truck size={16} />
+                                            <span className="text-xs font-medium">
+                                                Categoria
+                                            </span>
+                                        </div>
+
+                                        <p className="mt-2 break-words text-sm text-[#35342f]">
+                                            {fornecedorSelecionado.categoria ||
+                                                "Não informada"}
                                         </p>
                                     </div>
                                 </div>
@@ -1290,9 +1301,7 @@ export const Fornecedores = () => {
                             <div className="flex flex-col-reverse gap-2 border-t border-[#eee7d7] bg-[#fcfbf7] p-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
                                 <button
                                     type="button"
-                                    onClick={() =>
-                                        alterarStatus(fornecedorSelecionado)
-                                    }
+                                    onClick={() => alterarStatus(fornecedorSelecionado)}
                                     className="rounded-lg border border-[#e6dfcd] px-3.5 py-2.5 text-sm font-medium text-[#77746b] transition hover:bg-[#f1eee6]"
                                 >
                                     {fornecedorSelecionado.status === "Ativo"
@@ -1311,9 +1320,7 @@ export const Fornecedores = () => {
 
                                     <button
                                         type="button"
-                                        onClick={() =>
-                                            abrirEdicao(fornecedorSelecionado)
-                                        }
+                                        onClick={() => abrirEdicao(fornecedorSelecionado)}
                                         className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#98700a] px-4 py-2.5 text-sm font-medium text-white transition hover:bg-[#806009]"
                                     >
                                         <Pencil size={16} />
