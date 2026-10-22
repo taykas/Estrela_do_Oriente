@@ -3,6 +3,8 @@ import {
     collection,
     doc,
     getDocs,
+    getDoc,
+    updateDoc,
     runTransaction,
     serverTimestamp
 } from "firebase/firestore";
@@ -316,7 +318,9 @@ export async function registrarVenda({
             subtotal,
             valorDesconto,
             total,
-            status: "Concluída",
+            status: crediario || pagamento === "Crediário"
+                ? "Pendente"
+                : "Concluída",
             criadoEm: serverTimestamp()
         };
 
@@ -341,4 +345,35 @@ export async function registrarVenda({
             criadoEm: new Date()
         };
     });
+}
+
+export async function concluirVenda(id) {
+    if (!id) {
+        throw new Error("Identificador da venda inválido.");
+    }
+
+    const vendaRef = doc(db, "vendas", id);
+
+    const vendaSnapshot = await getDoc(vendaRef);
+
+    if (!vendaSnapshot.exists()) {
+        throw new Error("Venda não encontrada.");
+    }
+
+    const venda = vendaSnapshot.data();
+
+    if (venda.status !== "Pendente") {
+        throw new Error("Esta venda não está pendente.");
+    }
+
+    await updateDoc(vendaRef, {
+        status: "Concluída",
+        atualizadoEm: serverTimestamp()
+    });
+
+    return {
+        id,
+        ...venda,
+        status: "Concluída"
+    };
 }

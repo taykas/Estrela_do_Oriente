@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 
 import Sidebar from "../components/Sidebar";
-import { listarProdutosVenda, listarVendas, registrarVenda as salvarVenda } from "../services/vendas";
+import { listarProdutosVenda, listarVendas, registrarVenda as salvarVenda, concluirVenda } from "../services/vendas";
 import {
     Package,
     ShoppingCart,
@@ -21,6 +21,7 @@ import {
     ChevronLeft,
     ChevronRight,
     CheckCircle2,
+    CheckCircle,
     CircleAlert,
     ChartNoAxesCombined
 } from "lucide-react";
@@ -70,6 +71,8 @@ export const Vendas = () => {
     }, [pathname]);
 
     const [produtos, setProdutos] = useState([]);
+    const [modalConfirmarConclusao, setModalConfirmarConclusao] = useState(false);
+    const [concluindoVenda, setConcluindoVenda] = useState(false);
     const [vendas, setVendas] = useState([]);
     const [carregando, setCarregando] = useState(true);
     const [salvando, setSalvando] = useState(false);
@@ -370,6 +373,39 @@ export const Vendas = () => {
         }
     };
 
+    const handleConcluirVenda = async () => {
+        if (!vendaSelecionada?.id) return;
+
+        setConcluindoVenda(true);
+
+        try {
+            const vendaAtualizada = await concluirVenda(
+                vendaSelecionada.id
+            );
+
+            setVendas((vendasAtuais) =>
+                vendasAtuais.map((venda) =>
+                    venda.id === vendaSelecionada.id
+                        ? { ...venda, ...vendaAtualizada }
+                        : venda
+                )
+            );
+
+            setVendaSelecionada((vendaAtual) =>
+                vendaAtual?.id === vendaSelecionada.id
+                    ? { ...vendaAtual, ...vendaAtualizada }
+                    : vendaAtual
+            );
+
+            setModalConfirmarConclusao(false);
+        } catch (error) {
+            console.error("Erro ao concluir venda:", error);
+            window.alert(error.message || "Não foi possível concluir a venda.");
+        } finally {
+            setConcluindoVenda(false);
+        }
+    };
+
     const indicadores = [
         {
             titulo: "Faturamento de Hoje",
@@ -598,8 +634,8 @@ export const Vendas = () => {
                                             </p>
                                             <p
                                                 className={`mt-1 text-[10px] ${venda.status === "Concluída"
-                                                        ? "text-emerald-700"
-                                                        : "text-amber-700"
+                                                    ? "text-emerald-700"
+                                                    : "text-amber-700"
                                                     }`}
                                             >
                                                 {venda.status}
@@ -723,8 +759,8 @@ export const Vendas = () => {
                                             <td className="px-4 py-4">
                                                 <span
                                                     className={`whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium ${ehCrediario(venda)
-                                                            ? "bg-amber-100 text-amber-800"
-                                                            : "bg-stone-100 text-stone-600"
+                                                        ? "bg-amber-100 text-amber-800"
+                                                        : "bg-stone-100 text-stone-600"
                                                         }`}
                                                 >
                                                     {ehCrediario(venda) ? "Sim" : "Não"}
@@ -736,8 +772,8 @@ export const Vendas = () => {
                                             <td className="px-4 py-4">
                                                 <span
                                                     className={`whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium ${venda.status === "Concluída"
-                                                            ? "bg-emerald-100 text-emerald-700"
-                                                            : "bg-amber-100 text-amber-800"
+                                                        ? "bg-emerald-100 text-emerald-700"
+                                                        : "bg-amber-100 text-amber-800"
                                                         }`}
                                                 >
                                                     {venda.status}
@@ -874,8 +910,8 @@ export const Vendas = () => {
                                         <p className="text-xs text-[#918d83]">Venda no crediário?</p>
                                         <p
                                             className={`mt-2 font-medium ${ehCrediario(vendaSelecionada)
-                                                    ? "text-amber-700"
-                                                    : "text-[#45433d]"
+                                                ? "text-amber-700"
+                                                : "text-[#45433d]"
                                                 }`}
                                         >
                                             {ehCrediario(vendaSelecionada) ? "Sim" : "Não"}
@@ -918,28 +954,56 @@ export const Vendas = () => {
                                     </table>
                                 </div>
 
-                                <div className="flex flex-col items-end gap-2 border-t border-[#eee7d7] pt-4">
-                                    <p className="text-sm text-[#77746b]">
-                                        Subtotal: {moeda(subtotalVenda(vendaSelecionada))}
-                                    </p>
+                                <div className="flex items-end justify-between gap-4 border-t border-[#eee7d7] pt-4">
+                                    <div className="flex flex-col items-start gap-3">
 
-                                    {(vendaSelecionada.desconto || 0) > 0 && (
+                                        <div className="flex flex-col gap-1">
+                                            <span className="text-sm text-[#77746b] mb-1">
+                                                Status do pedido:
+                                            </span>
+
+                                            <span
+                                                className={`inline-flex w-fit items-center rounded-full px-3 py-1 text-xs font-semibold ${vendaSelecionada.status === "Concluída"
+                                                    ? "bg-emerald-100 text-emerald-700"
+                                                    : vendaSelecionada.status === "Pendente"
+                                                        ? "bg-amber-100 text-amber-800"
+                                                        : "bg-red-100 text-red-700"
+                                                    }`}
+                                            >
+                                                {vendaSelecionada.status}
+                                            </span>
+                                        </div>
+
+                                        {vendaSelecionada.status === "Pendente" && (
+                                            <button
+                                                onClick={() => setModalConfirmarConclusao(true)}
+                                                className="flex items-center mt-2 gap-2 rounded-lg bg-[#98700a] px-4 py-2.5 text-sm font-medium text-white transition hover:bg-[#806009] disabled:cursor-not-allowed disabled:opacity-40"
+                                            >
+                                                <CheckCircle size={16} />
+                                                Concluir venda
+                                            </button>
+                                        )}
+                                    </div>
+
+                                    <div className="flex flex-col items-end gap-2 text-right">
                                         <p className="text-sm text-[#77746b]">
-                                            Desconto ({vendaSelecionada.desconto}%):{" "}
-                                            -{moeda(
-                                                subtotalVenda(vendaSelecionada) *
-                                                vendaSelecionada.desconto / 100
-                                            )}
+                                            Subtotal: {moeda(subtotalVenda(vendaSelecionada))}
                                         </p>
-                                    )}
 
-                                    <p className="text-sm text-[#77746b]">
-                                        Status: {vendaSelecionada.status}
-                                    </p>
+                                        {(vendaSelecionada.desconto || 0) > 0 && (
+                                            <p className="text-sm text-[#77746b]">
+                                                Desconto ({vendaSelecionada.desconto}%):{" "}
+                                                -{moeda(
+                                                    subtotalVenda(vendaSelecionada) *
+                                                    vendaSelecionada.desconto / 100
+                                                )}
+                                            </p>
+                                        )}
 
-                                    <p className="text-2xl font-semibold text-[#8b690e]">
-                                        Total: {moeda(totalVenda(vendaSelecionada))}
-                                    </p>
+                                        <p className="mt-1 text-2xl font-semibold text-[#8b690e]">
+                                            Total: {moeda(totalVenda(vendaSelecionada))}
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
                         ) : (
@@ -1208,8 +1272,8 @@ export const Vendas = () => {
                                     {mensagem && (
                                         <div
                                             className={`mt-4 flex items-start gap-2 rounded-lg border p-3 text-sm ${tipoMensagem === "sucesso"
-                                                    ? "border-[#b9d9c5] bg-[#edf7f0] text-[#32734a]"
-                                                    : "border-[#e6c8c3] bg-[#fdf0ed] text-[#b34b40]"
+                                                ? "border-[#b9d9c5] bg-[#edf7f0] text-[#32734a]"
+                                                : "border-[#e6c8c3] bg-[#fdf0ed] text-[#b34b40]"
                                                 }`}
                                         >
                                             {tipoMensagem === "sucesso" ? (
@@ -1246,7 +1310,95 @@ export const Vendas = () => {
                     </div>
                 </div>
             )}
+
+            {modalConfirmarConclusao && (
+    <div
+        className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
+        onClick={() => {
+            if (!concluindoVenda) {
+                setModalConfirmarConclusao(false);
+            }
+        }}
+    >
+        <div
+            className="w-full max-w-md rounded-2xl border border-[#e6dfcd] bg-[#fffefa] p-6 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+        >
+            <div className="mb-5 flex items-start gap-4">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#f3f1eb] text-[#98700a]">
+                    <CheckCircle size={24} />
+                </div>
+
+                <div>
+                    <h2 className="text-lg font-semibold text-[#3f3b30]">
+                        Concluir venda?
+                    </h2>
+
+                    <p className="mt-2 text-sm leading-relaxed text-[#77746b]">
+                        Confirme se o pagamento desta venda foi recebido.
+                        Após a confirmação, o pedido será marcado como
+                        concluído.
+                    </p>
+                </div>
+            </div>
+
+            <div className="mb-6 rounded-xl border border-[#eee7d7] bg-[#faf9f5] p-4">
+                <div className="flex items-center justify-between gap-4">
+                    <span className="text-sm text-[#77746b]">
+                        Cliente
+                    </span>
+
+                    <span className="max-w-[60%] truncate text-sm font-medium text-[#3f3b30]">
+                        {vendaSelecionada?.cliente || "Não informado"}
+                    </span>
+                </div>
+
+                <div className="mt-3 flex items-center justify-between gap-4">
+                    <span className="text-sm text-[#77746b]">
+                        Valor total
+                    </span>
+
+                    <span className="text-lg font-semibold text-[#8b690e]">
+                        {moeda(totalVenda(vendaSelecionada))}
+                    </span>
+                </div>
+            </div>
+
+            <div className="flex justify-end gap-3">
+                <button
+                    type="button"
+                    disabled={concluindoVenda}
+                    onClick={() => setModalConfirmarConclusao(false)}
+                    className="rounded-lg border border-[#e6dfcd] px-4 py-2.5 text-sm font-medium text-[#625d50] transition hover:bg-[#f3f1eb] disabled:opacity-50"
+                >
+                    Cancelar
+                </button>
+
+                <button
+                    type="button"
+                    disabled={concluindoVenda}
+                    onClick={handleConcluirVenda}
+                    className="flex items-center gap-2 rounded-lg bg-[#98700a] px-4 py-2.5 text-sm font-medium text-white transition hover:bg-[#7d5b08] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                    {concluindoVenda ? (
+                        <>
+                            <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+                            Concluindo...
+                        </>
+                    ) : (
+                        <>
+                            <CheckCircle size={16} />
+                            Confirmar conclusão
+                        </>
+                    )}
+                </button>
+            </div>
         </div>
+    </div>
+)}
+        </div>
+
+        
     );
 };
 
